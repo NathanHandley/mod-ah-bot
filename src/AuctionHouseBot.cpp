@@ -121,6 +121,40 @@ AuctionHouseBot::~AuctionHouseBot()
 {
 }
 
+uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
+{
+    // Determine the stack ratio based on class type
+    if (itemProto == NULL)
+        return 1;
+
+    // TODO: Move this to a config
+    uint32 stackRatio = 0;
+    switch (itemProto->Class)
+    {
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = 5; break;
+    case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
+    case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
+    case ITEM_CLASS_GEM:            stackRatio = 5; break;
+    case ITEM_CLASS_REAGENT:        stackRatio = 50; break;
+    case ITEM_CLASS_ARMOR:          stackRatio = 0; break;
+    case ITEM_CLASS_PROJECTILE:     stackRatio = 100; break;
+    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 25; break;
+    case ITEM_CLASS_GENERIC:        stackRatio = 100; break;
+    case ITEM_CLASS_RECIPE:         stackRatio = 0; break;
+    case ITEM_CLASS_QUIVER:         stackRatio = 0; break;
+    case ITEM_CLASS_QUEST:          stackRatio = 10; break;
+    case ITEM_CLASS_KEY:            stackRatio = 10; break;
+    case ITEM_CLASS_MISC:           stackRatio = 100; break;
+    case ITEM_CLASS_GLYPH:          stackRatio = 0; break;
+    default:                        stackRatio = 0; break;
+    }
+
+    if (stackRatio > urand(0, 99))
+        return urand(1, itemProto->GetMaxStackSize());
+    else
+        return 1;
+}
+
 void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
 {
     if (!AHBSeller)
@@ -369,7 +403,6 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
 
             uint64 buyoutPrice = 0;
             uint64 bidPrice = 0;
-            uint32 stackCount = 1;
 
             if (SellMethod)
                 buyoutPrice = prototype->BuyPrice;
@@ -383,14 +416,9 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
                 buyoutPrice = 150;
             }
 
+            
             if (prototype->Quality <= AHB_MAX_QUALITY)
             {
-                if (config->GetMaxStack(prototype->Quality) > 1 && item->GetMaxStackCount() > 1)
-                    stackCount = urand(1, minValue(item->GetMaxStackCount(), config->GetMaxStack(prototype->Quality)));
-                else if (config->GetMaxStack(prototype->Quality) == 0 && item->GetMaxStackCount() > 1)
-                    stackCount = urand(1, item->GetMaxStackCount());
-                else
-                    stackCount = 1;
                 buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
                 buyoutPrice /= 100;
                 bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
@@ -404,6 +432,9 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
                 item->RemoveFromUpdateQueueOf(AHBplayer);
                 continue;
             }
+
+            // Determine stack price
+            uint32 stackCount = GetStackSizeForItem(prototype);
 
             uint32 etime = urand(1,3);
             switch(etime)
