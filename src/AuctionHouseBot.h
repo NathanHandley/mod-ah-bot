@@ -742,7 +742,7 @@ private:
 
     inline uint32 minValue(uint32 a, uint32 b) { return a <= b ? a : b; };
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
-    void calculateSellItemPrice(Player* AHBplayer, Item* item, ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);

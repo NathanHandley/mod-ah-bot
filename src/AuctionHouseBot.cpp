@@ -84,7 +84,7 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
         return 1;
 }
 
-void AuctionHouseBot::calculateSellItemPrice(Player* AHBplayer, Item* item, ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
+void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
 {
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
@@ -344,7 +344,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         // Determine price
         uint64 buyoutPrice = 0;
         uint64 bidPrice = 0;
-        calculateSellItemPrice(AHBplayer, item, prototype, bidPrice, buyoutPrice);
+        calculateItemValue(prototype, bidPrice, buyoutPrice);
 
         // Define a duration
         uint32 etime = urand(1,3);
@@ -464,68 +464,38 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
         else
             currentprice = auction->startbid;
 
-        // Prepare portion from maximum bid
+        // Prepare portion from maximum bid per item
         double bidrate = static_cast<double>(urand(1, 100)) / 100;
-        long double bidMax = 0;
-
-        // check that bid has acceptable value and take bid based on vendorprice, stacksize and quality
-        if (BuyMethod)
-        {
-            if (prototype->Quality <= AHB_MAX_QUALITY)
-            {
-                if (currentprice < prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
-                    bidMax = prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
-            }
-            else
-            {
-                // quality is something it shouldn't be, let's get out of here
-                if (debug_Out)
-                    LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-                    continue;
-            }
-        }
-        else
-        {
-            if (prototype->Quality <= AHB_MAX_QUALITY)
-            {
-                if (currentprice < prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
-                    bidMax = prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
-            }
-            else
-            {
-                // quality is something it shouldn't be, let's get out of here
-                if (debug_Out)
-                    LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-                    continue;
-            }
-        }
+        uint64 discardBuyoutPrice = 0;
+        uint64 bidPriceMaxSingle = 0;
+        calculateItemValue(prototype, bidPriceMaxSingle, discardBuyoutPrice);
+        uint64 bitPriceMaxCurStack = bidPriceMaxSingle * pItem->GetCount();
 
         // check some special items, and do recalculating to their prices
         switch (prototype->Class)
         {
-            // ammo
+        // ammo
         case 6:
-            bidMax = 0;
+            bitPriceMaxCurStack = 0;
             break;
         default:
             break;
         }
 
-        if (bidMax == 0)
+        if (bitPriceMaxCurStack == 0)
         {
             // quality check failed to get bidmax, let's get out of here
             continue;
         }
 
         // Calculate our bid
-        long double bidvalue = currentprice + ((bidMax - currentprice) * bidrate);
+        long double bidvalue = currentprice + ((bitPriceMaxCurStack - currentprice) * bidrate);
         // Convert to uint32
         uint32 bidprice = static_cast<uint32>(bidvalue);
 
         // Check our bid is high enough to be valid. If not, correct it to minimum.
         if ((currentprice + auction->GetAuctionOutBid()) > bidprice)
             bidprice = currentprice + auction->GetAuctionOutBid();
-
 
         if (debug_Out)
         {
@@ -540,7 +510,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
             LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
             LOG_INFO("module", "AHBuyer: Bid Rate: {}", bidrate);
-            LOG_INFO("module", "AHBuyer: Bid Max: {}", bidMax);
+            LOG_INFO("module", "AHBuyer: Bid Max: {}", bitPriceMaxCurStack);
             LOG_INFO("module", "AHBuyer: Bid Value: {}", bidvalue);
             LOG_INFO("module", "AHBuyer: Bid Price: {}", bidprice);
             LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
