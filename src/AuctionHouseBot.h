@@ -23,6 +23,9 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 
+#include <map>
+#include <vector>
+
 struct AuctionEntry;
 class Player;
 class WorldSession;
@@ -731,6 +734,8 @@ private:
     uint32 ItemsPerCycle;
 
     std::set<uint32> DisableItemStore;
+    std::vector<uint32> itemCandidateClassWeightedSeedList;
+    std::map<uint32, std::vector<uint32>> itemCandidatesByItemClass;
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
@@ -743,6 +748,8 @@ private:
     inline uint32 minValue(uint32 a, uint32 b) { return a <= b ? a : b; };
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
+    void populateItemClassSeedList();
     void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);

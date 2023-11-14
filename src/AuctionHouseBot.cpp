@@ -25,10 +25,8 @@
 #include "WorldSession.h"
 #include "GameTime.h"
 #include "DatabaseEnv.h"
-#include <vector>
 
 using namespace std;
-vector<uint32> itemCandidates;
 
 AuctionHouseBot::AuctionHouseBot()
 {
@@ -60,14 +58,14 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = 75; break;
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = 50; break;
     case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
     case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
     case ITEM_CLASS_GEM:            stackRatio = 5; break;
     case ITEM_CLASS_REAGENT:        stackRatio = 50; break;
     case ITEM_CLASS_ARMOR:          stackRatio = 0; break;
     case ITEM_CLASS_PROJECTILE:     stackRatio = 100; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 25; break;
+    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 50; break;
     case ITEM_CLASS_GENERIC:        stackRatio = 100; break;
     case ITEM_CLASS_RECIPE:         stackRatio = 0; break;
     case ITEM_CLASS_QUIVER:         stackRatio = 0; break;
@@ -133,15 +131,82 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     outBidPrice /= 100;
 }
 
+void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
+{
+    for (uint32 i = 0; i < itemClassSeedWeight; ++i)
+        itemCandidateClassWeightedSeedList.push_back(itemClass);
+}
+
+void AuctionHouseBot::populateItemClassSeedList()
+{
+    // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
+
+    // TODO: Move these weight items to a config
+    uint32 itemClassWeightitemClassWeightConsumable = 6;
+    uint32 itemClassSeedWeightContainer = 4;
+    uint32 itemClassSeedWeightWeapon = 8;
+    uint32 itemClassSeedWeightGem = 3;
+    uint32 itemClassSeedWeightArmor = 8;
+    uint32 itemClassSeedWeightReagent = 1;
+    uint32 itemClassSeedWeightProjectile = 2;
+    uint32 itemClassSeedWeightTradeGoods = 10;
+    uint32 itemClassSeedWeightGeneric = 1;
+    uint32 itemClassSeedWeightRecipe = 6;
+    uint32 itemClassSeedWeightQuiver = 1;
+    uint32 itemClassSeedWeightQuest = 1;
+    uint32 itemClassSeedWeightKey = 1;
+    uint32 itemClassSeedWeightMisc = 0;
+    uint32 itemClassSeedWeightGlyph = 3;
+
+    // Clear old list
+    itemCandidateClassWeightedSeedList.clear();
+
+    // Fill the list
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, itemClassWeightitemClassWeightConsumable);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, itemClassSeedWeightContainer);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, itemClassSeedWeightWeapon);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, itemClassSeedWeightGem);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_ARMOR, itemClassSeedWeightArmor);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_REAGENT, itemClassSeedWeightReagent);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_PROJECTILE, itemClassSeedWeightProjectile);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_TRADE_GOODS, itemClassSeedWeightTradeGoods);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GENERIC, itemClassSeedWeightGeneric);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_RECIPE, itemClassSeedWeightRecipe);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUIVER, itemClassSeedWeightQuiver);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUEST, itemClassSeedWeightQuest);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_KEY, itemClassSeedWeightKey);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_MISC, itemClassSeedWeightMisc);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, itemClassSeedWeightGlyph);
+}
+
 void AuctionHouseBot::populateItemCandidateList()
 {
-    // Clear old list
-    itemCandidates.clear();
+    // Clear old list and rebuild it
+    itemCandidatesByItemClass.clear();
+    itemCandidatesByItemClass[ITEM_CLASS_CONSUMABLE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_CONTAINER] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_WEAPON] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GEM] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_ARMOR] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_REAGENT] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_PROJECTILE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_TRADE_GOODS] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GENERIC] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_RECIPE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_QUIVER] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_QUEST] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_KEY] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
 
     // Fill list
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
     for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
     {
+        // Skip any items not in the seed list
+        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
+            continue;
+
         // Skip any BOP items
         if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
             continue;
@@ -190,6 +255,14 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
+        // Disable containers with zero slots
+        if (itr->second.Class == ITEM_CLASS_CONTAINER && itr->second.ContainerSlots == 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Container with no slots)", itr->second.ItemId);
+            continue;
+        }
+
         // Disable items which are bind quest Items
         if (itr->second.Bonding == BIND_QUEST_ITEM)
         {
@@ -203,9 +276,11 @@ void AuctionHouseBot::populateItemCandidateList()
             itr->second.Name1.find("Unused") != std::string::npos ||
             itr->second.Name1.find("Deprecated") != std::string::npos ||
             itr->second.Name1.find(" Epic ") != std::string::npos ||
-            itr->second.Name1.find("[PH]") != std::string::npos ||
-            itr->second.Name1.find("[DEP]") != std::string::npos ||
+            itr->second.Name1.find("]") != std::string::npos ||
+            itr->second.Name1.find("[") != std::string::npos ||
             itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("(") != std::string::npos ||
+            itr->second.Name1.find(")") != std::string::npos ||
             itr->second.Name1.find("OLD") != std::string::npos)
         {
             if (debug_Out_Filters)
@@ -221,16 +296,8 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Disable All MISC items (pets, mounts, etc)  Use Subclass _JUNK_() for pets and mounts
-        if (itr->second.Class == ITEM_CLASS_MISC)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
-            continue;
-        }
-
-        // Disable all items that have neither a sell or a buy price
-        if (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0)
+        // Disable all items that have neither a sell or a buy price, with exception of item enhancements
+        if (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0 && itr->second.Class != ITEM_CLASS_CONSUMABLE && itr->second.SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
@@ -238,7 +305,7 @@ void AuctionHouseBot::populateItemCandidateList()
         }
 
         // Store the item ID
-        itemCandidates.push_back(itr->second.ItemId);
+        itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
     }
 }
 
@@ -310,13 +377,16 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
         // Pull a random item out of the candidate list
-        uint32 itemID = itemCandidates[urand(0, itemCandidates.size() - 1)];
+        uint32 chosenItemClass = itemCandidateClassWeightedSeedList[urand(0, itemCandidateClassWeightedSeedList.size() - 1)];
+        uint32 itemID = 0;
+        if (itemCandidatesByItemClass[chosenItemClass].size() != 0)
+            itemID = itemCandidatesByItemClass[chosenItemClass][urand(0, itemCandidatesByItemClass[chosenItemClass].size() - 1)];
 
         // Prevent invalid IDs
         if (itemID == 0)
         {
             if (debug_Out)
-                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0");
+                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0", chosenItemClass);
             continue;
         }
 
@@ -660,6 +730,7 @@ void AuctionHouseBot::Initialize()
     if (AHBSeller)
     {
         // Build a list of items that can be pulled from for auction
+        populateItemClassSeedList();
         populateItemCandidateList();
 
         LOG_INFO("module", "AuctionHouseBot:");
