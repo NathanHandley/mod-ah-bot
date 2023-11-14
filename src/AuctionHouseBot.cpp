@@ -52,45 +52,6 @@ AuctionHouseBot::AuctionHouseBot()
     Bind_When_Use = false;
     Bind_Quest_Item = false;
 
-    DisablePermEnchant = false;
-    DisableConjured = false;
-    DisableGems = false;
-    DisableMoney = false;
-    DisableMoneyLoot = false;
-    DisableLootable = false;
-    DisableKeys = false;
-    DisableDuration = false;
-    DisableBOP_Or_Quest_NoReqLevel = false;
-
-    DisableWarriorItems = false;
-    DisablePaladinItems = false;
-    DisableHunterItems = false;
-    DisableRogueItems = false;
-    DisablePriestItems = false;
-    DisableDKItems = false;
-    DisableShamanItems = false;
-    DisableMageItems = false;
-    DisableWarlockItems = false;
-    DisableUnusedClassItems = false;
-    DisableDruidItems = false;
-
-    DisableItemsBelowLevel = 0;
-    DisableItemsAboveLevel = 0;
-    DisableTGsBelowLevel = 0;
-    DisableTGsAboveLevel = 0;
-    DisableItemsBelowGUID = 0;
-    DisableItemsAboveGUID = 0;
-    DisableTGsBelowGUID = 0;
-    DisableTGsAboveGUID = 0;
-    DisableItemsBelowReqLevel = 0;
-    DisableItemsAboveReqLevel = 0;
-    DisableTGsBelowReqLevel = 0;
-    DisableTGsAboveReqLevel = 0;
-    DisableItemsBelowReqSkillRank = 0;
-    DisableItemsAboveReqSkillRank = 0;
-    DisableTGsBelowReqSkillRank = 0;
-    DisableTGsAboveReqSkillRank = 0;
-
     //End Filters
 
     _lastrun_a = time(NULL);
@@ -643,7 +604,7 @@ void AuctionHouseBot::Initialize()
             }
 
            // Disable money
-           if ((DisableMoney) && (itr->second.Class == ITEM_CLASS_MONEY))
+           if (itr->second.Class == ITEM_CLASS_MONEY)
            {
                if (debug_Out_Filters)
                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
@@ -651,7 +612,7 @@ void AuctionHouseBot::Initialize()
            }
 
            // Disable moneyloot
-           if ((DisableMoneyLoot) && (itr->second.MinMoneyLoot > 0))
+           if (itr->second.MinMoneyLoot > 0)
            {
                if (debug_Out_Filters)
                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
@@ -749,45 +710,6 @@ void AuctionHouseBot::InitializeConfiguration()
     Bind_When_Equipped = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_When_Equipped", true);
     Bind_When_Use = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_When_Use", true);
     Bind_Quest_Item = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_Quest_Item", false);
-
-    DisablePermEnchant = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisablePermEnchant", false);
-    DisableConjured = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableConjured", false);
-    DisableGems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableGems", false);
-    DisableMoney = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableMoney", false);
-    DisableMoneyLoot = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableMoneyLoot", false);
-    DisableLootable = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableLootable", false);
-    DisableKeys = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableKeys", false);
-    DisableDuration = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableDuration", false);
-    DisableBOP_Or_Quest_NoReqLevel = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableBOP_Or_Quest_NoReqLevel", false);
-
-    DisableWarriorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableWarriorItems", false);
-    DisablePaladinItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisablePaladinItems", false);
-    DisableHunterItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableHunterItems", false);
-    DisableRogueItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableRogueItems", false);
-    DisablePriestItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisablePriestItems", false);
-    DisableDKItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableDKItems", false);
-    DisableShamanItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableShamanItems", false);
-    DisableMageItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableMageItems", false);
-    DisableWarlockItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableWarlockItems", false);
-    DisableUnusedClassItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableUnusedClassItems", false);
-    DisableDruidItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisableDruidItems", false);
-
-    DisableItemsBelowLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsBelowLevel", 0);
-    DisableItemsAboveLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsAboveLevel", 0);
-    DisableTGsBelowLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsBelowLevel", 0);
-    DisableTGsAboveLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsAboveLevel", 0);
-    DisableItemsBelowGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsBelowGUID", 0);
-    DisableItemsAboveGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsAboveGUID", 0);
-    DisableTGsBelowGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsBelowGUID", 0);
-    DisableTGsAboveGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsAboveGUID", 0);
-    DisableItemsBelowReqLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsBelowReqLevel", 0);
-    DisableItemsAboveReqLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsAboveReqLevel", 0);
-    DisableTGsBelowReqLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsBelowReqLevel", 0);
-    DisableTGsAboveReqLevel = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsAboveReqLevel", 0);
-    DisableItemsBelowReqSkillRank = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsBelowReqSkillRank", 0);
-    DisableItemsAboveReqSkillRank = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableItemsAboveReqSkillRank", 0);
-    DisableTGsBelowReqSkillRank = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsBelowReqSkillRank", 0);
-    DisableTGsAboveReqSkillRank = sConfigMgr->GetOption<uint32>("AuctionHouseBot.DisableTGsAboveReqSkillRank", 0);
 }
 
 void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
@@ -833,8 +755,6 @@ void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
             LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
         config = &NeutralConfig;
     }
-
-    config->IncItemCounts(prototype->Class, prototype->Quality);
 }
 
 void AuctionHouseBot::DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry)
@@ -869,8 +789,6 @@ void AuctionHouseBot::DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry)
             LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
         config = &NeutralConfig;
     }
-
-    config->DecItemCounts(prototype->Class, prototype->Quality);
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char* args)
@@ -951,7 +869,6 @@ void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char*
             uint32 maxItems = (uint32) strtoul(param1, NULL, 0);
 			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxitems = '{}' WHERE auctionhouse = '{}'", maxItems, ahMapID);
             config->SetMaxItems(maxItems);
-            config->CalculatePercents();
         }
         break;
     case 3:     //min time Deprecated (Place holder for future commands)
@@ -1005,7 +922,6 @@ void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char*
             trans->Append("UPDATE mod_auctionhousebot SET percentorangeitems = '{}' WHERE auctionhouse = '{}'", orangei, ahMapID);
             trans->Append("UPDATE mod_auctionhousebot SET percentyellowitems = '{}' WHERE auctionhouse = '{}'", yellowi, ahMapID);
 			WorldDatabase.CommitTransaction(trans);
-            config->SetPercentages(greytg, whitetg, greentg, bluetg, purpletg, orangetg, yellowtg, greyi, whitei, greeni, bluei, purplei, orangei, yellowi);
         }
         break;
     case 6:     //min prices
@@ -1102,7 +1018,6 @@ void AuctionHouseBot::LoadValues(AHBConfig *config)
 		uint32 purplei = WorldDatabase.Query("SELECT percentpurpleitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>();
 		uint32 orangei = WorldDatabase.Query("SELECT percentorangeitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>();
 		uint32 yellowi = WorldDatabase.Query("SELECT percentyellowitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>();
-        config->SetPercentages(greytg, whitetg, greentg, bluetg, purpletg, orangetg, yellowtg, greyi, whitei, greeni, bluei, purplei, orangei, yellowi);
         //load min and max prices
 		config->SetMinPrice(AHB_GREY, WorldDatabase.Query("SELECT minpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
 		config->SetMaxPrice(AHB_GREY, WorldDatabase.Query("SELECT maxpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
@@ -1145,20 +1060,6 @@ void AuctionHouseBot::LoadValues(AHBConfig *config)
         {
             LOG_ERROR("module", "minItems                = {}", config->GetMinItems());
             LOG_ERROR("module", "maxItems                = {}", config->GetMaxItems());
-            LOG_ERROR("module", "percentGreyTradeGoods   = {}", config->GetPercentages(AHB_GREY_TG));
-            LOG_ERROR("module", "percentWhiteTradeGoods  = {}", config->GetPercentages(AHB_WHITE_TG));
-            LOG_ERROR("module", "percentGreenTradeGoods  = {}", config->GetPercentages(AHB_GREEN_TG));
-            LOG_ERROR("module", "percentBlueTradeGoods   = {}", config->GetPercentages(AHB_BLUE_TG));
-            LOG_ERROR("module", "percentPurpleTradeGoods = {}", config->GetPercentages(AHB_PURPLE_TG));
-            LOG_ERROR("module", "percentOrangeTradeGoods = {}", config->GetPercentages(AHB_ORANGE_TG));
-            LOG_ERROR("module", "percentYellowTradeGoods = {}", config->GetPercentages(AHB_YELLOW_TG));
-            LOG_ERROR("module", "percentGreyItems        = {}", config->GetPercentages(AHB_GREY_I));
-            LOG_ERROR("module", "percentWhiteItems       = {}", config->GetPercentages(AHB_WHITE_I));
-            LOG_ERROR("module", "percentGreenItems       = {}", config->GetPercentages(AHB_GREEN_I));
-            LOG_ERROR("module", "percentBlueItems        = {}", config->GetPercentages(AHB_BLUE_I));
-            LOG_ERROR("module", "percentPurpleItems      = {}", config->GetPercentages(AHB_PURPLE_I));
-            LOG_ERROR("module", "percentOrangeItems      = {}", config->GetPercentages(AHB_ORANGE_I));
-            LOG_ERROR("module", "percentYellowItems      = {}", config->GetPercentages(AHB_YELLOW_I));
             LOG_ERROR("module", "minPriceGrey            = {}", config->GetMinPrice(AHB_GREY));
             LOG_ERROR("module", "maxPriceGrey            = {}", config->GetMaxPrice(AHB_GREY));
             LOG_ERROR("module", "minPriceWhite           = {}", config->GetMinPrice(AHB_WHITE));
@@ -1198,83 +1099,8 @@ void AuctionHouseBot::LoadValues(AHBConfig *config)
 
         //AuctionHouseEntry const* ahEntry =  sAuctionMgr->GetAuctionHouseEntry(config->GetAHFID());
         AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config->GetAHFID());
-
-        config->ResetItemCounts();
-        uint32 auctions = auctionHouse->Getcount();
-
-        if (auctions)
-        {
-            for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionHouse->GetAuctionsBegin(); itr != auctionHouse->GetAuctionsEnd(); ++itr)
-            {
-                AuctionEntry *Aentry = itr->second;
-				Item *item = sAuctionMgr->GetAItem(Aentry->item_guid);
-                if (item)
-                {
-                    ItemTemplate const *prototype = item->GetTemplate();
-                    if (prototype)
-                    {
-                        switch (prototype->Quality)
-                        {
-                        case 0:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_GREY_TG);
-                            else
-                                config->IncItemCounts(AHB_GREY_I);
-                            break;
-                        case 1:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_WHITE_TG);
-                            else
-                                config->IncItemCounts(AHB_WHITE_I);
-                            break;
-                        case 2:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_GREEN_TG);
-                            else
-                                config->IncItemCounts(AHB_GREEN_I);
-                            break;
-                        case 3:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_BLUE_TG);
-                            else
-                                config->IncItemCounts(AHB_BLUE_I);
-                            break;
-                        case 4:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_PURPLE_TG);
-                            else
-                                config->IncItemCounts(AHB_PURPLE_I);
-                            break;
-                        case 5:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_ORANGE_TG);
-                            else
-                                config->IncItemCounts(AHB_ORANGE_I);
-                            break;
-                        case 6:
-                            if (prototype->Class == ITEM_CLASS_TRADE_GOODS)
-                                config->IncItemCounts(AHB_YELLOW_TG);
-                            else
-                                config->IncItemCounts(AHB_YELLOW_I);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (debug_Out)
-        {
-			LOG_ERROR("module", "Current Settings for {} Auctionhouses:", WorldDatabase.Query("SELECT name FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<std::string>());
-            LOG_ERROR("module", "Grey Trade Goods\t{}\tGrey Items\t{}", config->GetItemCounts(AHB_GREY_TG), config->GetItemCounts(AHB_GREY_I));
-            LOG_ERROR("module", "White Trade Goods\t{}\tWhite Items\t{}", config->GetItemCounts(AHB_WHITE_TG), config->GetItemCounts(AHB_WHITE_I));
-            LOG_ERROR("module", "Green Trade Goods\t{}\tGreen Items\t{}", config->GetItemCounts(AHB_GREEN_TG), config->GetItemCounts(AHB_GREEN_I));
-            LOG_ERROR("module", "Blue Trade Goods\t{}\tBlue Items\t{}", config->GetItemCounts(AHB_BLUE_TG), config->GetItemCounts(AHB_BLUE_I));
-            LOG_ERROR("module", "Purple Trade Goods\t{}\tPurple Items\t{}", config->GetItemCounts(AHB_PURPLE_TG), config->GetItemCounts(AHB_PURPLE_I));
-            LOG_ERROR("module", "Orange Trade Goods\t{}\tOrange Items\t{}", config->GetItemCounts(AHB_ORANGE_TG), config->GetItemCounts(AHB_ORANGE_I));
-            LOG_ERROR("module", "Yellow Trade Goods\t{}\tYellow Items\t{}", config->GetItemCounts(AHB_YELLOW_TG), config->GetItemCounts(AHB_YELLOW_I));
-        }
     }
+
     if (AHBBuyer)
     {
         //load buyer bid prices
