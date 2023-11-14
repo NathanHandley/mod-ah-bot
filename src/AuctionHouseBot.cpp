@@ -84,6 +84,55 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
         return 1;
 }
 
+void AuctionHouseBot::calculateSellItemPrice(Player* AHBplayer, Item* item, ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
+{
+    // Start with a buyout price related to the sell price
+    outBuyoutPrice = itemProto->SellPrice;
+
+    // Multiply the price by the quality
+    outBuyoutPrice *= itemProto->Quality;
+
+    // Set a minimum base buyoutPrice to 1 silver
+    if (outBuyoutPrice < 100)
+    {
+        // TODO: Move this to a config value
+        outBuyoutPrice = 100;
+    }
+
+    // If a vendor sells this item, make the base price the same as the vendor price
+    // TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    // Add a variance to the buyout price, minimum of 1%
+    uint64 sellVarianceBuyoutPriceTopPercent = 150;
+    uint64 sellVarianceBuyoutPriceBottomPercent = 75;
+
+    // Constrain variance top so that it can't be lower than bottom, and minimum values are 1%
+    if (sellVarianceBuyoutPriceTopPercent == 0)
+        sellVarianceBuyoutPriceTopPercent = 1;
+    if (sellVarianceBuyoutPriceBottomPercent == 0)
+        sellVarianceBuyoutPriceBottomPercent = 1;
+    if (sellVarianceBuyoutPriceTopPercent < sellVarianceBuyoutPriceBottomPercent)
+        sellVarianceBuyoutPriceTopPercent = sellVarianceBuyoutPriceBottomPercent;
+
+    // Apply variance to buyout price
+    outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
+    outBuyoutPrice /= 100;
+
+    // Calculate a bid price based on a variance against buyout price, minimum of 1%
+    uint64 sellVarianceBidPriceTopPercent = 100;
+    uint64 sellVarianceBidPriceBottomPercent = 75;
+    if (sellVarianceBidPriceTopPercent == 0)
+        sellVarianceBidPriceTopPercent = 1;
+    if (sellVarianceBidPriceBottomPercent == 0)
+        sellVarianceBidPriceBottomPercent = 1;
+    if (sellVarianceBidPriceTopPercent < sellVarianceBidPriceBottomPercent)
+        sellVarianceBidPriceTopPercent = sellVarianceBidPriceBottomPercent;
+
+    // Calculate the bid price
+    outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
+    outBidPrice /= 100;
+}
+
 void AuctionHouseBot::populateItemCandidateList()
 {
     // Clear old list
@@ -291,37 +340,10 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         if (randomPropertyId != 0)
             item->SetItemRandomProperties(randomPropertyId);
 
+        // Determine price
         uint64 buyoutPrice = 0;
         uint64 bidPrice = 0;
-
-        if (SellMethod)
-            buyoutPrice = prototype->BuyPrice;
-        else
-            buyoutPrice = prototype->SellPrice;
-
-        // Set a minimum buyoutPrice to 1 silver
-        if (buyoutPrice < 100)
-        {
-            // TODO: Move this to a config value
-            buyoutPrice = 100;
-        }
-
-        // Set the price
-        if (prototype->Quality <= AHB_MAX_QUALITY)
-        {
-            buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-            buyoutPrice /= 100;
-            bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-            bidPrice /= 100;
-        }
-        else
-        {
-            // quality is something it shouldn't be, let's get out of here
-            if (debug_Out)
-                LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-            item->RemoveFromUpdateQueueOf(AHBplayer);
-            continue;
-        }
+        calculateSellItemPrice(AHBplayer, item, prototype, bidPrice, buyoutPrice);
 
         // Define a duration
         uint32 etime = urand(1,3);
