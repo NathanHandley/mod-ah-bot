@@ -142,8 +142,8 @@ void AuctionHouseBot::populateItemClassSeedList()
     // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
 
     // TODO: Move these weight items to a config
-    uint32 itemClassWeightitemClassWeightConsumable = 6;
-    uint32 itemClassSeedWeightContainer = 4;
+    uint32 itemClassSeedWeightConsumable = 4;
+    uint32 itemClassSeedWeightContainer = 2;
     uint32 itemClassSeedWeightWeapon = 8;
     uint32 itemClassSeedWeightGem = 3;
     uint32 itemClassSeedWeightArmor = 8;
@@ -151,18 +151,18 @@ void AuctionHouseBot::populateItemClassSeedList()
     uint32 itemClassSeedWeightProjectile = 2;
     uint32 itemClassSeedWeightTradeGoods = 10;
     uint32 itemClassSeedWeightGeneric = 1;
-    uint32 itemClassSeedWeightRecipe = 6;
+    uint32 itemClassSeedWeightRecipe = 4;
     uint32 itemClassSeedWeightQuiver = 1;
     uint32 itemClassSeedWeightQuest = 1;
     uint32 itemClassSeedWeightKey = 1;
     uint32 itemClassSeedWeightMisc = 0;
-    uint32 itemClassSeedWeightGlyph = 3;
+    uint32 itemClassSeedWeightGlyph = 2;
 
     // Clear old list
     itemCandidateClassWeightedSeedList.clear();
 
     // Fill the list
-    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, itemClassWeightitemClassWeightConsumable);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, itemClassSeedWeightConsumable);
     populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, itemClassSeedWeightContainer);
     populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, itemClassSeedWeightWeapon);
     populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, itemClassSeedWeightGem);
@@ -273,14 +273,18 @@ void AuctionHouseBot::populateItemCandidateList()
 
         // Disable anything with the string literal of a testing or depricated item
         if (itr->second.Name1.find("Test ") != std::string::npos ||
+            itr->second.Name1.find("Item") != std::string::npos ||
             itr->second.Name1.find("Unused") != std::string::npos ||
             itr->second.Name1.find("Deprecated") != std::string::npos ||
+            itr->second.Name1.find("Depricated") != std::string::npos ||
             itr->second.Name1.find(" Epic ") != std::string::npos ||
             itr->second.Name1.find("]") != std::string::npos ||
             itr->second.Name1.find("[") != std::string::npos ||
             itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("D'Sak") != std::string::npos ||
             itr->second.Name1.find("(") != std::string::npos ||
             itr->second.Name1.find(")") != std::string::npos ||
+            itr->second.Name1.find("PVP") != std::string::npos ||
             itr->second.Name1.find("OLD") != std::string::npos)
         {
             if (debug_Out_Filters)
@@ -1045,9 +1049,6 @@ void AuctionHouseBot::LoadValues(AHBConfig *config)
             LOG_ERROR("module", "maxStackOrange          = {}", config->GetMaxStack(AHB_ORANGE));
             LOG_ERROR("module", "maxStackYellow          = {}", config->GetMaxStack(AHB_YELLOW));
         }
-
-        //AuctionHouseEntry const* ahEntry =  sAuctionMgr->GetAuctionHouseEntry(config->GetAHFID());
-        AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config->GetAHFID());
     }
 
     if (AHBBuyer)
