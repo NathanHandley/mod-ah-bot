@@ -762,8 +762,6 @@ public:
     void Initialize();
     void InitializeConfiguration();
     void LoadValues(AHBConfig*);
-    void DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry);
-    void IncrementItemCounts(AuctionEntry* ah);
     void Commands(uint32, uint32, uint32, char*);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };

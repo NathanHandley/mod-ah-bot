@@ -52,16 +52,6 @@ public:
             oldBidder->GetSession()->SendAuctionBidderNotification(auction->GetHouseId(), auction->Id, ObjectGuid::Create<HighGuid::Player>(auctionbot->GetAHBplayerGUID()), newPrice, auction->GetAuctionOutBid(), auction->item_template);
     }
 
-    void OnAuctionAdd(AuctionHouseObject* /*ah*/, AuctionEntry* auction) override
-    {
-        auctionbot->IncrementItemCounts(auction);
-    }
-
-    void OnAuctionRemove(AuctionHouseObject* /*ah*/, AuctionEntry* auction) override
-    {
-        auctionbot->DecrementItemCounts(auction, auction->item_template);
-    }
-
     void OnBeforeAuctionHouseMgrUpdate() override
     {
         auctionbot->Update();
