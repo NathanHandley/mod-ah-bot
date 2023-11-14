@@ -60,7 +60,7 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = 5; break;
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = 75; break;
     case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
     case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
     case ITEM_CLASS_GEM:            stackRatio = 5; break;
@@ -89,15 +89,15 @@ void AuctionHouseBot::calculateSellItemPrice(Player* AHBplayer, Item* item, Item
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
 
-    // Multiply the price by the quality
-    outBuyoutPrice *= itemProto->Quality;
-
     // Set a minimum base buyoutPrice to 1 silver
     if (outBuyoutPrice < 100)
     {
-        // TODO: Move this to a config value
+        // TODO: Move to a config
         outBuyoutPrice = 100;
     }
+
+    // Multiply the price by the quality
+    outBuyoutPrice *= itemProto->Quality;
 
     // If a vendor sells this item, make the base price the same as the vendor price
     // TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -205,7 +205,8 @@ void AuctionHouseBot::populateItemCandidateList()
             itr->second.Name1.find(" Epic ") != std::string::npos ||
             itr->second.Name1.find("[PH]") != std::string::npos ||
             itr->second.Name1.find("[DEP]") != std::string::npos ||
-            itr->second.Name1.find("TEST") != std::string::npos)
+            itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("OLD") != std::string::npos)
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
@@ -220,16 +221,16 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Disable All Pets
-        if (itr->second.Class == ITEM_CLASS_MISC && itr->second.SubClass == ITEM_SUBCLASS_JUNK_PET)
+        // Disable All MISC items (pets, mounts, etc)  Use Subclass _JUNK_() for pets and mounts
+        if (itr->second.Class == ITEM_CLASS_MISC)
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
             continue;
         }
 
-        // Disable All MISC items (pets, mounts, etc)  Use Subclass _JUNK_() for pets and mounts
-        if (itr->second.Class == ITEM_CLASS_MISC)
+        // Disable all items that have neither a sell or a buy price
+        if (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0)
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
