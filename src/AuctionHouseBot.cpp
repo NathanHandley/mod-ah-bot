@@ -698,6 +698,18 @@ void AuctionHouseBot::Initialize()
                continue;
            }
 
+           // Disable anything with the string literal of a testing or depricated item
+           if (itr->second.Name1.find("Test ") != std::string::npos ||
+               itr->second.Name1.find("Unused") != std::string::npos ||
+               itr->second.Name1.find("Deprecated") != std::string::npos ||
+               itr->second.Name1.find(" Epic ") != std::string::npos ||
+               itr->second.Name1.find("TEST") != std::string::npos)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
+               continue;
+           }
+
            // Store the item ID
            itemCandidates.push_back(itr->second.ItemId);
         }
