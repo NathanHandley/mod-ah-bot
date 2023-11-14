@@ -730,21 +730,6 @@ private:
     ObjectGuid::LowType AHBplayerGUID;
     uint32 ItemsPerCycle;
 
-    //Begin Filters
-
-    bool Vendor_Items;
-    bool Loot_Items;
-    bool Other_Items;
-    bool Vendor_TGs;
-    bool Loot_TGs;
-    bool Other_TGs;
-
-    bool No_Bind;
-    bool Bind_When_Picked_Up;
-    bool Bind_When_Equipped;
-    bool Bind_When_Use;
-    bool Bind_Quest_Item;
-
     std::set<uint32> DisableItemStore;
 
     //End Filters

@@ -37,23 +37,6 @@ AuctionHouseBot::AuctionHouseBot()
     AHBSeller = false;
     AHBBuyer = false;
 
-    //Begin Filters
-
-    Vendor_Items = false;
-    Loot_Items = false;
-    Other_Items = false;
-    Vendor_TGs = false;
-    Loot_TGs = false;
-    Other_TGs = false;
-
-    No_Bind = false;
-    Bind_When_Picked_Up = false;
-    Bind_When_Equipped = false;
-    Bind_When_Use = false;
-    Bind_Quest_Item = false;
-
-    //End Filters
-
     _lastrun_a = time(NULL);
     _lastrun_h = time(NULL);
     _lastrun_n = time(NULL);
@@ -695,21 +678,6 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
-
-    //Begin Filters
-
-    Vendor_Items = sConfigMgr->GetOption<bool>("AuctionHouseBot.VendorItems", false);
-    Loot_Items = sConfigMgr->GetOption<bool>("AuctionHouseBot.LootItems", true);
-    Other_Items = sConfigMgr->GetOption<bool>("AuctionHouseBot.OtherItems", false);
-    Vendor_TGs = sConfigMgr->GetOption<bool>("AuctionHouseBot.VendorTradeGoods", false);
-    Loot_TGs = sConfigMgr->GetOption<bool>("AuctionHouseBot.LootTradeGoods", true);
-    Other_TGs = sConfigMgr->GetOption<bool>("AuctionHouseBot.OtherTradeGoods", false);
-
-    No_Bind = sConfigMgr->GetOption<bool>("AuctionHouseBot.No_Bind", true);
-    Bind_When_Picked_Up = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_When_Picked_Up", false);
-    Bind_When_Equipped = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_When_Equipped", true);
-    Bind_When_Use = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_When_Use", true);
-    Bind_Quest_Item = sConfigMgr->GetOption<bool>("AuctionHouseBot.Bind_Quest_Item", false);
 }
 
 void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
