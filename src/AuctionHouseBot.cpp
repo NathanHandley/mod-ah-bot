@@ -247,11 +247,11 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         else
             buyoutPrice = prototype->SellPrice;
 
-        // Set a minimum buyoutPrice to avoid zero prices
-        if (buyoutPrice == 0)
+        // Set a minimum buyoutPrice to 1 silver
+        if (buyoutPrice < 100)
         {
             // TODO: Move this to a config value
-            buyoutPrice = 150;
+            buyoutPrice = 100;
         }
 
         // Set the price
