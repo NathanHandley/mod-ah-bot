@@ -647,6 +647,8 @@ void AuctionHouseBot::Initialize()
                itr->second.Name1.find("Unused") != std::string::npos ||
                itr->second.Name1.find("Deprecated") != std::string::npos ||
                itr->second.Name1.find(" Epic ") != std::string::npos ||
+               itr->second.Name1.find("[PH]") != std::string::npos ||
+               itr->second.Name1.find("[DEP]") != std::string::npos ||
                itr->second.Name1.find("TEST") != std::string::npos)
            {
                if (debug_Out_Filters)
