@@ -28,22 +28,7 @@
 #include <vector>
 
 using namespace std;
-vector<uint32> npcItems;
-vector<uint32> lootItems;
-vector<uint32> greyTradeGoodsBin;
-vector<uint32> whiteTradeGoodsBin;
-vector<uint32> greenTradeGoodsBin;
-vector<uint32> blueTradeGoodsBin;
-vector<uint32> purpleTradeGoodsBin;
-vector<uint32> orangeTradeGoodsBin;
-vector<uint32> yellowTradeGoodsBin;
-vector<uint32> greyItemsBin;
-vector<uint32> whiteItemsBin;
-vector<uint32> greenItemsBin;
-vector<uint32> blueItemsBin;
-vector<uint32> purpleItemsBin;
-vector<uint32> orangeItemsBin;
-vector<uint32> yellowItemsBin;
+vector<uint32> itemCandidates;
 
 AuctionHouseBot::AuctionHouseBot()
 {
@@ -213,41 +198,6 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
     if (debug_Out)
         LOG_ERROR("module", "AHSeller: Current house id is {}", config->GetAHID());
 
-    uint32 greyTGcount = config->GetPercents(AHB_GREY_TG);
-    uint32 whiteTGcount = config->GetPercents(AHB_WHITE_TG);
-    uint32 greenTGcount = config->GetPercents(AHB_GREEN_TG);
-    uint32 blueTGcount = config->GetPercents(AHB_BLUE_TG);
-    uint32 purpleTGcount = config->GetPercents(AHB_PURPLE_TG);
-    uint32 orangeTGcount = config->GetPercents(AHB_ORANGE_TG);
-    uint32 yellowTGcount = config->GetPercents(AHB_YELLOW_TG);
-    uint32 greyIcount = config->GetPercents(AHB_GREY_I);
-    uint32 whiteIcount = config->GetPercents(AHB_WHITE_I);
-    uint32 greenIcount = config->GetPercents(AHB_GREEN_I);
-    uint32 blueIcount = config->GetPercents(AHB_BLUE_I);
-    uint32 purpleIcount = config->GetPercents(AHB_PURPLE_I);
-    uint32 orangeIcount = config->GetPercents(AHB_ORANGE_I);
-    uint32 yellowIcount = config->GetPercents(AHB_YELLOW_I);
-/*    uint32 total = greyTGcount + whiteTGcount + greenTGcount + blueTGcount
-        + purpleTGcount + orangeTGcount + yellowTGcount
-        + whiteIcount + greenIcount + blueIcount + purpleIcount
-        + orangeIcount + yellowIcount;
-*/
-    uint32 greyTGoods = config->GetItemCounts(AHB_GREY_TG);
-    uint32 whiteTGoods = config->GetItemCounts(AHB_WHITE_TG);
-    uint32 greenTGoods = config->GetItemCounts(AHB_GREEN_TG);
-    uint32 blueTGoods = config->GetItemCounts(AHB_BLUE_TG);
-    uint32 purpleTGoods = config->GetItemCounts(AHB_PURPLE_TG);
-    uint32 orangeTGoods = config->GetItemCounts(AHB_ORANGE_TG);
-    uint32 yellowTGoods = config->GetItemCounts(AHB_YELLOW_TG);
-
-    uint32 greyItems = config->GetItemCounts(AHB_GREY_I);
-    uint32 whiteItems = config->GetItemCounts(AHB_WHITE_I);
-    uint32 greenItems = config->GetItemCounts(AHB_GREEN_I);
-    uint32 blueItems = config->GetItemCounts(AHB_BLUE_I);
-    uint32 purpleItems = config->GetItemCounts(AHB_PURPLE_I);
-    uint32 orangeItems = config->GetItemCounts(AHB_ORANGE_I);
-    uint32 yellowItems = config->GetItemCounts(AHB_YELLOW_I);
-
     if (debug_Out)
         LOG_ERROR("module", "AHSeller: {} items", items);
 
@@ -257,274 +207,116 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         if (debug_Out)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
-        uint32 itemID = 0;
-        uint32 itemColor = 99;
-        uint32 loopbreaker = 0;
-        while (itemID == 0 && loopbreaker <= 50)
+        // Pull a random item out of the candidate list
+        uint32 itemID = itemCandidates[urand(0, itemCandidates.size() - 1)];
+
+        // Prevent invalid IDs
+        if (itemID == 0)
         {
-            ++loopbreaker;
-            uint32 choice = urand(0, 13);
-            itemColor = choice;
-            switch (choice)
-            {
-            case 0:
-                {
-                    if ((greyItemsBin.size() > 0) && (greyItems < greyIcount))
-                        itemID = greyItemsBin[urand(0, greyItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 1:
-                {
-                    if ((whiteItemsBin.size() > 0) && (whiteItems < whiteIcount))
-                        itemID = whiteItemsBin[urand(0, whiteItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 2:
-                {
-                    if ((greenItemsBin.size() > 0) && (greenItems < greenIcount))
-                        itemID = greenItemsBin[urand(0, greenItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 3:
-                {
-                    if ((blueItemsBin.size() > 0) && (blueItems < blueIcount))
-                        itemID = blueItemsBin[urand(0, blueItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 4:
-                {
-                    if ((purpleItemsBin.size() > 0) && (purpleItems < purpleIcount))
-                        itemID = purpleItemsBin[urand(0, purpleItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 5:
-                {
-                    if ((orangeItemsBin.size() > 0) && (orangeItems < orangeIcount))
-                        itemID = orangeItemsBin[urand(0, orangeItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 6:
-                {
-                    if ((yellowItemsBin.size() > 0) && (yellowItems < yellowIcount))
-                        itemID = yellowItemsBin[urand(0, yellowItemsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 7:
-                {
-                    if ((greyTradeGoodsBin.size() > 0) && (greyTGoods < greyTGcount))
-                        itemID = greyTradeGoodsBin[urand(0, greyTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 8:
-                {
-                    if ((whiteTradeGoodsBin.size() > 0) && (whiteTGoods < whiteTGcount))
-                        itemID = whiteTradeGoodsBin[urand(0, whiteTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 9:
-                {
-                    if ((greenTradeGoodsBin.size() > 0) && (greenTGoods < greenTGcount))
-                        itemID = greenTradeGoodsBin[urand(0, greenTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 10:
-                {
-                    if ((blueTradeGoodsBin.size() > 0) && (blueTGoods < blueTGcount))
-                        itemID = blueTradeGoodsBin[urand(0, blueTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 11:
-                {
-                    if ((purpleTradeGoodsBin.size() > 0) && (purpleTGoods < purpleTGcount))
-                        itemID = purpleTradeGoodsBin[urand(0, purpleTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 12:
-                {
-                    if ((orangeTradeGoodsBin.size() > 0) && (orangeTGoods < orangeTGcount))
-                        itemID = orangeTradeGoodsBin[urand(0, orangeTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            case 13:
-                {
-                    if ((yellowTradeGoodsBin.size() > 0) && (yellowTGoods < yellowTGcount))
-                        itemID = yellowTradeGoodsBin[urand(0, yellowTradeGoodsBin.size() - 1)];
-                    else continue;
-                    break;
-                }
-            default:
-                {
-                    if (debug_Out)
-                        LOG_ERROR("module", "AHSeller: itemID Switch - Default Reached");
-                    break;
-                }
-            }
-
-            if (itemID == 0)
-            {
-                if (debug_Out)
-                    LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0");
-                continue;
-            }
-
-            ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemID);
-            if (prototype == NULL)
-            {
-                if (debug_Out)
-                    LOG_ERROR("module", "AHSeller: Huh?!?! prototype == NULL");
-                continue;
-            }
-
-            Item* item = Item::CreateItem(itemID, 1, AHBplayer);
-            if (item == NULL)
-            {
-                if (debug_Out)
-                    LOG_ERROR("module", "AHSeller: Item::CreateItem() returned NULL");
-                break;
-            }
-            item->AddToUpdateQueueOf(AHBplayer);
-
-            uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(itemID);
-            if (randomPropertyId != 0)
-                item->SetItemRandomProperties(randomPropertyId);
-
-            uint64 buyoutPrice = 0;
-            uint64 bidPrice = 0;
-
-            if (SellMethod)
-                buyoutPrice = prototype->BuyPrice;
-            else
-                buyoutPrice = prototype->SellPrice;
-
-            // Set a minimum buyoutPrice to avoid zero prices
-            if (buyoutPrice == 0)
-            {
-                // TODO: Move this to a config value
-                buyoutPrice = 150;
-            }
-
-            
-            if (prototype->Quality <= AHB_MAX_QUALITY)
-            {
-                buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-                buyoutPrice /= 100;
-                bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-                bidPrice /= 100;
-            }
-            else
-            {
-                // quality is something it shouldn't be, let's get out of here
-                if (debug_Out)
-                    LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-                item->RemoveFromUpdateQueueOf(AHBplayer);
-                continue;
-            }
-
-            // Determine stack price
-            uint32 stackCount = GetStackSizeForItem(prototype);
-
-            uint32 etime = urand(1,3);
-            switch(etime)
-            {
-            case 1:
-                etime = 43200;
-                break;
-            case 2:
-                etime = 86400;
-                break;
-            case 3:
-                etime = 172800;
-                break;
-            default:
-                etime = 86400;
-                break;
-            }
-            item->SetCount(stackCount);
-
-            uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
-
-            auto trans = CharacterDatabase.BeginTransaction();
-            AuctionEntry* auctionEntry = new AuctionEntry();
-            auctionEntry->Id = sObjectMgr->GenerateAuctionID();
-            auctionEntry->houseId = config->GetAHID();
-			auctionEntry->item_guid = item->GetGUID();
-            auctionEntry->item_template = item->GetEntry();
-            auctionEntry->itemCount = item->GetCount();
-            auctionEntry->owner = AHBplayer->GetGUID();
-            auctionEntry->startbid = bidPrice * stackCount;
-            auctionEntry->buyout = buyoutPrice * stackCount;
-            auctionEntry->bid = 0;
-            auctionEntry->deposit = dep;
-            auctionEntry->expire_time = (time_t) etime + time(NULL);
-            auctionEntry->auctionHouseEntry = ahEntry;
-            item->SaveToDB(trans);
-            item->RemoveFromUpdateQueueOf(AHBplayer);
-            sAuctionMgr->AddAItem(item);
-            auctionHouse->AddAuction(auctionEntry);
-            auctionEntry->SaveToDB(trans);
-            CharacterDatabase.CommitTransaction(trans);
-
-            switch(itemColor)
-            {
-            case 0:
-                ++greyItems;
-                break;
-            case 1:
-                ++whiteItems;
-                break;
-            case 2:
-                ++greenItems;
-                break;
-            case 3:
-                ++blueItems;
-                break;
-            case 4:
-                ++purpleItems;
-                break;
-            case 5:
-                ++orangeItems;
-                break;
-            case 6:
-                ++yellowItems;
-                break;
-            case 7:
-                ++greyTGoods;
-                break;
-            case 8:
-                ++whiteTGoods;
-                break;
-            case 9:
-                ++greenTGoods;
-                break;
-            case 10:
-                ++blueTGoods;
-                break;
-            case 11:
-                ++purpleTGoods;
-                break;
-            case 12:
-                ++orangeTGoods;
-                break;
-            case 13:
-                ++yellowTGoods;
-                break;
-            default:
-                break;
-            }
+            if (debug_Out)
+                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0");
+            continue;
         }
+
+        ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemID);
+        if (prototype == NULL)
+        {
+            if (debug_Out)
+                LOG_ERROR("module", "AHSeller: prototype == NULL");
+            continue;
+        }
+
+        Item* item = Item::CreateItem(itemID, 1, AHBplayer);
+        if (item == NULL)
+        {
+            if (debug_Out)
+                LOG_ERROR("module", "AHSeller: Item::CreateItem() returned NULL");
+            break;
+        }
+        item->AddToUpdateQueueOf(AHBplayer);
+
+        uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(itemID);
+        if (randomPropertyId != 0)
+            item->SetItemRandomProperties(randomPropertyId);
+
+        uint64 buyoutPrice = 0;
+        uint64 bidPrice = 0;
+
+        if (SellMethod)
+            buyoutPrice = prototype->BuyPrice;
+        else
+            buyoutPrice = prototype->SellPrice;
+
+        // Set a minimum buyoutPrice to avoid zero prices
+        if (buyoutPrice == 0)
+        {
+            // TODO: Move this to a config value
+            buyoutPrice = 150;
+        }
+
+        // Set the price
+        if (prototype->Quality <= AHB_MAX_QUALITY)
+        {
+            buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
+            buyoutPrice /= 100;
+            bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
+            bidPrice /= 100;
+        }
+        else
+        {
+            // quality is something it shouldn't be, let's get out of here
+            if (debug_Out)
+                LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
+            item->RemoveFromUpdateQueueOf(AHBplayer);
+            continue;
+        }
+
+        // Define a duration
+        uint32 etime = urand(1,3);
+        switch(etime)
+        {
+        case 1:
+            etime = 43200;
+            break;
+        case 2:
+            etime = 86400;
+            break;
+        case 3:
+            etime = 172800;
+            break;
+        default:
+            etime = 86400;
+            break;
+        }
+
+        // Set stack size
+        uint32 stackCount = GetStackSizeForItem(prototype);
+        item->SetCount(stackCount);
+
+        uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
+
+        auto trans = CharacterDatabase.BeginTransaction();
+        AuctionEntry* auctionEntry = new AuctionEntry();
+        auctionEntry->Id = sObjectMgr->GenerateAuctionID();
+        auctionEntry->houseId = config->GetAHID();
+		auctionEntry->item_guid = item->GetGUID();
+        auctionEntry->item_template = item->GetEntry();
+        auctionEntry->itemCount = item->GetCount();
+        auctionEntry->owner = AHBplayer->GetGUID();
+        auctionEntry->startbid = bidPrice * stackCount;
+        auctionEntry->buyout = buyoutPrice * stackCount;
+        auctionEntry->bid = 0;
+        auctionEntry->deposit = dep;
+        auctionEntry->expire_time = (time_t) etime + time(NULL);
+        auctionEntry->auctionHouseEntry = ahEntry;
+        item->SaveToDB(trans);
+        item->RemoveFromUpdateQueueOf(AHBplayer);
+        sAuctionMgr->AddAItem(item);
+        auctionHouse->AddAuction(auctionEntry);
+        auctionEntry->SaveToDB(trans);
+        CharacterDatabase.CommitTransaction(trans);
+
+
     }
 }
 void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session)
@@ -822,191 +614,19 @@ void AuctionHouseBot::Initialize()
 
     if (AHBSeller)
     {
-        QueryResult results = QueryResult(NULL);
-        char npcQuery[] = "SELECT distinct item FROM npc_vendor";
-        results = WorldDatabase.Query(npcQuery);
-        if (results)
-        {
-            do
-            {
-                Field* fields = results->Fetch();
-                npcItems.push_back(fields[0].Get<int32>());
-
-            } while (results->NextRow());
-        }
-        else
-        {
-            if (debug_Out)
-                LOG_ERROR("module", "AuctionHouseBot: \"{}\" failed", npcQuery);
-        }
-
-        char lootQuery[] = "SELECT item FROM creature_loot_template UNION "
-            "SELECT item FROM reference_loot_template UNION "
-            "SELECT item FROM disenchant_loot_template UNION "
-            "SELECT item FROM fishing_loot_template UNION "
-            "SELECT item FROM gameobject_loot_template UNION "
-            "SELECT item FROM item_loot_template UNION "
-            "SELECT item FROM milling_loot_template UNION "
-            "SELECT item FROM pickpocketing_loot_template UNION "
-            "SELECT item FROM prospecting_loot_template UNION "
-            "SELECT item FROM skinning_loot_template";
-
-        results = WorldDatabase.Query(lootQuery);
-        if (results)
-        {
-            do
-            {
-                Field* fields = results->Fetch();
-                lootItems.push_back(fields[0].Get<uint32>());
-
-            } while (results->NextRow());
-        }
-        else
-        {
-            if (debug_Out)
-                LOG_ERROR("module", "AuctionHouseBot: \"{}\" failed", lootQuery);
-        }
-
+        // Build a list of items that can be pulled from for auction
         ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
         for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
         {
-            switch (itr->second.Bonding)
-            {
-            case NO_BIND:
-                if (!No_Bind)
-                    continue;
-                break;
-            case BIND_WHEN_PICKED_UP:
-                if (!Bind_When_Picked_Up)
-                    continue;
-                break;
-            case BIND_WHEN_EQUIPED:
-                if (!Bind_When_Equipped)
-                    continue;
-                break;
-            case BIND_WHEN_USE:
-                if (!Bind_When_Use)
-                    continue;
-                break;
-            case BIND_QUEST_ITEM:
-                if (!Bind_Quest_Item)
-                    continue;
-                break;
-            default:
-                continue;
-                break;
-            }
-
-            // Disable logic that blocks zero sell/buy prices
-            /*if (SellMethod)
-            {
-                if (itr->second.BuyPrice == 0)
-                    continue;
-            }
-            else
-            {
-                if (itr->second.SellPrice == 0)
-                    continue;
-            }*/
-
-            if (itr->second.Quality > 6)
+            // Skip any BOP items
+            if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
                 continue;
 
-            if ((Vendor_Items == 0) && !(itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isVendorItem = false;
+            // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
+            if (itr->second.Quality == 0 || itr->second.Quality > 6)
+                continue;
 
-                for (unsigned int i = 0; (i < npcItems.size()) && (!isVendorItem); i++)
-                {
-                    if (itr->second.ItemId == npcItems[i])
-                        isVendorItem = true;
-                }
-
-                if (isVendorItem)
-                    continue;
-            }
-
-            if ((Vendor_TGs == 0) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isVendorTG = false;
-
-                for (unsigned int i = 0; (i < npcItems.size()) && (!isVendorTG); i++)
-                {
-                    if (itr->second.ItemId == npcItems[i])
-                        isVendorTG = true;
-                }
-
-                if (isVendorTG)
-                    continue;
-            }
-
-            if ((Loot_Items == 0) && !(itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isLootItem = false;
-
-                for (unsigned int i = 0; (i < lootItems.size()) && (!isLootItem); i++)
-                {
-                    if (itr->second.ItemId == lootItems[i])
-                        isLootItem = true;
-                }
-
-                if (isLootItem)
-                    continue;
-            }
-
-            if ((Loot_TGs == 0) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isLootTG = false;
-
-                for (unsigned int i = 0; (i < lootItems.size()) && (!isLootTG); i++)
-                {
-                    if (itr->second.ItemId == lootItems[i])
-                        isLootTG = true;
-                }
-
-                if (isLootTG)
-                    continue;
-            }
-
-            if ((Other_Items == 0) && !(itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isVendorItem = false;
-                bool isLootItem = false;
-
-                for (unsigned int i = 0; (i < npcItems.size()) && (!isVendorItem); i++)
-                {
-                    if (itr->second.ItemId == npcItems[i])
-                        isVendorItem = true;
-                }
-                for (unsigned int i = 0; (i < lootItems.size()) && (!isLootItem); i++)
-                {
-                    if (itr->second.ItemId == lootItems[i])
-                        isLootItem = true;
-                }
-                if ((!isLootItem) && (!isVendorItem))
-                    continue;
-            }
-
-            if ((Other_TGs == 0) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS))
-            {
-                bool isVendorTG = false;
-                bool isLootTG = false;
-
-                for (unsigned int i = 0; (i < npcItems.size()) && (!isVendorTG); i++)
-                {
-                    if (itr->second.ItemId == npcItems[i])
-                        isVendorTG = true;
-                }
-                for (unsigned int i = 0; (i < lootItems.size()) && (!isLootTG); i++)
-                {
-                    if (itr->second.ItemId == lootItems[i])
-                        isLootTG = true;
-                }
-                if ((!isLootTG) && (!isVendorTG))
-                    continue;
-            }
-
-            // Disable items by Id
+            // Disabled items by Id
             if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
             {
                 if (debug_Out_Filters)
@@ -1014,382 +634,76 @@ void AuctionHouseBot::Initialize()
                 continue;
             }
 
-            // Disable permanent enchants items
-            if ((DisablePermEnchant) && (itr->second.Class == ITEM_CLASS_PERMANENT))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Permanent Enchant Item)", itr->second.ItemId);
-                continue;
-            }
-
             // Disable conjured items
-            if ((DisableConjured) && (itr->second.IsConjuredConsumable()))
+            if (itr->second.IsConjuredConsumable())
             {
                 if (debug_Out_Filters)
                     LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Conjured Consumable)", itr->second.ItemId);
                 continue;
             }
 
-            // Disable gems
-            if ((DisableGems) && (itr->second.Class == ITEM_CLASS_GEM))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Gem)", itr->second.ItemId);
-                continue;
-            }
+           // Disable money
+           if ((DisableMoney) && (itr->second.Class == ITEM_CLASS_MONEY))
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable money
-            if ((DisableMoney) && (itr->second.Class == ITEM_CLASS_MONEY))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
-                continue;
-            }
+           // Disable moneyloot
+           if ((DisableMoneyLoot) && (itr->second.MinMoneyLoot > 0))
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable moneyloot
-            if ((DisableMoneyLoot) && (itr->second.MinMoneyLoot > 0))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
-                continue;
-            }
+           // Disable items with duration
+           if (itr->second.Duration > 0)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable lootable items
-            if ((DisableLootable) && (itr->second.Flags & 4))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Lootable Item)", itr->second.ItemId);
-                continue;
-            }
+           // Disable items which are bind quest Items
+           if (itr->second.Bonding == BIND_QUEST_ITEM)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable Keys
-            if ((DisableKeys) && (itr->second.Class == ITEM_CLASS_KEY))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Quest Item)", itr->second.ItemId);
-                continue;
-            }
+           // Disable "other" consumables
+           if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable items with duration
-            if ((DisableDuration) && (itr->second.Duration > 0))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
-                continue;
-            }
+           // Disable Junk items
+           if (itr->second.SubClass == ITEM_SUBCLASS_JUNK)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled 'junk' item", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable items which are BOP or Quest Items and have a required level lower than the item level
-            if ((DisableBOP_Or_Quest_NoReqLevel) && ((itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM) && (itr->second.RequiredLevel < itr->second.ItemLevel)))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
-                continue;
-            }
+           // Disable All Misc (Pets, Mounts, etc)
+           if (itr->second.Class == ITEM_CLASS_MISC)
+           {
+               if (debug_Out_Filters)
+                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
+               continue;
+           }
 
-            // Disable items specifically for Warrior
-            if ((DisableWarriorItems) && (itr->second.AllowableClass == 1))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Warrior Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Paladin
-            if ((DisablePaladinItems) && (itr->second.AllowableClass == 2))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Paladin Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Hunter
-            if ((DisableHunterItems) && (itr->second.AllowableClass == 4))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Hunter Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Rogue
-            if ((DisableRogueItems) && (itr->second.AllowableClass == 8))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Rogue Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Priest
-            if ((DisablePriestItems) && (itr->second.AllowableClass == 16))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Priest Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for DK
-            if ((DisableDKItems) && (itr->second.AllowableClass == 32))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (DK Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Shaman
-            if ((DisableShamanItems) && (itr->second.AllowableClass == 64))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Shaman Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Mage
-            if ((DisableMageItems) && (itr->second.AllowableClass == 128))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Mage Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Warlock
-            if ((DisableWarlockItems) && (itr->second.AllowableClass == 256))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Warlock Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Unused Class
-            if ((DisableUnusedClassItems) && (itr->second.AllowableClass == 512))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Unused Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable items specifically for Druid
-            if ((DisableDruidItems) && (itr->second.AllowableClass == 1024))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Druid Item)", itr->second.ItemId);
-                continue;
-            }
-
-             // Disable Items below level X
-            if ((DisableItemsBelowLevel) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel < DisableItemsBelowLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Item Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Items above level X
-            if ((DisableItemsAboveLevel) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel > DisableItemsAboveLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Item Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-           // Disable Trade Goods below level X
-            if ((DisableTGsBelowLevel) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel < DisableTGsBelowLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Trade Good {} disabled (Trade Good Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-           // Disable Trade Goods above level X
-            if ((DisableTGsAboveLevel) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemLevel > DisableTGsAboveLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Trade Good {} disabled (Trade Good Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Items below GUID X
-            if ((DisableItemsBelowGUID) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId < DisableItemsBelowGUID))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Item Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Items above GUID X
-            if ((DisableItemsAboveGUID) && (itr->second.Class != ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId > DisableItemsAboveGUID))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Item Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Trade Goods below GUID X
-            if ((DisableTGsBelowGUID) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId < DisableTGsBelowGUID))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Trade Good Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Trade Goods above GUID X
-            if ((DisableTGsAboveGUID) && (itr->second.Class == ITEM_CLASS_TRADE_GOODS) && (itr->second.ItemId > DisableTGsAboveGUID))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Trade Good Level = {})", itr->second.ItemId, itr->second.ItemLevel);
-                continue;
-            }
-
-            // Disable Items for level lower than X
-            if ((DisableItemsBelowReqLevel) && (itr->second.RequiredLevel < DisableItemsBelowReqLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredLevel = {})", itr->second.ItemId, itr->second.RequiredLevel);
-                continue;
-            }
-
-            // Disable Items for level higher than X
-            if ((DisableItemsAboveReqLevel) && (itr->second.RequiredLevel > DisableItemsAboveReqLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredLevel = {})", itr->second.ItemId, itr->second.RequiredLevel);
-                continue;
-            }
-
-            // Disable Trade Goods for level lower than X
-            if ((DisableTGsBelowReqLevel) && (itr->second.RequiredLevel < DisableTGsBelowReqLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Trade Good {} disabled (RequiredLevel = {})", itr->second.ItemId, itr->second.RequiredLevel);
-                continue;
-            }
-
-            // Disable Trade Goods for level higher than X
-            if ((DisableTGsAboveReqLevel) && (itr->second.RequiredLevel > DisableTGsAboveReqLevel))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Trade Good {} disabled (RequiredLevel = {})", itr->second.ItemId, itr->second.RequiredLevel);
-                continue;
-            }
-
-            // Disable Items that require skill lower than X
-            if ((DisableItemsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableItemsBelowReqSkillRank))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredSkillRank = {})", itr->second.ItemId, itr->second.RequiredSkillRank);
-                continue;
-            }
-
-            // Disable Items that require skill higher than X
-            if ((DisableItemsAboveReqSkillRank) && (itr->second.RequiredSkillRank > DisableItemsAboveReqSkillRank))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredSkillRank = {})", itr->second.ItemId, itr->second.RequiredSkillRank);
-                continue;
-            }
-
-            // Disable Trade Goods that require skill lower than X
-            if ((DisableTGsBelowReqSkillRank) && (itr->second.RequiredSkillRank < DisableTGsBelowReqSkillRank))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredSkillRank = {})", itr->second.ItemId, itr->second.RequiredSkillRank);
-                continue;
-            }
-
-            // Disable Trade Goods that require skill higher than X
-            if ((DisableTGsAboveReqSkillRank) && (itr->second.RequiredSkillRank > DisableTGsAboveReqSkillRank))
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (RequiredSkillRank = {})", itr->second.ItemId, itr->second.RequiredSkillRank);
-                continue;
-            }
-
-            switch (itr->second.Quality)
-            {
-            case AHB_GREY:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    greyTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    greyItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_WHITE:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    whiteTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    whiteItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_GREEN:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    greenTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    greenItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_BLUE:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    blueTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    blueItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_PURPLE:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    purpleTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    purpleItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_ORANGE:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    orangeTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    orangeItemsBin.push_back(itr->second.ItemId);
-                break;
-
-            case AHB_YELLOW:
-                if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-                    yellowTradeGoodsBin.push_back(itr->second.ItemId);
-                else
-                    yellowItemsBin.push_back(itr->second.ItemId);
-                break;
-            }
-        }
-
-        if ((greyTradeGoodsBin.size() == 0) &&
-            (whiteTradeGoodsBin.size() == 0) &&
-            (greenTradeGoodsBin.size() == 0) &&
-            (blueTradeGoodsBin.size() == 0) &&
-            (purpleTradeGoodsBin.size() == 0) &&
-            (orangeTradeGoodsBin.size() == 0) &&
-            (yellowTradeGoodsBin.size() == 0) &&
-            (greyItemsBin.size() == 0) &&
-            (whiteItemsBin.size() == 0) &&
-            (greenItemsBin.size() == 0) &&
-            (blueItemsBin.size() == 0) &&
-            (purpleItemsBin.size() == 0) &&
-            (orangeItemsBin.size() == 0) &&
-            (yellowItemsBin.size() == 0))
-        {
-            LOG_ERROR("module", "AuctionHouseBot: No items");
-            AHBSeller = 0;
+           // Store the item ID
+           itemCandidates.push_back(itr->second.ItemId);
         }
 
         LOG_INFO("module", "AuctionHouseBot:");
         LOG_INFO("module", "{} disabled items", uint32(DisableItemStore.size()));
-        LOG_INFO("module", "loaded {} grey trade goods", uint32(greyTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} white trade goods", uint32(whiteTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} green trade goods", uint32(greenTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} blue trade goods", uint32(blueTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} purple trade goods", uint32(purpleTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} orange trade goods", uint32(orangeTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} yellow trade goods", uint32(yellowTradeGoodsBin.size()));
-        LOG_INFO("module", "loaded {} grey items", uint32(greyItemsBin.size()));
-        LOG_INFO("module", "loaded {} white items", uint32(whiteItemsBin.size()));
-        LOG_INFO("module", "loaded {} green items", uint32(greenItemsBin.size()));
-        LOG_INFO("module", "loaded {} blue items", uint32(blueItemsBin.size()));
-        LOG_INFO("module", "loaded {} purple items", uint32(purpleItemsBin.size()));
-        LOG_INFO("module", "loaded {} orange items", uint32(orangeItemsBin.size()));
-        LOG_INFO("module", "loaded {} yellow items", uint32(yellowItemsBin.size()));
     }
 
     LOG_INFO("module", "AuctionHouseBot and AuctionHouseBuyer have been loaded.");
