@@ -50,7 +50,7 @@ AuctionHouseBot::~AuctionHouseBot()
 {
 }
 
-uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
+uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
 {
     // Determine the stack ratio based on class type
     if (itemProto == NULL)
@@ -82,6 +82,114 @@ uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
         return urand(1, itemProto->GetMaxStackSize());
     else
         return 1;
+}
+
+void AuctionHouseBot::populateItemCandidateList()
+{
+    // Clear old list
+    itemCandidates.clear();
+
+    // Fill list
+    ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
+    for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
+    {
+        // Skip any BOP items
+        if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
+            continue;
+
+        // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
+        if (itr->second.Quality == 0 || itr->second.Quality > 6)
+            continue;
+
+        // Disabled items by Id
+        if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable conjured items
+        if (itr->second.IsConjuredConsumable())
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Conjured Consumable)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable money
+        if (itr->second.Class == ITEM_CLASS_MONEY)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable moneyloot
+        if (itr->second.MinMoneyLoot > 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable items with duration
+        if (itr->second.Duration > 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable items which are bind quest Items
+        if (itr->second.Bonding == BIND_QUEST_ITEM)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable anything with the string literal of a testing or depricated item
+        if (itr->second.Name1.find("Test ") != std::string::npos ||
+            itr->second.Name1.find("Unused") != std::string::npos ||
+            itr->second.Name1.find("Deprecated") != std::string::npos ||
+            itr->second.Name1.find(" Epic ") != std::string::npos ||
+            itr->second.Name1.find("[PH]") != std::string::npos ||
+            itr->second.Name1.find("[DEP]") != std::string::npos ||
+            itr->second.Name1.find("TEST") != std::string::npos)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable "other" consumables
+        if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable All Pets
+        if (itr->second.Class == ITEM_CLASS_MISC && itr->second.SubClass == ITEM_SUBCLASS_JUNK_PET)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable All MISC items (pets, mounts, etc)  Use Subclass _JUNK_() for pets and mounts
+        if (itr->second.Class == ITEM_CLASS_MISC)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
+            continue;
+        }
+
+        // Store the item ID
+        itemCandidates.push_back(itr->second.ItemId);
+    }
 }
 
 void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
@@ -234,7 +342,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         }
 
         // Set stack size
-        uint32 stackCount = GetStackSizeForItem(prototype);
+        uint32 stackCount = getStackSizeForItem(prototype);
         item->SetCount(stackCount);
 
         uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
@@ -559,106 +667,7 @@ void AuctionHouseBot::Initialize()
     if (AHBSeller)
     {
         // Build a list of items that can be pulled from for auction
-        ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
-        for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
-        {
-            // Skip any BOP items
-            if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
-                continue;
-
-            // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
-            if (itr->second.Quality == 0 || itr->second.Quality > 6)
-                continue;
-
-            // Disabled items by Id
-            if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable conjured items
-            if (itr->second.IsConjuredConsumable())
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Conjured Consumable)", itr->second.ItemId);
-                continue;
-            }
-
-           // Disable money
-           if (itr->second.Class == ITEM_CLASS_MONEY)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable moneyloot
-           if (itr->second.MinMoneyLoot > 0)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable items with duration
-           if (itr->second.Duration > 0)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable items which are bind quest Items
-           if (itr->second.Bonding == BIND_QUEST_ITEM)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable "other" consumables
-           if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable Junk items
-           if (itr->second.SubClass == ITEM_SUBCLASS_JUNK)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled 'junk' item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable All Misc (Pets, Mounts, etc)
-           if (itr->second.Class == ITEM_CLASS_MISC)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable anything with the string literal of a testing or depricated item
-           if (itr->second.Name1.find("Test ") != std::string::npos ||
-               itr->second.Name1.find("Unused") != std::string::npos ||
-               itr->second.Name1.find("Deprecated") != std::string::npos ||
-               itr->second.Name1.find(" Epic ") != std::string::npos ||
-               itr->second.Name1.find("[PH]") != std::string::npos ||
-               itr->second.Name1.find("[DEP]") != std::string::npos ||
-               itr->second.Name1.find("TEST") != std::string::npos)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
-               continue;
-           }
-
-           // Store the item ID
-           itemCandidates.push_back(itr->second.ItemId);
-        }
+        populateItemCandidateList();
 
         LOG_INFO("module", "AuctionHouseBot:");
         LOG_INFO("module", "{} disabled items", uint32(DisableItemStore.size()));

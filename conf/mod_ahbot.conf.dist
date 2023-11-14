@@ -49,4 +49,4 @@ AuctionHouseBot.UseBuyPriceForSeller = 0
 AuctionHouseBot.UseBuyPriceForBuyer = 0
 AuctionHouseBot.Account = 0
 AuctionHouseBot.GUID = 0
-AuctionHouseBot.ItemsPerCycle = 200
+AuctionHouseBot.ItemsPerCycle = 1000
