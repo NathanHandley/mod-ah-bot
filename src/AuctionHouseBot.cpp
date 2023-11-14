@@ -25,10 +25,8 @@
 #include "WorldSession.h"
 #include "GameTime.h"
 #include "DatabaseEnv.h"
-#include <vector>
 
 using namespace std;
-vector<uint32> itemCandidates;
 
 AuctionHouseBot::AuctionHouseBot()
 {
@@ -50,7 +48,7 @@ AuctionHouseBot::~AuctionHouseBot()
 {
 }
 
-uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
+uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
 {
     // Determine the stack ratio based on class type
     if (itemProto == NULL)
@@ -60,14 +58,14 @@ uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = 5; break;
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = 50; break;
     case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
     case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
     case ITEM_CLASS_GEM:            stackRatio = 5; break;
     case ITEM_CLASS_REAGENT:        stackRatio = 50; break;
     case ITEM_CLASS_ARMOR:          stackRatio = 0; break;
     case ITEM_CLASS_PROJECTILE:     stackRatio = 100; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 25; break;
+    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 50; break;
     case ITEM_CLASS_GENERIC:        stackRatio = 100; break;
     case ITEM_CLASS_RECIPE:         stackRatio = 0; break;
     case ITEM_CLASS_QUIVER:         stackRatio = 0; break;
@@ -82,6 +80,233 @@ uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
         return urand(1, itemProto->GetMaxStackSize());
     else
         return 1;
+}
+
+void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
+{
+    // Start with a buyout price related to the sell price
+    outBuyoutPrice = itemProto->SellPrice;
+
+    // Set a minimum base buyoutPrice to 1 silver
+    if (outBuyoutPrice < 100)
+    {
+        // TODO: Move to a config
+        outBuyoutPrice = 100;
+    }
+
+    // Multiply the price by the quality
+    outBuyoutPrice *= itemProto->Quality;
+
+    // If a vendor sells this item, make the base price the same as the vendor price
+    // TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    // Add a variance to the buyout price, minimum of 1%
+    uint64 sellVarianceBuyoutPriceTopPercent = 150;
+    uint64 sellVarianceBuyoutPriceBottomPercent = 75;
+
+    // Constrain variance top so that it can't be lower than bottom, and minimum values are 1%
+    if (sellVarianceBuyoutPriceTopPercent == 0)
+        sellVarianceBuyoutPriceTopPercent = 1;
+    if (sellVarianceBuyoutPriceBottomPercent == 0)
+        sellVarianceBuyoutPriceBottomPercent = 1;
+    if (sellVarianceBuyoutPriceTopPercent < sellVarianceBuyoutPriceBottomPercent)
+        sellVarianceBuyoutPriceTopPercent = sellVarianceBuyoutPriceBottomPercent;
+
+    // Apply variance to buyout price
+    outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
+    outBuyoutPrice /= 100;
+
+    // Calculate a bid price based on a variance against buyout price, minimum of 1%
+    uint64 sellVarianceBidPriceTopPercent = 100;
+    uint64 sellVarianceBidPriceBottomPercent = 75;
+    if (sellVarianceBidPriceTopPercent == 0)
+        sellVarianceBidPriceTopPercent = 1;
+    if (sellVarianceBidPriceBottomPercent == 0)
+        sellVarianceBidPriceBottomPercent = 1;
+    if (sellVarianceBidPriceTopPercent < sellVarianceBidPriceBottomPercent)
+        sellVarianceBidPriceTopPercent = sellVarianceBidPriceBottomPercent;
+
+    // Calculate the bid price
+    outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
+    outBidPrice /= 100;
+}
+
+void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
+{
+    for (uint32 i = 0; i < itemClassSeedWeight; ++i)
+        itemCandidateClassWeightedSeedList.push_back(itemClass);
+}
+
+void AuctionHouseBot::populateItemClassSeedList()
+{
+    // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
+
+    // TODO: Move these weight items to a config
+    uint32 itemClassWeightitemClassWeightConsumable = 6;
+    uint32 itemClassSeedWeightContainer = 4;
+    uint32 itemClassSeedWeightWeapon = 8;
+    uint32 itemClassSeedWeightGem = 3;
+    uint32 itemClassSeedWeightArmor = 8;
+    uint32 itemClassSeedWeightReagent = 1;
+    uint32 itemClassSeedWeightProjectile = 2;
+    uint32 itemClassSeedWeightTradeGoods = 10;
+    uint32 itemClassSeedWeightGeneric = 1;
+    uint32 itemClassSeedWeightRecipe = 6;
+    uint32 itemClassSeedWeightQuiver = 1;
+    uint32 itemClassSeedWeightQuest = 1;
+    uint32 itemClassSeedWeightKey = 1;
+    uint32 itemClassSeedWeightMisc = 0;
+    uint32 itemClassSeedWeightGlyph = 3;
+
+    // Clear old list
+    itemCandidateClassWeightedSeedList.clear();
+
+    // Fill the list
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, itemClassWeightitemClassWeightConsumable);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, itemClassSeedWeightContainer);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, itemClassSeedWeightWeapon);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, itemClassSeedWeightGem);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_ARMOR, itemClassSeedWeightArmor);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_REAGENT, itemClassSeedWeightReagent);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_PROJECTILE, itemClassSeedWeightProjectile);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_TRADE_GOODS, itemClassSeedWeightTradeGoods);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GENERIC, itemClassSeedWeightGeneric);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_RECIPE, itemClassSeedWeightRecipe);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUIVER, itemClassSeedWeightQuiver);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUEST, itemClassSeedWeightQuest);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_KEY, itemClassSeedWeightKey);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_MISC, itemClassSeedWeightMisc);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, itemClassSeedWeightGlyph);
+}
+
+void AuctionHouseBot::populateItemCandidateList()
+{
+    // Clear old list and rebuild it
+    itemCandidatesByItemClass.clear();
+    itemCandidatesByItemClass[ITEM_CLASS_CONSUMABLE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_CONTAINER] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_WEAPON] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GEM] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_ARMOR] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_REAGENT] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_PROJECTILE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_TRADE_GOODS] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GENERIC] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_RECIPE] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_QUIVER] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_QUEST] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_KEY] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
+    itemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
+
+    // Fill list
+    ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
+    for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
+    {
+        // Skip any items not in the seed list
+        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
+            continue;
+
+        // Skip any BOP items
+        if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
+            continue;
+
+        // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
+        if (itr->second.Quality == 0 || itr->second.Quality > 6)
+            continue;
+
+        // Disabled items by Id
+        if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable conjured items
+        if (itr->second.IsConjuredConsumable())
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Conjured Consumable)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable money
+        if (itr->second.Class == ITEM_CLASS_MONEY)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable moneyloot
+        if (itr->second.MinMoneyLoot > 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable items with duration
+        if (itr->second.Duration > 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable containers with zero slots
+        if (itr->second.Class == ITEM_CLASS_CONTAINER && itr->second.ContainerSlots == 0)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Container with no slots)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable items which are bind quest Items
+        if (itr->second.Bonding == BIND_QUEST_ITEM)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable anything with the string literal of a testing or depricated item
+        if (itr->second.Name1.find("Test ") != std::string::npos ||
+            itr->second.Name1.find("Unused") != std::string::npos ||
+            itr->second.Name1.find("Deprecated") != std::string::npos ||
+            itr->second.Name1.find(" Epic ") != std::string::npos ||
+            itr->second.Name1.find("]") != std::string::npos ||
+            itr->second.Name1.find("[") != std::string::npos ||
+            itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("(") != std::string::npos ||
+            itr->second.Name1.find(")") != std::string::npos ||
+            itr->second.Name1.find("OLD") != std::string::npos)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable "other" consumables
+        if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable all items that have neither a sell or a buy price, with exception of item enhancements
+        if (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0 && itr->second.Class != ITEM_CLASS_CONSUMABLE && itr->second.SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
+            continue;
+        }
+
+        // Store the item ID
+        itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+    }
 }
 
 void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
@@ -152,13 +377,16 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
         // Pull a random item out of the candidate list
-        uint32 itemID = itemCandidates[urand(0, itemCandidates.size() - 1)];
+        uint32 chosenItemClass = itemCandidateClassWeightedSeedList[urand(0, itemCandidateClassWeightedSeedList.size() - 1)];
+        uint32 itemID = 0;
+        if (itemCandidatesByItemClass[chosenItemClass].size() != 0)
+            itemID = itemCandidatesByItemClass[chosenItemClass][urand(0, itemCandidatesByItemClass[chosenItemClass].size() - 1)];
 
         // Prevent invalid IDs
         if (itemID == 0)
         {
             if (debug_Out)
-                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0");
+                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0", chosenItemClass);
             continue;
         }
 
@@ -183,37 +411,10 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         if (randomPropertyId != 0)
             item->SetItemRandomProperties(randomPropertyId);
 
+        // Determine price
         uint64 buyoutPrice = 0;
         uint64 bidPrice = 0;
-
-        if (SellMethod)
-            buyoutPrice = prototype->BuyPrice;
-        else
-            buyoutPrice = prototype->SellPrice;
-
-        // Set a minimum buyoutPrice to 1 silver
-        if (buyoutPrice < 100)
-        {
-            // TODO: Move this to a config value
-            buyoutPrice = 100;
-        }
-
-        // Set the price
-        if (prototype->Quality <= AHB_MAX_QUALITY)
-        {
-            buyoutPrice *= urand(config->GetMinPrice(prototype->Quality), config->GetMaxPrice(prototype->Quality));
-            buyoutPrice /= 100;
-            bidPrice = buyoutPrice * urand(config->GetMinBidPrice(prototype->Quality), config->GetMaxBidPrice(prototype->Quality));
-            bidPrice /= 100;
-        }
-        else
-        {
-            // quality is something it shouldn't be, let's get out of here
-            if (debug_Out)
-                LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-            item->RemoveFromUpdateQueueOf(AHBplayer);
-            continue;
-        }
+        calculateItemValue(prototype, bidPrice, buyoutPrice);
 
         // Define a duration
         uint32 etime = urand(1,3);
@@ -234,7 +435,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         }
 
         // Set stack size
-        uint32 stackCount = GetStackSizeForItem(prototype);
+        uint32 stackCount = getStackSizeForItem(prototype);
         item->SetCount(stackCount);
 
         uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
@@ -333,68 +534,38 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
         else
             currentprice = auction->startbid;
 
-        // Prepare portion from maximum bid
+        // Prepare portion from maximum bid per item
         double bidrate = static_cast<double>(urand(1, 100)) / 100;
-        long double bidMax = 0;
-
-        // check that bid has acceptable value and take bid based on vendorprice, stacksize and quality
-        if (BuyMethod)
-        {
-            if (prototype->Quality <= AHB_MAX_QUALITY)
-            {
-                if (currentprice < prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
-                    bidMax = prototype->SellPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
-            }
-            else
-            {
-                // quality is something it shouldn't be, let's get out of here
-                if (debug_Out)
-                    LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-                    continue;
-            }
-        }
-        else
-        {
-            if (prototype->Quality <= AHB_MAX_QUALITY)
-            {
-                if (currentprice < prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality))
-                    bidMax = prototype->BuyPrice * pItem->GetCount() * config->GetBuyerPrice(prototype->Quality);
-            }
-            else
-            {
-                // quality is something it shouldn't be, let's get out of here
-                if (debug_Out)
-                    LOG_ERROR("module", "AHBuyer: Quality {} not Supported", prototype->Quality);
-                    continue;
-            }
-        }
+        uint64 discardBuyoutPrice = 0;
+        uint64 bidPriceMaxSingle = 0;
+        calculateItemValue(prototype, bidPriceMaxSingle, discardBuyoutPrice);
+        uint64 bitPriceMaxCurStack = bidPriceMaxSingle * pItem->GetCount();
 
         // check some special items, and do recalculating to their prices
         switch (prototype->Class)
         {
-            // ammo
+        // ammo
         case 6:
-            bidMax = 0;
+            bitPriceMaxCurStack = 0;
             break;
         default:
             break;
         }
 
-        if (bidMax == 0)
+        if (bitPriceMaxCurStack == 0)
         {
             // quality check failed to get bidmax, let's get out of here
             continue;
         }
 
         // Calculate our bid
-        long double bidvalue = currentprice + ((bidMax - currentprice) * bidrate);
+        long double bidvalue = currentprice + ((bitPriceMaxCurStack - currentprice) * bidrate);
         // Convert to uint32
         uint32 bidprice = static_cast<uint32>(bidvalue);
 
         // Check our bid is high enough to be valid. If not, correct it to minimum.
         if ((currentprice + auction->GetAuctionOutBid()) > bidprice)
             bidprice = currentprice + auction->GetAuctionOutBid();
-
 
         if (debug_Out)
         {
@@ -409,7 +580,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
             LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
             LOG_INFO("module", "AHBuyer: Bid Rate: {}", bidrate);
-            LOG_INFO("module", "AHBuyer: Bid Max: {}", bidMax);
+            LOG_INFO("module", "AHBuyer: Bid Max: {}", bitPriceMaxCurStack);
             LOG_INFO("module", "AHBuyer: Bid Value: {}", bidvalue);
             LOG_INFO("module", "AHBuyer: Bid Price: {}", bidprice);
             LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
@@ -559,106 +730,8 @@ void AuctionHouseBot::Initialize()
     if (AHBSeller)
     {
         // Build a list of items that can be pulled from for auction
-        ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
-        for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
-        {
-            // Skip any BOP items
-            if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
-                continue;
-
-            // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
-            if (itr->second.Quality == 0 || itr->second.Quality > 6)
-                continue;
-
-            // Disabled items by Id
-            if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
-                continue;
-            }
-
-            // Disable conjured items
-            if (itr->second.IsConjuredConsumable())
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Conjured Consumable)", itr->second.ItemId);
-                continue;
-            }
-
-           // Disable money
-           if (itr->second.Class == ITEM_CLASS_MONEY)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Money)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable moneyloot
-           if (itr->second.MinMoneyLoot > 0)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (MoneyLoot)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable items with duration
-           if (itr->second.Duration > 0)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Has a Duration)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable items which are bind quest Items
-           if (itr->second.Bonding == BIND_QUEST_ITEM)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable "other" consumables
-           if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable Junk items
-           if (itr->second.SubClass == ITEM_SUBCLASS_JUNK)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled 'junk' item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable All Misc (Pets, Mounts, etc)
-           if (itr->second.Class == ITEM_CLASS_MISC)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
-               continue;
-           }
-
-           // Disable anything with the string literal of a testing or depricated item
-           if (itr->second.Name1.find("Test ") != std::string::npos ||
-               itr->second.Name1.find("Unused") != std::string::npos ||
-               itr->second.Name1.find("Deprecated") != std::string::npos ||
-               itr->second.Name1.find(" Epic ") != std::string::npos ||
-               itr->second.Name1.find("[PH]") != std::string::npos ||
-               itr->second.Name1.find("[DEP]") != std::string::npos ||
-               itr->second.Name1.find("TEST") != std::string::npos)
-           {
-               if (debug_Out_Filters)
-                   LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
-               continue;
-           }
-
-           // Store the item ID
-           itemCandidates.push_back(itr->second.ItemId);
-        }
+        populateItemClassSeedList();
+        populateItemCandidateList();
 
         LOG_INFO("module", "AuctionHouseBot:");
         LOG_INFO("module", "{} disabled items", uint32(DisableItemStore.size()));
@@ -680,85 +753,6 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
-}
-
-void AuctionHouseBot::IncrementItemCounts(AuctionEntry* ah)
-{
-    // from auctionhousehandler.cpp, creates auction pointer & player pointer
-
-    // get exact item information
-    Item *pItem =  sAuctionMgr->GetAItem(ah->item_guid);
-    if (!pItem)
-    {
-		if (debug_Out)
-            LOG_ERROR("module", "AHBot: Item {} doesn't exist, perhaps bought already?", ah->item_guid.ToString());
-        return;
-    }
-
-    // get item prototype
-    ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(ah->item_template);
-
-    AHBConfig *config;
-
-    AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(ah->GetHouseId());
-    if (!ahEntry)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
-        config = &NeutralConfig;
-    }
-    else if (ahEntry->houseId == AUCTIONHOUSE_ALLIANCE)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Alliance", ah->GetHouseId());
-        config = &AllianceConfig;
-    }
-    else if (ahEntry->houseId == AUCTIONHOUSE_HORDE)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Horde", ah->GetHouseId());
-        config = &HordeConfig;
-    }
-    else
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
-        config = &NeutralConfig;
-    }
-}
-
-void AuctionHouseBot::DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry)
-{
-    // get item prototype
-    ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemEntry);
-
-    AHBConfig *config;
-
-    AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(ah->GetHouseId());
-    if (!ahEntry)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
-        config = &NeutralConfig;
-    }
-    else if (ahEntry->houseId == AUCTIONHOUSE_ALLIANCE)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Alliance", ah->GetHouseId());
-        config = &AllianceConfig;
-    }
-    else if (ahEntry->houseId == AUCTIONHOUSE_HORDE)
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Horde", ah->GetHouseId());
-        config = &HordeConfig;
-    }
-    else
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AHBot: {} returned as House Faction. Neutral", ah->GetHouseId());
-        config = &NeutralConfig;
-    }
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char* args)

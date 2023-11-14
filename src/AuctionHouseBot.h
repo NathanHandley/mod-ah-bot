@@ -23,6 +23,9 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 
+#include <map>
+#include <vector>
+
 struct AuctionEntry;
 class Player;
 class WorldSession;
@@ -731,8 +734,8 @@ private:
     uint32 ItemsPerCycle;
 
     std::set<uint32> DisableItemStore;
-
-    //End Filters
+    std::vector<uint32> itemCandidateClassWeightedSeedList;
+    std::map<uint32, std::vector<uint32>> itemCandidatesByItemClass;
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
@@ -743,9 +746,14 @@ private:
     time_t _lastrun_n;
 
     inline uint32 minValue(uint32 a, uint32 b) { return a <= b ? a : b; };
-    uint32 GetStackSizeForItem(ItemTemplate const* itemProto) const;
+    uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
+    void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
+    void populateItemClassSeedList();
+    void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
+
 
 //    friend class ACE_Singleton<AuctionHouseBot, ACE_Null_Mutex>;
     AuctionHouseBot();
@@ -762,8 +770,6 @@ public:
     void Initialize();
     void InitializeConfiguration();
     void LoadValues(AHBConfig*);
-    void DecrementItemCounts(AuctionEntry* ah, uint32 itemEntry);
-    void IncrementItemCounts(AuctionEntry* ah);
     void Commands(uint32, uint32, uint32, char*);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };
