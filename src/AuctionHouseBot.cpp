@@ -87,21 +87,28 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
 
-    // Set a minimum base buyoutPrice to 1 silver
-    if (outBuyoutPrice < 100)
+    // Set a minimum base buyoutPrice to 5 silver for non-projectiles
+    if (outBuyoutPrice < 500 && itemProto->Class != ITEM_CLASS_PROJECTILE)
     {
         // TODO: Move to a config
-        outBuyoutPrice = 100;
+        outBuyoutPrice = 500;
     }
 
-    // Multiply the price by the quality
-    outBuyoutPrice *= itemProto->Quality;
+    // Multiply the price based on quality
+    switch (itemProto->Quality)
+    {
+    case ITEM_QUALITY_UNCOMMON: outBuyoutPrice *= 2; break;
+    case ITEM_QUALITY_RARE:     outBuyoutPrice *= 5; break;
+    case ITEM_QUALITY_EPIC:     outBuyoutPrice *= 7; break;
+    default: break;
+    }
 
-    // If a vendor sells this item, make the base price the same as the vendor price
-    // TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // If a vendor sells this item, make the price at least that high
+    if (itemProto->SellPrice > outBuyoutPrice)
+        outBuyoutPrice = itemProto->SellPrice;
 
     // Add a variance to the buyout price, minimum of 1%
-    uint64 sellVarianceBuyoutPriceTopPercent = 150;
+    uint64 sellVarianceBuyoutPriceTopPercent = 125;
     uint64 sellVarianceBuyoutPriceBottomPercent = 75;
 
     // Constrain variance top so that it can't be lower than bottom, and minimum values are 1%
