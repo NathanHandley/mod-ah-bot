@@ -1,1 +1,0 @@
-UPDATE mod_auctionhousebot SET minitems = 20000, maxitems = 20000 WHERE auctionhouse < 10;
