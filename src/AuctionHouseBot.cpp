@@ -892,54 +892,6 @@ void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char*
 			WorldDatabase.CommitTransaction(trans);
         }
         break;
-    case 6:     //min prices
-        {
-            char * param1 = strtok(args, " ");
-            uint32 minPrice = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET minprice{} = '{}' WHERE auctionhouse = '{}'", color, minPrice, ahMapID);
-            config->SetMinPrice(col, minPrice);
-        }
-        break;
-    case 7:     //max prices
-        {
-            char * param1 = strtok(args, " ");
-            uint32 maxPrice = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxprice{} = '{}' WHERE auctionhouse = '{}'", color, maxPrice, ahMapID);
-            config->SetMaxPrice(col, maxPrice);
-        }
-        break;
-    case 8:     //min bid price
-        {
-            char * param1 = strtok(args, " ");
-            uint32 minBidPrice = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET minbidprice{} = '{}' WHERE auctionhouse = '{}'", color, minBidPrice, ahMapID);
-            config->SetMinBidPrice(col, minBidPrice);
-        }
-        break;
-    case 9:     //max bid price
-        {
-            char * param1 = strtok(args, " ");
-            uint32 maxBidPrice = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxbidprice{} = '{}' WHERE auctionhouse = '{}'", color, maxBidPrice, ahMapID);
-            config->SetMaxBidPrice(col, maxBidPrice);
-        }
-        break;
-    case 10:        //max stacks
-        {
-            char * param1 = strtok(args, " ");
-            uint32 maxStack = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxstack{} = '{}' WHERE auctionhouse = '{}'", color, maxStack, ahMapID);
-            config->SetMaxStack(col, maxStack);
-        }
-        break;
-    case 11:        //buyer bid prices
-        {
-            char * param1 = strtok(args, " ");
-            uint32 buyerPrice = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET buyerprice{} = '{}' WHERE auctionhouse = '{}'", color, buyerPrice, ahMapID);
-            config->SetBuyerPrice(col, buyerPrice);
-        }
-        break;
     case 12:        //buyer bidding interval
         {
             char * param1 = strtok(args, " ");
@@ -971,109 +923,21 @@ void AuctionHouseBot::LoadValues(AHBConfig *config)
         //load min and max items
 		config->SetMinItems(WorldDatabase.Query("SELECT minitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
 		config->SetMaxItems(WorldDatabase.Query("SELECT maxitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        //load min and max prices
-		config->SetMinPrice(AHB_GREY, WorldDatabase.Query("SELECT minpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_GREY, WorldDatabase.Query("SELECT maxpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_WHITE, WorldDatabase.Query("SELECT minpricewhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_WHITE, WorldDatabase.Query("SELECT maxpricewhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_GREEN, WorldDatabase.Query("SELECT minpricegreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_GREEN, WorldDatabase.Query("SELECT maxpricegreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_BLUE, WorldDatabase.Query("SELECT minpriceblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_BLUE, WorldDatabase.Query("SELECT maxpriceblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_PURPLE, WorldDatabase.Query("SELECT minpricepurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_PURPLE, WorldDatabase.Query("SELECT maxpricepurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_ORANGE, WorldDatabase.Query("SELECT minpriceorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_ORANGE, WorldDatabase.Query("SELECT maxpriceorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinPrice(AHB_YELLOW, WorldDatabase.Query("SELECT minpriceyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxPrice(AHB_YELLOW, WorldDatabase.Query("SELECT maxpriceyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        //load min and max bid prices
-		config->SetMinBidPrice(AHB_GREY, WorldDatabase.Query("SELECT minbidpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_GREY, WorldDatabase.Query("SELECT maxbidpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_WHITE, WorldDatabase.Query("SELECT minbidpricewhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_WHITE, WorldDatabase.Query("SELECT maxbidpricewhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_GREEN, WorldDatabase.Query("SELECT minbidpricegreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_GREEN, WorldDatabase.Query("SELECT maxbidpricegreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_BLUE, WorldDatabase.Query("SELECT minbidpriceblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_BLUE, WorldDatabase.Query("SELECT maxbidpriceblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_PURPLE, WorldDatabase.Query("SELECT minbidpricepurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_PURPLE, WorldDatabase.Query("SELECT maxbidpricepurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_ORANGE, WorldDatabase.Query("SELECT minbidpriceorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_ORANGE, WorldDatabase.Query("SELECT maxbidpriceorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMinBidPrice(AHB_YELLOW, WorldDatabase.Query("SELECT minbidpriceyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxBidPrice(AHB_YELLOW, WorldDatabase.Query("SELECT maxbidpriceyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        //load max stacks
-		config->SetMaxStack(AHB_GREY, WorldDatabase.Query("SELECT maxstackgrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_WHITE, WorldDatabase.Query("SELECT maxstackwhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_GREEN, WorldDatabase.Query("SELECT maxstackgreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_BLUE, WorldDatabase.Query("SELECT maxstackblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_PURPLE, WorldDatabase.Query("SELECT maxstackpurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_ORANGE, WorldDatabase.Query("SELECT maxstackorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxStack(AHB_YELLOW, WorldDatabase.Query("SELECT maxstackyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
         if (debug_Out)
         {
             LOG_ERROR("module", "minItems                = {}", config->GetMinItems());
             LOG_ERROR("module", "maxItems                = {}", config->GetMaxItems());
-            LOG_ERROR("module", "minPriceGrey            = {}", config->GetMinPrice(AHB_GREY));
-            LOG_ERROR("module", "maxPriceGrey            = {}", config->GetMaxPrice(AHB_GREY));
-            LOG_ERROR("module", "minPriceWhite           = {}", config->GetMinPrice(AHB_WHITE));
-            LOG_ERROR("module", "maxPriceWhite           = {}", config->GetMaxPrice(AHB_WHITE));
-            LOG_ERROR("module", "minPriceGreen           = {}", config->GetMinPrice(AHB_GREEN));
-            LOG_ERROR("module", "maxPriceGreen           = {}", config->GetMaxPrice(AHB_GREEN));
-            LOG_ERROR("module", "minPriceBlue            = {}", config->GetMinPrice(AHB_BLUE));
-            LOG_ERROR("module", "maxPriceBlue            = {}", config->GetMaxPrice(AHB_BLUE));
-            LOG_ERROR("module", "minPricePurple          = {}", config->GetMinPrice(AHB_PURPLE));
-            LOG_ERROR("module", "maxPricePurple          = {}", config->GetMaxPrice(AHB_PURPLE));
-            LOG_ERROR("module", "minPriceOrange          = {}", config->GetMinPrice(AHB_ORANGE));
-            LOG_ERROR("module", "maxPriceOrange          = {}", config->GetMaxPrice(AHB_ORANGE));
-            LOG_ERROR("module", "minPriceYellow          = {}", config->GetMinPrice(AHB_YELLOW));
-            LOG_ERROR("module", "maxPriceYellow          = {}", config->GetMaxPrice(AHB_YELLOW));
-            LOG_ERROR("module", "minBidPriceGrey         = {}", config->GetMinBidPrice(AHB_GREY));
-            LOG_ERROR("module", "maxBidPriceGrey         = {}", config->GetMaxBidPrice(AHB_GREY));
-            LOG_ERROR("module", "minBidPriceWhite        = {}", config->GetMinBidPrice(AHB_WHITE));
-            LOG_ERROR("module", "maxBidPriceWhite        = {}", config->GetMaxBidPrice(AHB_WHITE));
-            LOG_ERROR("module", "minBidPriceGreen        = {}", config->GetMinBidPrice(AHB_GREEN));
-            LOG_ERROR("module", "maxBidPriceGreen        = {}", config->GetMaxBidPrice(AHB_GREEN));
-            LOG_ERROR("module", "minBidPriceBlue         = {}", config->GetMinBidPrice(AHB_BLUE));
-            LOG_ERROR("module", "maxBidPriceBlue         = {}", config->GetMinBidPrice(AHB_BLUE));
-            LOG_ERROR("module", "minBidPricePurple       = {}", config->GetMinBidPrice(AHB_PURPLE));
-            LOG_ERROR("module", "maxBidPricePurple       = {}", config->GetMaxBidPrice(AHB_PURPLE));
-            LOG_ERROR("module", "minBidPriceOrange       = {}", config->GetMinBidPrice(AHB_ORANGE));
-            LOG_ERROR("module", "maxBidPriceOrange       = {}", config->GetMaxBidPrice(AHB_ORANGE));
-            LOG_ERROR("module", "minBidPriceYellow       = {}", config->GetMinBidPrice(AHB_YELLOW));
-            LOG_ERROR("module", "maxBidPriceYellow       = {}", config->GetMaxBidPrice(AHB_YELLOW));
-            LOG_ERROR("module", "maxStackGrey            = {}", config->GetMaxStack(AHB_GREY));
-            LOG_ERROR("module", "maxStackWhite           = {}", config->GetMaxStack(AHB_WHITE));
-            LOG_ERROR("module", "maxStackGreen           = {}", config->GetMaxStack(AHB_GREEN));
-            LOG_ERROR("module", "maxStackBlue            = {}", config->GetMaxStack(AHB_BLUE));
-            LOG_ERROR("module", "maxStackPurple          = {}", config->GetMaxStack(AHB_PURPLE));
-            LOG_ERROR("module", "maxStackOrange          = {}", config->GetMaxStack(AHB_ORANGE));
-            LOG_ERROR("module", "maxStackYellow          = {}", config->GetMaxStack(AHB_YELLOW));
         }
     }
 
     if (AHBBuyer)
     {
-        //load buyer bid prices
-		config->SetBuyerPrice(AHB_GREY, WorldDatabase.Query("SELECT buyerpricegrey FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_WHITE, WorldDatabase.Query("SELECT buyerpricewhite FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_GREEN, WorldDatabase.Query("SELECT buyerpricegreen FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_BLUE, WorldDatabase.Query("SELECT buyerpriceblue FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_PURPLE, WorldDatabase.Query("SELECT buyerpricepurple FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_ORANGE, WorldDatabase.Query("SELECT buyerpriceorange FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetBuyerPrice(AHB_YELLOW, WorldDatabase.Query("SELECT buyerpriceyellow FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
         //load bidding interval
 		config->SetBiddingInterval(WorldDatabase.Query("SELECT buyerbiddinginterval FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
         //load bids per interval
 		config->SetBidsPerInterval(WorldDatabase.Query("SELECT buyerbidsperinterval FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
         if (debug_Out)
         {
-            LOG_ERROR("module", "buyerPriceGrey          = {}", config->GetBuyerPrice(AHB_GREY));
-            LOG_ERROR("module", "buyerPriceWhite         = {}", config->GetBuyerPrice(AHB_WHITE));
-            LOG_ERROR("module", "buyerPriceGreen         = {}", config->GetBuyerPrice(AHB_GREEN));
-            LOG_ERROR("module", "buyerPriceBlue          = {}", config->GetBuyerPrice(AHB_BLUE));
-            LOG_ERROR("module", "buyerPricePurple        = {}", config->GetBuyerPrice(AHB_PURPLE));
-            LOG_ERROR("module", "buyerPriceOrange        = {}", config->GetBuyerPrice(AHB_ORANGE));
-            LOG_ERROR("module", "buyerPriceYellow        = {}", config->GetBuyerPrice(AHB_YELLOW));
             LOG_ERROR("module", "buyerBiddingInterval    = {}", config->GetBiddingInterval());
             LOG_ERROR("module", "buyerBidsPerInterval    = {}", config->GetBidsPerInterval());
         }
