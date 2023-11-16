@@ -126,6 +126,12 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBuyoutPrice = urand(100 * itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
         outBuyoutPrice /= 100;
     }
+
+    // Bid price can never be below sell price
+    if (outBidPrice < itemProto->SellPrice)
+    {
+        outBidPrice = itemProto->SellPrice;
+    }
 }
 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
