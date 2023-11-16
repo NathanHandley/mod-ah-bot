@@ -87,11 +87,11 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
 
-    // Set a minimum base buyoutPrice to 5 silver for non-projectiles
+    // Set a minimum base buyoutPrice to 5-15 silver for non-projectiles
     if (outBuyoutPrice < 500 && itemProto->Class != ITEM_CLASS_PROJECTILE)
     {
         // TODO: Move to a config
-        outBuyoutPrice = 500;
+        outBuyoutPrice = urand(500, 1500);
     }
 
     // Multiply the price based on quality
@@ -107,33 +107,15 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
 
-    // Add a variance to the buyout price, minimum of 1%
-    uint64 sellVarianceBuyoutPriceTopPercent = 125;
-    uint64 sellVarianceBuyoutPriceBottomPercent = 75;
-
-    // Constrain variance top so that it can't be lower than bottom, and minimum values are 1%
-    if (sellVarianceBuyoutPriceTopPercent == 0)
-        sellVarianceBuyoutPriceTopPercent = 1;
-    if (sellVarianceBuyoutPriceBottomPercent == 0)
-        sellVarianceBuyoutPriceBottomPercent = 1;
-    if (sellVarianceBuyoutPriceTopPercent < sellVarianceBuyoutPriceBottomPercent)
-        sellVarianceBuyoutPriceTopPercent = sellVarianceBuyoutPriceBottomPercent;
-
-    // Apply variance to buyout price
+    // Calculate buyout price with a variance
+    uint64 sellVarianceBuyoutPriceTopPercent = 130;
+    uint64 sellVarianceBuyoutPriceBottomPercent = 70;
     outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
     outBuyoutPrice /= 100;
 
-    // Calculate a bid price based on a variance against buyout price, minimum of 1%
+    // Calculate a bid price based on a variance against buyout price
     uint64 sellVarianceBidPriceTopPercent = 100;
     uint64 sellVarianceBidPriceBottomPercent = 75;
-    if (sellVarianceBidPriceTopPercent == 0)
-        sellVarianceBidPriceTopPercent = 1;
-    if (sellVarianceBidPriceBottomPercent == 0)
-        sellVarianceBidPriceBottomPercent = 1;
-    if (sellVarianceBidPriceTopPercent < sellVarianceBidPriceBottomPercent)
-        sellVarianceBidPriceTopPercent = sellVarianceBidPriceBottomPercent;
-
-    // Calculate the bid price
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
     outBidPrice /= 100;
 }
@@ -218,7 +200,7 @@ void AuctionHouseBot::populateItemCandidateList()
         if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
             continue;
 
-        // Restrict quality to anything under 7 (artifact and below) or are 0 (poor)
+        // Restrict quality to anything under 7 (artifact and below) or above poor
         if (itr->second.Quality == 0 || itr->second.Quality > 6)
             continue;
 
@@ -312,6 +294,22 @@ void AuctionHouseBot::populateItemCandidateList()
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
+            continue;
+        }
+
+        //  Disable common weapons
+        if (itr->second.Quality == ITEM_QUALITY_NORMAL && itr->second.Class == ITEM_CLASS_WEAPON)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled common weapon", itr->second.ItemId);
+            continue;
+        }
+
+        // Disable common armor
+        if (itr->second.Quality == ITEM_QUALITY_NORMAL && itr->second.Class == ITEM_CLASS_ARMOR)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled common non-misc armor", itr->second.ItemId);
             continue;
         }
 
@@ -471,10 +469,9 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         auctionHouse->AddAuction(auctionEntry);
         auctionEntry->SaveToDB(trans);
         CharacterDatabase.CommitTransaction(trans);
-
-
     }
 }
+
 void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session)
 {
     if (!AHBBuyer)
@@ -758,8 +755,6 @@ void AuctionHouseBot::InitializeConfiguration()
 
     AHBSeller = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
-    SellMethod = sConfigMgr->GetOption<bool>("AuctionHouseBot.UseBuyPriceForSeller", false);
-    BuyMethod = sConfigMgr->GetOption<bool>("AuctionHouseBot.UseBuyPriceForBuyer", false);
 
     AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
@@ -779,33 +774,6 @@ void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char*
         break;
     case 7:
         config = &NeutralConfig;
-        break;
-    }
-    std::string color;
-    switch (col)
-    {
-    case AHB_GREY:
-        color = "grey";
-        break;
-    case AHB_WHITE:
-        color = "white";
-        break;
-    case AHB_GREEN:
-        color = "green";
-        break;
-    case AHB_BLUE:
-        color = "blue";
-        break;
-    case AHB_PURPLE:
-        color = "purple";
-        break;
-    case AHB_ORANGE:
-        color = "orange";
-        break;
-    case AHB_YELLOW:
-        color = "yellow";
-        break;
-    default:
         break;
     }
     switch (command)
@@ -844,59 +812,6 @@ void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char*
             uint32 maxItems = (uint32) strtoul(param1, NULL, 0);
 			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxitems = '{}' WHERE auctionhouse = '{}'", maxItems, ahMapID);
             config->SetMaxItems(maxItems);
-        }
-        break;
-    case 3:     //min time Deprecated (Place holder for future commands)
-        break;
-    case 4:     //max time Deprecated (Place holder for future commands)
-        break;
-    case 5:     //percentages
-        {
-            char * param1 = strtok(args, " ");
-            char * param2 = strtok(NULL, " ");
-            char * param3 = strtok(NULL, " ");
-            char * param4 = strtok(NULL, " ");
-            char * param5 = strtok(NULL, " ");
-            char * param6 = strtok(NULL, " ");
-            char * param7 = strtok(NULL, " ");
-            char * param8 = strtok(NULL, " ");
-            char * param9 = strtok(NULL, " ");
-            char * param10 = strtok(NULL, " ");
-            char * param11 = strtok(NULL, " ");
-            char * param12 = strtok(NULL, " ");
-            char * param13 = strtok(NULL, " ");
-            char * param14 = strtok(NULL, " ");
-            uint32 greytg = (uint32) strtoul(param1, NULL, 0);
-            uint32 whitetg = (uint32) strtoul(param2, NULL, 0);
-            uint32 greentg = (uint32) strtoul(param3, NULL, 0);
-            uint32 bluetg = (uint32) strtoul(param4, NULL, 0);
-            uint32 purpletg = (uint32) strtoul(param5, NULL, 0);
-            uint32 orangetg = (uint32) strtoul(param6, NULL, 0);
-            uint32 yellowtg = (uint32) strtoul(param7, NULL, 0);
-            uint32 greyi = (uint32) strtoul(param8, NULL, 0);
-            uint32 whitei = (uint32) strtoul(param9, NULL, 0);
-            uint32 greeni = (uint32) strtoul(param10, NULL, 0);
-            uint32 bluei = (uint32) strtoul(param11, NULL, 0);
-            uint32 purplei = (uint32) strtoul(param12, NULL, 0);
-            uint32 orangei = (uint32) strtoul(param13, NULL, 0);
-            uint32 yellowi = (uint32) strtoul(param14, NULL, 0);
-
-			auto trans = WorldDatabase.BeginTransaction();
-            trans->Append("UPDATE mod_auctionhousebot SET percentgreytradegoods = '{}' WHERE auctionhouse = '{}'", greytg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentwhitetradegoods = '{}' WHERE auctionhouse = '{}'", whitetg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentgreentradegoods = '{}' WHERE auctionhouse = '{}'", greentg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentbluetradegoods = '{}' WHERE auctionhouse = '{}'", bluetg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentpurpletradegoods = '{}' WHERE auctionhouse = '{}'", purpletg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentorangetradegoods = '{}' WHERE auctionhouse = '{}'", orangetg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentyellowtradegoods = '{}' WHERE auctionhouse = '{}'", yellowtg, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentgreyitems = '{}' WHERE auctionhouse = '{}'", greyi, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentwhiteitems = '{}' WHERE auctionhouse = '{}'", whitei, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentgreenitems = '{}' WHERE auctionhouse = '{}'", greeni, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentblueitems = '{}' WHERE auctionhouse = '{}'", bluei, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentpurpleitems = '{}' WHERE auctionhouse = '{}'", purplei, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentorangeitems = '{}' WHERE auctionhouse = '{}'", orangei, ahMapID);
-            trans->Append("UPDATE mod_auctionhousebot SET percentyellowitems = '{}' WHERE auctionhouse = '{}'", yellowi, ahMapID);
-			WorldDatabase.CommitTransaction(trans);
         }
         break;
     case 12:        //buyer bidding interval

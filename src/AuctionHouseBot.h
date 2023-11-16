@@ -32,29 +32,6 @@ class WorldSession;
 
 #include "ItemTemplate.h"
 
-#define AHB_GREY        0
-#define AHB_WHITE       1
-#define AHB_GREEN       2
-#define AHB_BLUE        3
-#define AHB_PURPLE      4
-#define AHB_ORANGE      5
-#define AHB_YELLOW      6
-#define AHB_MAX_QUALITY 6
-#define AHB_GREY_TG     0
-#define AHB_WHITE_TG    1
-#define AHB_GREEN_TG    2
-#define AHB_BLUE_TG     3
-#define AHB_PURPLE_TG   4
-#define AHB_ORANGE_TG   5
-#define AHB_YELLOW_TG   6
-#define AHB_GREY_I      7
-#define AHB_WHITE_I     8
-#define AHB_GREEN_I     9
-#define AHB_BLUE_I      10
-#define AHB_PURPLE_I    11
-#define AHB_ORANGE_I    12
-#define AHB_YELLOW_I    13
-
 class AHBConfig
 {
 private:
@@ -151,8 +128,6 @@ private:
 
     bool AHBSeller;
     bool AHBBuyer;
-    bool BuyMethod;
-    bool SellMethod;
 
     uint32 AHBplayerAccount;
     ObjectGuid::LowType AHBplayerGUID;
@@ -179,8 +154,6 @@ private:
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
 
-
-//    friend class ACE_Singleton<AuctionHouseBot, ACE_Null_Mutex>;
     AuctionHouseBot();
 
 public:

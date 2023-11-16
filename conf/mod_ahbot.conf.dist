@@ -19,14 +19,6 @@
 #        Enable/Disable the part of AHBot that buys items from players
 #    Default 0 (disabled)
 #
-#    AuctionHouseBot.UseBuyPriceForSeller
-#        Should the Seller use BuyPrice or SellPrice to determine Bid Prices
-#    Default 0 (use SellPrice)
-#
-#    AuctionHouseBot.UseBuyPriceForBuyer
-#        Should the Buyer use BuyPrice or SellPrice to determine Bid Prices
-#    Default 0 (use SellPrice)
-#
 #    Auction House Bot character data
 #        AuctionHouseBot.Account is the account number
 #         (in realmd->account table) of the player you want to run
@@ -45,8 +37,6 @@ AuctionHouseBot.DEBUG = 0
 AuctionHouseBot.DEBUG_FILTERS = 0
 AuctionHouseBot.EnableSeller = 0
 AuctionHouseBot.EnableBuyer = 0
-AuctionHouseBot.UseBuyPriceForSeller = 0
-AuctionHouseBot.UseBuyPriceForBuyer = 0
 AuctionHouseBot.Account = 0
 AuctionHouseBot.GUID = 0
-AuctionHouseBot.ItemsPerCycle = 1000
+AuctionHouseBot.ItemsPerCycle = 50
