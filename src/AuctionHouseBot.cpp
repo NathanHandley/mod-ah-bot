@@ -123,7 +123,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     if (outBuyoutPrice < itemProto->SellPrice)
     {
         uint64 minLowPriceAddVariancePercent = 125;
-        outBuyoutPrice = urand(100 * outBuyoutPrice, minLowPriceAddVariancePercent * outBuyoutPrice);
+        outBuyoutPrice = urand(100 * itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
         outBuyoutPrice /= 100;
     }
 }
