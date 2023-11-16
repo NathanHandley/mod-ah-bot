@@ -1,21 +1,14 @@
 # ![logo](https://raw.githubusercontent.com/azerothcore/azerothcore.github.io/master/images/logo-github.png) AzerothCore
-## Mod-AHBOT
-- Latest build status with azerothcore: [![Build Status](https://github.com/azerothcore/mod-ah-bot/workflows/core-build/badge.svg?branch=master&event=push)](https://github.com/azerothcore/mod-ah-bot)
-
 
 ## Important notes
 
 You have to use at least AzerothCore commit [9adba48](https://github.com/azerothcore/azerothcore-wotlk/commit/9adba482c236f1087d66a672e97a99f763ba74b3).
 
-If you use an old version of this module please update the table structure using this SQL statement:
-
-```sql
-ALTER TABLE `auctionhousebot` RENAME TO `mod_auctionhousebot`;
-```
+If you use an old version of this module (such as the parent fork), re-run the mod_auctionhousebot.sql found in the data/sql/db-world/base/ folder
 
 ## Description
 
-An auction house bot for the best core: AzerothCore.
+A fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house.  It also fixes many bugs such as glyphs not showing up
 
 ## Installation
 
@@ -28,7 +21,7 @@ An auction house bot for the best core: AzerothCore.
 ## Edit module configuration (optional)
 
 If you need to change the module configuration, go to your server configuration folder (where your `worldserver` or `worldserver.exe` is)
-rename the file mod_ahbot.conf.dist to mod_ahbot.conf and edit it.
+edit the file mod_ahbot.conf.dist
 
 ## Usage
 
@@ -41,5 +34,6 @@ Notes:
 
 ## Credits
 
+- Nathan Handley: Created this rewrite of the one that was ported to AzerothCore
 - Ayase: ported the bot to AzerothCore
 - Other contributors (check the contributors list)
