@@ -32,6 +32,6 @@ Notes:
 
 ## Credits
 
-- Nathan Handley: Created this rewrite of the one that was ported to AzerothCore
+- NathanHandley: Created this rewrite of the one that was ported to AzerothCore
 - Ayase: ported the bot to AzerothCore
 - Other contributors (check the contributors list)
