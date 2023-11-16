@@ -19,7 +19,7 @@ A fork of the auction house bot for AzerothCore.  This fork gives a much more bl
 ## Edit module configuration (optional)
 
 If you need to change the module configuration, go to your server configuration folder (where your `worldserver` or `worldserver.exe` is)
-edit the file mod_ahbot.conf.dist
+edit the file mod_ahbot.conf.dist / mod_ahbot.conf.
 
 ## Usage
 
