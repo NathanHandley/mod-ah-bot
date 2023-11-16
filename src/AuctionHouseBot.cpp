@@ -761,7 +761,7 @@ void AuctionHouseBot::InitializeConfiguration()
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
 }
 
-void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char* args)
+void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)
 {
     AHBConfig *config = NULL;
     switch (ahMapID)

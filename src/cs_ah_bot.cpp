@@ -97,7 +97,7 @@ public:
                 return false;
             }
 
-            auctionbot->Commands(0, ahMapID, 0, NULL);
+            auctionbot->Commands(0, ahMapID, NULL);
         }
         else if (strncmp(opt, "minitems", l) == 0)
         {
@@ -108,7 +108,7 @@ public:
                 return false;
             }
 
-            auctionbot->Commands(1, ahMapID, 0, param1);
+            auctionbot->Commands(1, ahMapID, param1);
         }
         else if (strncmp(opt, "maxitems", l) == 0)
         {
@@ -119,7 +119,7 @@ public:
                 return false;
             }
 
-            auctionbot->Commands(2, ahMapID, 0, param1);
+            auctionbot->Commands(2, ahMapID, param1);
         }
         else if (strncmp(opt, "bidinterval", l) == 0)
         {
@@ -131,7 +131,7 @@ public:
                 return false;
             }
 
-            auctionbot->Commands(12, ahMapID, 0, param1);
+            auctionbot->Commands(12, ahMapID, param1);
         }
         else if (strncmp(opt, "bidsperinterval", l) == 0)
         {
@@ -143,7 +143,7 @@ public:
                 return false;
             }
 
-            auctionbot->Commands(13, ahMapID, 0, param1);
+            auctionbot->Commands(13, ahMapID, param1);
         }
         else
         {

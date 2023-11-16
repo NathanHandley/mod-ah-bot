@@ -168,7 +168,7 @@ public:
     void Initialize();
     void InitializeConfiguration();
     void LoadValues(AHBConfig*);
-    void Commands(uint32, uint32, uint32, char*);
+    void Commands(uint32 command, uint32 ahMapID, char* args);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };
 
