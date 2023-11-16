@@ -87,8 +87,8 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
 
-    // Set a minimum base buyoutPrice to 5-15 silver for non-projectiles
-    if (outBuyoutPrice < 500 && itemProto->Class != ITEM_CLASS_PROJECTILE)
+    // Set a minimum base buyoutPrice to 5-15 silver for non-projectiles and non-common trade goods
+    if (outBuyoutPrice < 500 && (itemProto->Class != ITEM_CLASS_PROJECTILE && !(itemProto->Class == ITEM_CLASS_TRADE_GOODS && itemProto->Quality == ITEM_QUALITY_NORMAL)))
     {
         // TODO: Move to a config
         outBuyoutPrice = urand(500, 1500);
@@ -118,6 +118,14 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     uint64 sellVarianceBidPriceBottomPercent = 75;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
     outBidPrice /= 100;
+
+    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
+    if (outBuyoutPrice < itemProto->SellPrice)
+    {
+        uint64 minLowPriceAddVariancePercent = 125;
+        outBuyoutPrice = urand(100 * outBuyoutPrice, minLowPriceAddVariancePercent * outBuyoutPrice);
+        outBuyoutPrice /= 100;
+    }
 }
 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
@@ -761,7 +769,7 @@ void AuctionHouseBot::InitializeConfiguration()
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
 }
 
-void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char* args)
+void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)
 {
     AHBConfig *config = NULL;
     switch (ahMapID)
