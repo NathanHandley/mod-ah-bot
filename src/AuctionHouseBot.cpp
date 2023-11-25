@@ -26,6 +26,8 @@
 #include "GameTime.h"
 #include "DatabaseEnv.h"
 
+#include <set>
+
 using namespace std;
 
 AuctionHouseBot::AuctionHouseBot()
@@ -156,7 +158,7 @@ void AuctionHouseBot::populateItemClassSeedList()
     uint32 itemClassSeedWeightGeneric = 1;
     uint32 itemClassSeedWeightRecipe = 4;
     uint32 itemClassSeedWeightQuiver = 1;
-    uint32 itemClassSeedWeightQuest = 1;
+    uint32 itemClassSeedWeightQuest = 2;
     uint32 itemClassSeedWeightKey = 1;
     uint32 itemClassSeedWeightMisc = 0;
     uint32 itemClassSeedWeightGlyph = 2;
@@ -202,10 +204,30 @@ void AuctionHouseBot::populateItemCandidateList()
     itemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
     itemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
 
+    // Item include exceptions
+    set<uint32> includeItemIDExecptions;
+    includeItemIDExecptions.insert(11732);
+    includeItemIDExecptions.insert(11733);
+    includeItemIDExecptions.insert(11734);
+    includeItemIDExecptions.insert(11736);
+    includeItemIDExecptions.insert(11737);
+    includeItemIDExecptions.insert(18332);
+    includeItemIDExecptions.insert(18333);
+    includeItemIDExecptions.insert(18334);
+    includeItemIDExecptions.insert(18335);
+
     // Fill list
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
     for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
     {
+        // Always store items that are exceptions
+        if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
+        {
+            // Store the item ID
+            itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+            continue;
+        }
+
         // Skip any items not in the seed list
         if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
             continue;
