@@ -462,22 +462,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         calculateItemValue(prototype, bidPrice, buyoutPrice);
 
         // Define a duration
-        uint32 etime = urand(1,3);
-        switch(etime)
-        {
-        case 1:
-            etime = 43200;
-            break;
-        case 2:
-            etime = 86400;
-            break;
-        case 3:
-            etime = 172800;
-            break;
-        default:
-            etime = 86400;
-            break;
-        }
+        uint32 etime = urand(900, 43200);
 
         // Set stack size
         uint32 stackCount = getStackSizeForItem(prototype);
