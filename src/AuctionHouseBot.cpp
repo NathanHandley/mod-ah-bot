@@ -325,8 +325,11 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Disable all items that have neither a sell or a buy price, with exception of item enhancements
-        if (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0 && itr->second.Class != ITEM_CLASS_CONSUMABLE && itr->second.SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
+        // Disable all items that have neither a sell or a buy price, with exception of item enhancements and trade goods
+        bool isEnchantingTradeGood = (itr->second.Class == ITEM_CLASS_TRADE_GOODS && itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING);
+        bool isItemEnhancement = (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_ITEM_ENHANCEMENT);
+        bool hasNoPrice = (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0);
+        if (hasNoPrice == true && isItemEnhancement == false && isEnchantingTradeGood == false)
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
