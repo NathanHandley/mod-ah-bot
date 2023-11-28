@@ -96,6 +96,12 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBuyoutPrice = urand(500, 1500);
     }
 
+    // If still no buy price, give it something low
+    if (outBuyoutPrice == 0)
+    {
+        outBuyoutPrice = urand(500, 1500);
+    }
+
     // Multiply the price based on quality
     switch (itemProto->Quality)
     {
@@ -726,16 +732,19 @@ void AuctionHouseBot::Update()
 void AuctionHouseBot::Initialize()
 {
     DisableItemStore.clear();
-    QueryResult result = WorldDatabase.Query("SELECT item FROM mod_auctionhousebot_disabled_items");
+    // No longer make this a database thing
+    //QueryResult result = WorldDatabase.Query("SELECT item FROM mod_auctionhousebot_disabled_items");
 
-    if (result)
-    {
-        do
-        {
-            Field* fields = result->Fetch();
-            DisableItemStore.insert(fields[0].Get<uint32>());
-        } while (result->NextRow());
-    }
+    //if (result)
+    //{
+    //    do
+    //    {
+    //        Field* fields = result->Fetch();
+    //        DisableItemStore.insert(fields[0].Get<uint32>());
+    //    } while (result->NextRow());
+    //}
+    DisableItemStore.insert(51809); // Portable Hole
+    DisableItemStore.insert(38082); // Gigantique Bag
 
     //End Filters
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
