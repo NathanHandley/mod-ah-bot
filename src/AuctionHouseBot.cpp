@@ -105,9 +105,10 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     // Multiply the price based on quality
     switch (itemProto->Quality)
     {
-    case ITEM_QUALITY_UNCOMMON: outBuyoutPrice *= 2; break;
-    case ITEM_QUALITY_RARE:     outBuyoutPrice *= 5; break;
-    case ITEM_QUALITY_EPIC:     outBuyoutPrice *= 7; break;
+    case ITEM_QUALITY_UNCOMMON:     outBuyoutPrice *= 2; break;
+    case ITEM_QUALITY_RARE:         outBuyoutPrice *= 5; break;
+    case ITEM_QUALITY_EPIC:         outBuyoutPrice *= 7; break;
+    case ITEM_QUALITY_LEGENDARY:    outBuyoutPrice *= 11; break;
     default: break;
     }
 
@@ -316,6 +317,7 @@ void AuctionHouseBot::populateItemCandidateList()
             itr->second.Name1.find("(") != std::string::npos ||
             itr->second.Name1.find(")") != std::string::npos ||
             itr->second.Name1.find("PVP") != std::string::npos ||
+            itr->second.Name1.find("Art Demo") != std::string::npos ||
             itr->second.Name1.find("OLD") != std::string::npos)
         {
             if (debug_Out_Filters)
@@ -745,6 +747,7 @@ void AuctionHouseBot::Initialize()
     //}
     DisableItemStore.insert(51809); // Portable Hole
     DisableItemStore.insert(38082); // Gigantique Bag
+    DisableItemStore.insert(49334); // Scale of Onyxia 2.0
 
     //End Filters
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
