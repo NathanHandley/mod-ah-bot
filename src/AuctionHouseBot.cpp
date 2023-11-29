@@ -748,6 +748,9 @@ void AuctionHouseBot::Initialize()
     DisableItemStore.insert(51809); // Portable Hole
     DisableItemStore.insert(38082); // Gigantique Bag
     DisableItemStore.insert(49334); // Scale of Onyxia 2.0
+    DisableItemStore.insert(42976); // Lords Deck
+    DisableItemStore.insert(44852); // Cornmeal
+    DisableItemStore.insert(6216); // Mystical Powder
 
     //End Filters
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
