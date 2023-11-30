@@ -132,8 +132,9 @@ private:
     uint32 AHBplayerAccount;
     ObjectGuid::LowType AHBplayerGUID;
     uint32 ItemsPerCycle;
+    bool DisabledItemTextFilter;
+    std::set<uint32> DisabledItems;
 
-    std::set<uint32> DisableItemStore;
     std::vector<uint32> itemCandidateClassWeightedSeedList;
     std::map<uint32, std::vector<uint32>> itemCandidatesByItemClass;
 
@@ -168,6 +169,7 @@ public:
     void Initialize();
     void InitializeConfiguration();
     void LoadValues(AHBConfig*);
+    std::set<uint32> LoadDisabledItems(std::string disabledItemIdString);
     void Commands(uint32 command, uint32 ahMapID, char* args);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };

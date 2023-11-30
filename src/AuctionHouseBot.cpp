@@ -248,7 +248,7 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
 
         // Disabled items by Id
-        if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
+        if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
@@ -304,21 +304,16 @@ void AuctionHouseBot::populateItemCandidateList()
         }
 
         // Disable anything with the string literal of a testing or depricated item
-        if (itr->second.Name1.find("Test ") != std::string::npos ||
-            itr->second.Name1.find("Item") != std::string::npos ||
-            itr->second.Name1.find("Unused") != std::string::npos ||
+        if (DisabledItemTextFilter == true && 
+            (itr->second.Name1.find("Test ") != std::string::npos ||
+            itr->second.Name1.find("TEST") != std::string::npos ||
             itr->second.Name1.find("Deprecated") != std::string::npos ||
             itr->second.Name1.find("Depricated") != std::string::npos ||
             itr->second.Name1.find(" Epic ") != std::string::npos ||
-            itr->second.Name1.find("]") != std::string::npos ||
-            itr->second.Name1.find("[") != std::string::npos ||
-            itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("]") != std::string::npos ||            
             itr->second.Name1.find("D'Sak") != std::string::npos ||
             itr->second.Name1.find("(") != std::string::npos ||
-            itr->second.Name1.find(")") != std::string::npos ||
-            itr->second.Name1.find("PVP") != std::string::npos ||
-            itr->second.Name1.find("Art Demo") != std::string::npos ||
-            itr->second.Name1.find("OLD") != std::string::npos)
+            itr->second.Name1.find("OLD") != std::string::npos))
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
@@ -733,25 +728,6 @@ void AuctionHouseBot::Update()
 
 void AuctionHouseBot::Initialize()
 {
-    DisableItemStore.clear();
-    // No longer make this a database thing
-    //QueryResult result = WorldDatabase.Query("SELECT item FROM mod_auctionhousebot_disabled_items");
-
-    //if (result)
-    //{
-    //    do
-    //    {
-    //        Field* fields = result->Fetch();
-    //        DisableItemStore.insert(fields[0].Get<uint32>());
-    //    } while (result->NextRow());
-    //}
-    DisableItemStore.insert(51809); // Portable Hole
-    DisableItemStore.insert(38082); // Gigantique Bag
-    DisableItemStore.insert(49334); // Scale of Onyxia 2.0
-    DisableItemStore.insert(42976); // Lords Deck
-    DisableItemStore.insert(44852); // Cornmeal
-    DisableItemStore.insert(6216); // Mystical Powder
-
     //End Filters
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
@@ -781,7 +757,6 @@ void AuctionHouseBot::Initialize()
         populateItemCandidateList();
 
         LOG_INFO("module", "AuctionHouseBot:");
-        LOG_INFO("module", "{} disabled items", uint32(DisableItemStore.size()));
     }
 
     LOG_INFO("module", "AuctionHouseBot and AuctionHouseBuyer have been loaded.");
@@ -798,6 +773,35 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
+
+    DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
+    DisabledItems = LoadDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
+}
+
+std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdString)
+{
+    std::string delimitedValue;
+    std::stringstream disabledItemIdStream;
+    std::set<uint32> disabledItemIDs;
+
+    disabledItemIdStream.str(disabledItemIdString);
+    while (std::getline(disabledItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    {
+        std::string valueOne;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> valueOne;
+        auto itemId = atoi(valueOne.c_str());
+        if (disabledItemIDs.find(itemId) != disabledItemIDs.end())
+        {
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", itemId);
+        }
+        else
+        {
+            disabledItemIDs.insert(itemId);
+        }
+    }
+
+    return disabledItemIDs;
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)
