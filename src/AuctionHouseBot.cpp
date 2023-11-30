@@ -60,21 +60,21 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = 50; break;
-    case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
-    case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
-    case ITEM_CLASS_GEM:            stackRatio = 5; break;
-    case ITEM_CLASS_REAGENT:        stackRatio = 50; break;
-    case ITEM_CLASS_ARMOR:          stackRatio = 0; break;
-    case ITEM_CLASS_PROJECTILE:     stackRatio = 100; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 50; break;
-    case ITEM_CLASS_GENERIC:        stackRatio = 100; break;
-    case ITEM_CLASS_RECIPE:         stackRatio = 0; break;
-    case ITEM_CLASS_QUIVER:         stackRatio = 0; break;
-    case ITEM_CLASS_QUEST:          stackRatio = 10; break;
-    case ITEM_CLASS_KEY:            stackRatio = 10; break;
-    case ITEM_CLASS_MISC:           stackRatio = 100; break;
-    case ITEM_CLASS_GLYPH:          stackRatio = 0; break;
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = RandomStackRatioConsumable; break;
+    case ITEM_CLASS_CONTAINER:      stackRatio = RandomStackRatioContainer; break;
+    case ITEM_CLASS_WEAPON:         stackRatio = RandomStackRatioWeapon; break;
+    case ITEM_CLASS_GEM:            stackRatio = RandomStackRatioGem; break;
+    case ITEM_CLASS_REAGENT:        stackRatio = RandomStackRatioReagent; break;
+    case ITEM_CLASS_ARMOR:          stackRatio = RandomStackRatioArmor; break;
+    case ITEM_CLASS_PROJECTILE:     stackRatio = RandomStackRatioProjectile; break;
+    case ITEM_CLASS_TRADE_GOODS:    stackRatio = RandomStackRatioTradeGood; break;
+    case ITEM_CLASS_GENERIC:        stackRatio = RandomStackRatioGeneric; break;
+    case ITEM_CLASS_RECIPE:         stackRatio = RandomStackRatioRecipe; break;
+    case ITEM_CLASS_QUIVER:         stackRatio = RandomStackRatioQuiver; break;
+    case ITEM_CLASS_QUEST:          stackRatio = RandomStackRatioQuest; break;
+    case ITEM_CLASS_KEY:            stackRatio = RandomStackRatioKey; break;
+    case ITEM_CLASS_MISC:           stackRatio = RandomStackRatioMisc; break;
+    case ITEM_CLASS_GLYPH:          stackRatio = RandomStackRatioGlyph; break;
     default:                        stackRatio = 0; break;
     }
 
@@ -774,8 +774,37 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
 
+    // Stack Ratios
+    RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
+    RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Container", 0);
+    RandomStackRatioWeapon = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Weapon", 0);
+    RandomStackRatioGem = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Gem", 5);
+    RandomStackRatioArmor = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Armor", 0);
+    RandomStackRatioReagent = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Reagent", 50);
+    RandomStackRatioProjectile = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Projectile", 100);
+    RandomStackRatioTradeGood = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.TradeGood", 50);
+    RandomStackRatioGeneric = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Generic", 100);
+    RandomStackRatioRecipe = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Recipe", 0);
+    RandomStackRatioQuiver = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quiver", 0);
+    RandomStackRatioQuest = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quest", 10);
+    RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Key", 10);
+    RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Misc", 100);
+    RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
+
+    // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
     DisabledItems = LoadDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
+}
+
+uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
+{
+    uint32 stackValue = sConfigMgr->GetOption<uint32>(configKeyString, defaultValue);
+    if (stackValue > 100 || stackValue < 0)
+    {
+        LOG_ERROR("module", "{} value is invalid.  Setting to default ({}).", configKeyString, defaultValue);
+        stackValue = defaultValue;
+    }
+    return stackValue;
 }
 
 std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdString)
