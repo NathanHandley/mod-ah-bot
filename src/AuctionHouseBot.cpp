@@ -60,21 +60,21 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = 50; break;
-    case ITEM_CLASS_CONTAINER:      stackRatio = 0; break;
-    case ITEM_CLASS_WEAPON:         stackRatio = 0; break;
-    case ITEM_CLASS_GEM:            stackRatio = 5; break;
-    case ITEM_CLASS_REAGENT:        stackRatio = 50; break;
-    case ITEM_CLASS_ARMOR:          stackRatio = 0; break;
-    case ITEM_CLASS_PROJECTILE:     stackRatio = 100; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = 50; break;
-    case ITEM_CLASS_GENERIC:        stackRatio = 100; break;
-    case ITEM_CLASS_RECIPE:         stackRatio = 0; break;
-    case ITEM_CLASS_QUIVER:         stackRatio = 0; break;
-    case ITEM_CLASS_QUEST:          stackRatio = 10; break;
-    case ITEM_CLASS_KEY:            stackRatio = 10; break;
-    case ITEM_CLASS_MISC:           stackRatio = 100; break;
-    case ITEM_CLASS_GLYPH:          stackRatio = 0; break;
+    case ITEM_CLASS_CONSUMABLE:     stackRatio = RandomStackRatioConsumable; break;
+    case ITEM_CLASS_CONTAINER:      stackRatio = RandomStackRatioContainer; break;
+    case ITEM_CLASS_WEAPON:         stackRatio = RandomStackRatioWeapon; break;
+    case ITEM_CLASS_GEM:            stackRatio = RandomStackRatioGem; break;
+    case ITEM_CLASS_REAGENT:        stackRatio = RandomStackRatioReagent; break;
+    case ITEM_CLASS_ARMOR:          stackRatio = RandomStackRatioArmor; break;
+    case ITEM_CLASS_PROJECTILE:     stackRatio = RandomStackRatioProjectile; break;
+    case ITEM_CLASS_TRADE_GOODS:    stackRatio = RandomStackRatioTradeGood; break;
+    case ITEM_CLASS_GENERIC:        stackRatio = RandomStackRatioGeneric; break;
+    case ITEM_CLASS_RECIPE:         stackRatio = RandomStackRatioRecipe; break;
+    case ITEM_CLASS_QUIVER:         stackRatio = RandomStackRatioQuiver; break;
+    case ITEM_CLASS_QUEST:          stackRatio = RandomStackRatioQuest; break;
+    case ITEM_CLASS_KEY:            stackRatio = RandomStackRatioKey; break;
+    case ITEM_CLASS_MISC:           stackRatio = RandomStackRatioMisc; break;
+    case ITEM_CLASS_GLYPH:          stackRatio = RandomStackRatioGlyph; break;
     default:                        stackRatio = 0; break;
     }
 
@@ -235,25 +235,29 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Skip any items not in the seed list
-        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
-            continue;
-
-        // Skip any BOP items
-        if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
-            continue;
-
-        // Restrict quality to anything under 7 (artifact and below) or above poor
-        if (itr->second.Quality == 0 || itr->second.Quality > 6)
-            continue;
-
         // Disabled items by Id
-        if (DisableItemStore.find(itr->second.ItemId) != DisableItemStore.end())
+        if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
             continue;
         }
+
+        // Skip any items not in the seed list
+        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
+            continue;
+
+        // Skip any BOP items
+        if (itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI)", itr->second.ItemId);
+            continue;
+        }
+
+        // Restrict quality to anything under 7 (artifact and below) or above poor
+        if (itr->second.Quality == 0 || itr->second.Quality > 6)
+            continue;
 
         // Disable conjured items
         if (itr->second.IsConjuredConsumable())
@@ -295,41 +299,20 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Disable items which are bind quest Items
-        if (itr->second.Bonding == BIND_QUEST_ITEM)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
-            continue;
-        }
-
         // Disable anything with the string literal of a testing or depricated item
-        if (itr->second.Name1.find("Test ") != std::string::npos ||
-            itr->second.Name1.find("Item") != std::string::npos ||
-            itr->second.Name1.find("Unused") != std::string::npos ||
+        if (DisabledItemTextFilter == true && 
+            (itr->second.Name1.find("Test ") != std::string::npos ||
+            itr->second.Name1.find("TEST") != std::string::npos ||
             itr->second.Name1.find("Deprecated") != std::string::npos ||
             itr->second.Name1.find("Depricated") != std::string::npos ||
             itr->second.Name1.find(" Epic ") != std::string::npos ||
-            itr->second.Name1.find("]") != std::string::npos ||
-            itr->second.Name1.find("[") != std::string::npos ||
-            itr->second.Name1.find("TEST") != std::string::npos ||
+            itr->second.Name1.find("]") != std::string::npos ||            
             itr->second.Name1.find("D'Sak") != std::string::npos ||
             itr->second.Name1.find("(") != std::string::npos ||
-            itr->second.Name1.find(")") != std::string::npos ||
-            itr->second.Name1.find("PVP") != std::string::npos ||
-            itr->second.Name1.find("Art Demo") != std::string::npos ||
-            itr->second.Name1.find("OLD") != std::string::npos)
+            itr->second.Name1.find("OLD") != std::string::npos))
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
-            continue;
-        }
-
-        // Disable "other" consumables
-        if (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled consumber 'other' item", itr->second.ItemId);
             continue;
         }
 
@@ -733,25 +716,6 @@ void AuctionHouseBot::Update()
 
 void AuctionHouseBot::Initialize()
 {
-    DisableItemStore.clear();
-    // No longer make this a database thing
-    //QueryResult result = WorldDatabase.Query("SELECT item FROM mod_auctionhousebot_disabled_items");
-
-    //if (result)
-    //{
-    //    do
-    //    {
-    //        Field* fields = result->Fetch();
-    //        DisableItemStore.insert(fields[0].Get<uint32>());
-    //    } while (result->NextRow());
-    //}
-    DisableItemStore.insert(51809); // Portable Hole
-    DisableItemStore.insert(38082); // Gigantique Bag
-    DisableItemStore.insert(49334); // Scale of Onyxia 2.0
-    DisableItemStore.insert(42976); // Lords Deck
-    DisableItemStore.insert(44852); // Cornmeal
-    DisableItemStore.insert(6216); // Mystical Powder
-
     //End Filters
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
@@ -781,7 +745,6 @@ void AuctionHouseBot::Initialize()
         populateItemCandidateList();
 
         LOG_INFO("module", "AuctionHouseBot:");
-        LOG_INFO("module", "{} disabled items", uint32(DisableItemStore.size()));
     }
 
     LOG_INFO("module", "AuctionHouseBot and AuctionHouseBuyer have been loaded.");
@@ -798,6 +761,64 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
     AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
+
+    // Stack Ratios
+    RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
+    RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Container", 0);
+    RandomStackRatioWeapon = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Weapon", 0);
+    RandomStackRatioGem = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Gem", 5);
+    RandomStackRatioArmor = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Armor", 0);
+    RandomStackRatioReagent = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Reagent", 50);
+    RandomStackRatioProjectile = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Projectile", 100);
+    RandomStackRatioTradeGood = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.TradeGood", 50);
+    RandomStackRatioGeneric = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Generic", 100);
+    RandomStackRatioRecipe = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Recipe", 0);
+    RandomStackRatioQuiver = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quiver", 0);
+    RandomStackRatioQuest = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quest", 10);
+    RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Key", 10);
+    RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Misc", 100);
+    RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
+
+    // Disabled Items
+    DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
+    DisabledItems = LoadDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
+}
+
+uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
+{
+    uint32 stackValue = sConfigMgr->GetOption<uint32>(configKeyString, defaultValue);
+    if (stackValue > 100 || stackValue < 0)
+    {
+        LOG_ERROR("module", "{} value is invalid.  Setting to default ({}).", configKeyString, defaultValue);
+        stackValue = defaultValue;
+    }
+    return stackValue;
+}
+
+std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdString)
+{
+    std::string delimitedValue;
+    std::stringstream disabledItemIdStream;
+    std::set<uint32> disabledItemIDs;
+
+    disabledItemIdStream.str(disabledItemIdString);
+    while (std::getline(disabledItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    {
+        std::string valueOne;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> valueOne;
+        auto itemId = atoi(valueOne.c_str());
+        if (disabledItemIDs.find(itemId) != disabledItemIDs.end())
+        {
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", itemId);
+        }
+        else
+        {
+            disabledItemIDs.insert(itemId);
+        }
+    }
+
+    return disabledItemIDs;
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)
