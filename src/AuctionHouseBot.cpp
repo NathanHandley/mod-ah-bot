@@ -235,18 +235,6 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
-        // Skip any items not in the seed list
-        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
-            continue;
-
-        // Skip any BOP items
-        if (itr->second.Bonding == BIND_WHEN_PICKED_UP)
-            continue;
-
-        // Restrict quality to anything under 7 (artifact and below) or above poor
-        if (itr->second.Quality == 0 || itr->second.Quality > 6)
-            continue;
-
         // Disabled items by Id
         if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
@@ -254,6 +242,22 @@ void AuctionHouseBot::populateItemCandidateList()
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
             continue;
         }
+
+        // Skip any items not in the seed list
+        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
+            continue;
+
+        // Skip any BOP items
+        if (itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI)", itr->second.ItemId);
+            continue;
+        }
+
+        // Restrict quality to anything under 7 (artifact and below) or above poor
+        if (itr->second.Quality == 0 || itr->second.Quality > 6)
+            continue;
 
         // Disable conjured items
         if (itr->second.IsConjuredConsumable())
@@ -292,14 +296,6 @@ void AuctionHouseBot::populateItemCandidateList()
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Container with no slots)", itr->second.ItemId);
-            continue;
-        }
-
-        // Disable items which are bind quest Items
-        if (itr->second.Bonding == BIND_QUEST_ITEM)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (BOP or BQI and Required Level is less than Item Level)", itr->second.ItemId);
             continue;
         }
 
