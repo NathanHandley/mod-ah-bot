@@ -540,7 +540,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
 
         // get exact item information
 		Item *pItem = sAuctionMgr->GetAItem(auction->item_guid);
-        if (!pItem)
+        if (!pItem || pItem->GetCount() == 0)
         {
 			if (debug_Out)
                 LOG_ERROR("module", "AHBuyer: Item {} doesn't exist, perhaps bought already?", auction->item_guid.ToString());
@@ -550,120 +550,109 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
         // get item prototype
         ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(auction->item_template);
 
-        // check which price we have to use, startbid or if it is bidded already
-        uint32 currentprice;
-        if (auction->bid)
-            currentprice = auction->bid;
+        // Calculate a potential price for the item
+        uint64 willingToSpendPerItemPrice = 0;
+        uint64 discardBidPrice = 0;
+        calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
+        uint64 willingToSpendForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
+
+        // Buy it if the price is greater than buy out, bid if the price is greater than current bid, otherwise skip
+        bool doBuyout = false;
+        bool doBid = false;
+        uint32 minBidPrice = 0;
+        if (auction->buyout != 0 && willingToSpendForStackPrice >= auction->buyout)
+            doBuyout = true;
         else
-            currentprice = auction->startbid;
+        {            
+            if (auction->bid >= auction->startbid)
+                minBidPrice = auction->GetAuctionOutBid();
+            else
+                minBidPrice = auction->startbid;
 
-        // Prepare portion from maximum bid per item
-        double bidrate = static_cast<double>(urand(1, 100)) / 100;
-        uint64 discardBuyoutPrice = 0;
-        uint64 bidPriceMaxSingle = 0;
-        calculateItemValue(prototype, bidPriceMaxSingle, discardBuyoutPrice);
-        uint64 bitPriceMaxCurStack = bidPriceMaxSingle * pItem->GetCount();
-
-        // check some special items, and do recalculating to their prices
-        switch (prototype->Class)
-        {
-        // ammo
-        case 6:
-            bitPriceMaxCurStack = 0;
-            break;
-        default:
-            break;
-        }
-
-        if (bitPriceMaxCurStack == 0)
-        {
-            // quality check failed to get bidmax, let's get out of here
-            continue;
-        }
-
-        // Calculate our bid
-        long double bidvalue = currentprice + ((bitPriceMaxCurStack - currentprice) * bidrate);
-        // Convert to uint32
-        uint32 bidprice = static_cast<uint32>(bidvalue);
-
-        // Check our bid is high enough to be valid. If not, correct it to minimum.
-        if ((currentprice + auction->GetAuctionOutBid()) > bidprice)
-            bidprice = currentprice + auction->GetAuctionOutBid();
-
-        if (debug_Out)
-        {
-            LOG_INFO("module", "-------------------------------------------------");
-            LOG_INFO("module", "AHBuyer: Info for Auction #{}:", auction->Id);
-            LOG_INFO("module", "AHBuyer: AuctionHouse: {}", auction->GetHouseId());
-            LOG_INFO("module", "AHBuyer: Owner: {}", auction->owner.ToString());
-            LOG_INFO("module", "AHBuyer: Bidder: {}", auction->bidder.ToString());
-            LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
-            LOG_INFO("module", "AHBuyer: Current Bid: {}", currentprice);
-            LOG_INFO("module", "AHBuyer: Buyout: {}", auction->buyout);
-            LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
-            LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
-            LOG_INFO("module", "AHBuyer: Bid Rate: {}", bidrate);
-            LOG_INFO("module", "AHBuyer: Bid Max: {}", bitPriceMaxCurStack);
-            LOG_INFO("module", "AHBuyer: Bid Value: {}", bidvalue);
-            LOG_INFO("module", "AHBuyer: Bid Price: {}", bidprice);
-            LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
-            LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
-            LOG_INFO("module", "AHBuyer: Item Info:");
-            LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
-            LOG_INFO("module", "AHBuyer: Buy Price: {}", prototype->BuyPrice);
-            LOG_INFO("module", "AHBuyer: Sell Price: {}", prototype->SellPrice);
-            LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
-            LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
-            LOG_INFO("module", "AHBuyer: Item Level: {}", prototype->ItemLevel);
-            LOG_INFO("module", "AHBuyer: Ammo Type: {}", prototype->AmmoType);
-            LOG_INFO("module", "-------------------------------------------------");
-        }
-
-        // Check whether we do normal bid, or buyout
-        if ((bidprice < auction->buyout) || (auction->buyout == 0))
-        {
-            if (auction->bidder)
+            if (minBidPrice <= willingToSpendForStackPrice)
             {
-                if (auction->bidder == AHBplayer->GetGUID())
-                {
-                    //pl->ModifyMoney(-int32(price - auction->bid));
-                }
+                if (auction->buyout != 0 && minBidPrice >= auction->buyout)
+                    doBuyout = true;
                 else
-                {
-                    // mail to last bidder and return money
-                    auto trans = CharacterDatabase.BeginTransaction();
-                    sAuctionMgr->SendAuctionOutbiddedMail(auction, bidprice, session->GetPlayer(), trans);
-                    CharacterDatabase.CommitTransaction(trans);
-                    //pl->ModifyMoney(-int32(price));
-                }
-           }
-
-            auction->bidder = AHBplayer->GetGUID();
-            auction->bid = bidprice;
-
-            // Saving auction into database
-            CharacterDatabase.Execute("UPDATE auctionhouse SET buyguid = '{}',lastbid = '{}' WHERE id = '{}'", auction->bidder.GetCounter(), auction->bid, auction->Id);
-        }
-        else
-        {
-            auto trans = CharacterDatabase.BeginTransaction();
-            //buyout
-            if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
-            {
-                sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, session->GetPlayer(), trans);
+                    doBid = true;
             }
-            auction->bidder = AHBplayer->GetGUID();
-            auction->bid = auction->buyout;
+        }
 
-            // Send mails to buyer & seller
-            //sAuctionMgr->SendAuctionSalePendingMail(auction, trans);
-            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-            sAuctionMgr->SendAuctionWonMail(auction, trans);
-            auction->DeleteFromDB(trans);
+        if (doBuyout == true || doBid == true)
+        {
+            if (debug_Out)
+            {
+                LOG_INFO("module", "-------------------------------------------------");
+                LOG_INFO("module", "AHBuyer: Info for Auction #{}:", auction->Id);
+                LOG_INFO("module", "AHBuyer: AuctionHouse: {}", auction->GetHouseId());
+                LOG_INFO("module", "AHBuyer: Owner: {}", auction->owner.ToString());
+                LOG_INFO("module", "AHBuyer: Bidder: {}", auction->bidder.ToString());
+                LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
+                LOG_INFO("module", "AHBuyer: Current Bid: {}", auction->bid);
+                LOG_INFO("module", "AHBuyer: Buyout: {}", auction->buyout);
+                LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
+                LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
+                LOG_INFO("module", "AHBuyer: Willing To Spend For Stack Price: {}", willingToSpendForStackPrice);
+                LOG_INFO("module", "AHBuyer: Minimum Bid Price: {}", minBidPrice);
+                LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
+                LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
+                LOG_INFO("module", "AHBuyer: Item Info:");
+                LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
+                LOG_INFO("module", "AHBuyer: Buy Price: {}", prototype->BuyPrice);
+                LOG_INFO("module", "AHBuyer: Sell Price: {}", prototype->SellPrice);
+                LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
+                LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
+                LOG_INFO("module", "AHBuyer: Item Level: {}", prototype->ItemLevel);
+                LOG_INFO("module", "AHBuyer: Ammo Type: {}", prototype->AmmoType);
+                LOG_INFO("module", "-------------------------------------------------");
+            }
 
-			sAuctionMgr->RemoveAItem(auction->item_guid);
-            auctionHouse->RemoveAuction(auction);
-            CharacterDatabase.CommitTransaction(trans);
+            if (doBid)
+            {
+                // Return money of prior bidder
+                if (auction->bidder)
+                {
+                    if (auction->bidder == AHBplayer->GetGUID())
+                    {
+                        //pl->ModifyMoney(-int32(price - auction->bid));
+                    }
+                    else
+                    {
+                        // mail to last bidder and return money
+                        auto trans = CharacterDatabase.BeginTransaction();
+                        sAuctionMgr->SendAuctionOutbiddedMail(auction, minBidPrice, session->GetPlayer(), trans);
+                        CharacterDatabase.CommitTransaction(trans);
+                        //pl->ModifyMoney(-int32(price));
+                    }
+                }
+
+                auction->bidder = AHBplayer->GetGUID();
+                auction->bid = minBidPrice;
+
+                // Saving auction into database
+                CharacterDatabase.Execute("UPDATE auctionhouse SET buyguid = '{}',lastbid = '{}' WHERE id = '{}'", auction->bidder.GetCounter(), auction->bid, auction->Id);
+            }
+            else if (doBuyout)
+            {
+                auto trans = CharacterDatabase.BeginTransaction();
+                //buyout
+                if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
+                {
+                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, session->GetPlayer(), trans);
+                }
+                auction->bidder = AHBplayer->GetGUID();
+                auction->bid = auction->buyout;
+
+                // Send mails to buyer & seller
+                //sAuctionMgr->SendAuctionSalePendingMail(auction, trans);
+                sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
+                sAuctionMgr->SendAuctionWonMail(auction, trans);
+                auction->DeleteFromDB(trans);
+
+                sAuctionMgr->RemoveAItem(auction->item_guid);
+                auctionHouse->RemoveAuction(auction);
+                CharacterDatabase.CommitTransaction(trans);
+            }
         }
     }
 }
