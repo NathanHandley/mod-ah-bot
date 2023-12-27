@@ -133,7 +133,6 @@ private:
     ObjectGuid::LowType AHBplayerGUID;
     uint32 ItemsPerCycle;
 
-
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
     uint32 RandomStackRatioConsumable;
@@ -186,6 +185,7 @@ public:
     void InitializeConfiguration();
     void LoadValues(AHBConfig*);
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
+    void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
     std::set<uint32> LoadDisabledItems(std::string disabledItemIdString);
     void Commands(uint32 command, uint32 ahMapID, char* args);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };

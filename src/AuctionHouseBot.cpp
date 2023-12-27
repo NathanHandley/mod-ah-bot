@@ -784,6 +784,18 @@ uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 
     return stackValue;
 }
 
+void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID)
+{
+    if (workingDisabledItemIDs.find(disabledItemID) != workingDisabledItemIDs.end())
+    {
+        LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", disabledItemID);
+    }
+    else
+    {
+        workingDisabledItemIDs.insert(disabledItemID);
+    }
+}
+
 std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdString)
 {
     std::string delimitedValue;
@@ -796,14 +808,30 @@ std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdSt
         std::string valueOne;
         std::stringstream itemPairStream(delimitedValue);
         itemPairStream >> valueOne;
-        auto itemId = atoi(valueOne.c_str());
-        if (disabledItemIDs.find(itemId) != disabledItemIDs.end())
+        // If it has a hypen, then it's a range of numbers
+        if (valueOne.find("-") != std::string::npos)
         {
-            LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", itemId);
+            std::string leftIDString = valueOne.substr(0, valueOne.find("-"));
+            std::string rightIDString = valueOne.substr(valueOne.find("-")+1);
+
+            auto leftId = atoi(leftIDString.c_str());
+            auto rightId = atoi(rightIDString.c_str());
+
+            if (leftId > rightId)
+            {
+                LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID range of {} to {} needs to be smallest to largest, skipping", leftId, rightId);
+            }
+            else
+            {
+                for (leftId; leftId <= rightId; ++leftId)
+                    AddToDisabledItems(disabledItemIDs, leftId);
+            }
+
         }
         else
         {
-            disabledItemIDs.insert(itemId);
+            auto itemId = atoi(valueOne.c_str());
+            AddToDisabledItems(disabledItemIDs, itemId);
         }
     }
 
