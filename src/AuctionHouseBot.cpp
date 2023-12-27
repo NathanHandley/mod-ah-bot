@@ -823,8 +823,8 @@ std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdSt
             }
             else
             {
-                for (leftId; leftId <= rightId; ++leftId)
-                    AddToDisabledItems(disabledItemIDs, leftId);
+                for (uint32 i = leftId; i <= rightId; ++i)
+                    AddToDisabledItems(disabledItemIDs, i);
             }
 
         }
