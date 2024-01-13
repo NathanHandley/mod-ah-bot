@@ -299,6 +299,14 @@ void AuctionHouseBot::populateItemCandidateList()
             continue;
         }
 
+        // Disable normal class 'book' recipies, since they are junk
+        if (itr->second.Class == ITEM_CLASS_RECIPE && itr->second.SubClass == ITEM_SUBCLASS_BOOK && itr->second.Quality <= ITEM_QUALITY_NORMAL)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Normal or lower recipe book)", itr->second.ItemId);
+            continue;
+        }
+
         // Disable anything with the string literal of a testing or depricated item
         if (DisabledItemTextFilter == true && 
             (itr->second.Name1.find("Test ") != std::string::npos ||
