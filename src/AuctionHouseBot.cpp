@@ -95,6 +95,27 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         // TODO: Move to a config
         outBuyoutPrice = urand(500, 1500);
     }
+    // Special rules for trade goods
+    else if (itemProto->Class == ITEM_CLASS_TRADE_GOODS)
+    {
+        // trade goods are at least 2x vendor price
+        uint32 twoTimesSellPrice = itemProto->SellPrice * 2;
+        if (twoTimesSellPrice > outBuyoutPrice)
+        {
+            uint32 threeTimeSellPrice = itemProto->SellPrice * 3;
+            outBuyoutPrice = urand(twoTimesSellPrice, threeTimeSellPrice);
+        }
+
+        // Calculate a minimum base price for trade goods factoring in the item level
+        if (itemProto->ItemLevel > 0)
+        {
+            uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, 1.8));
+            if (minPossiblePrice > outBuyoutPrice)
+            {
+                outBuyoutPrice = urand(minPossiblePrice, minPossiblePrice * 1.2);
+            }
+        }
+    }
 
     // If still no buy price, give it something low
     if (outBuyoutPrice == 0)
@@ -107,8 +128,8 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     {
     case ITEM_QUALITY_UNCOMMON:     outBuyoutPrice *= 2; break;
     case ITEM_QUALITY_RARE:         outBuyoutPrice *= 5; break;
-    case ITEM_QUALITY_EPIC:         outBuyoutPrice *= 7; break;
-    case ITEM_QUALITY_LEGENDARY:    outBuyoutPrice *= 11; break;
+    case ITEM_QUALITY_EPIC:         outBuyoutPrice *= 8; break;
+    case ITEM_QUALITY_LEGENDARY:    outBuyoutPrice *= 13; break;
     default: break;
     }
 
@@ -154,16 +175,16 @@ void AuctionHouseBot::populateItemClassSeedList()
     // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
 
     // TODO: Move these weight items to a config
-    uint32 itemClassSeedWeightConsumable = 4;
+    uint32 itemClassSeedWeightConsumable = 3;
     uint32 itemClassSeedWeightContainer = 2;
-    uint32 itemClassSeedWeightWeapon = 8;
-    uint32 itemClassSeedWeightGem = 3;
-    uint32 itemClassSeedWeightArmor = 8;
+    uint32 itemClassSeedWeightWeapon = 6;
+    uint32 itemClassSeedWeightGem = 2;
+    uint32 itemClassSeedWeightArmor = 6;
     uint32 itemClassSeedWeightReagent = 1;
     uint32 itemClassSeedWeightProjectile = 2;
-    uint32 itemClassSeedWeightTradeGoods = 10;
+    uint32 itemClassSeedWeightTradeGoods = 14;
     uint32 itemClassSeedWeightGeneric = 1;
-    uint32 itemClassSeedWeightRecipe = 4;
+    uint32 itemClassSeedWeightRecipe = 3;
     uint32 itemClassSeedWeightQuiver = 1;
     uint32 itemClassSeedWeightQuest = 2;
     uint32 itemClassSeedWeightKey = 1;
@@ -321,6 +342,14 @@ void AuctionHouseBot::populateItemCandidateList()
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
+            continue;
+        }
+
+        // Disabled crafted gems that start with "Perfect"
+        if (itr->second.Class == ITEM_CLASS_GEM && itr->second.Name1.find("Perfect ") != std::string::npos)
+        {
+            if (debug_Out_Filters)
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled as it's a perfect crafted gem", itr->second.ItemId);
             continue;
         }
 
@@ -665,6 +694,14 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
     }
 }
 
+void AuctionHouseBot::addProducedItemsToDisabledItems()
+{
+
+
+
+
+}
+
 void AuctionHouseBot::Update()
 {
     time_t _newrun = time(NULL);
@@ -778,7 +815,9 @@ void AuctionHouseBot::InitializeConfiguration()
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
-    DisabledItems = LoadDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
+    DisabledItems.clear();
+    AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
+    AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""));
 }
 
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
@@ -796,7 +835,8 @@ void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemID
 {
     if (workingDisabledItemIDs.find(disabledItemID) != workingDisabledItemIDs.end())
     {
-        LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", disabledItemID);
+        if (debug_Out)
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", disabledItemID);
     }
     else
     {
@@ -804,11 +844,10 @@ void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemID
     }
 }
 
-std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdString)
+void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
 {
     std::string delimitedValue;
     std::stringstream disabledItemIdStream;
-    std::set<uint32> disabledItemIDs;
 
     disabledItemIdStream.str(disabledItemIdString);
     while (std::getline(disabledItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
@@ -832,18 +871,16 @@ std::set<uint32> AuctionHouseBot::LoadDisabledItems(std::string disabledItemIdSt
             else
             {
                 for (int32 i = leftId; i <= rightId; ++i)
-                    AddToDisabledItems(disabledItemIDs, i);
+                    AddToDisabledItems(DisabledItems, i);
             }
 
         }
         else
         {
             auto itemId = atoi(valueOne.c_str());
-            AddToDisabledItems(disabledItemIDs, itemId);
+            AddToDisabledItems(DisabledItems, itemId);
         }
     }
-
-    return disabledItemIDs;
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)

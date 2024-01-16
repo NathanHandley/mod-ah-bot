@@ -169,6 +169,7 @@ private:
     void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
+    void addProducedItemsToDisabledItems();
 
     AuctionHouseBot();
 
@@ -186,7 +187,7 @@ public:
     void LoadValues(AHBConfig*);
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
-    std::set<uint32> LoadDisabledItems(std::string disabledItemIdString);
+    void AddDisabledItems(std::string disabledItemIdString);
     void Commands(uint32 command, uint32 ahMapID, char* args);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };
