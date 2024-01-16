@@ -175,7 +175,7 @@ void AuctionHouseBot::populateItemClassSeedList()
     // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
 
     // TODO: Move these weight items to a config
-    uint32 itemClassSeedWeightConsumable = 3;
+    uint32 itemClassSeedWeightConsumable = 2;
     uint32 itemClassSeedWeightContainer = 2;
     uint32 itemClassSeedWeightWeapon = 6;
     uint32 itemClassSeedWeightGem = 2;
