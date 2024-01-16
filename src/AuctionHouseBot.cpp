@@ -382,6 +382,17 @@ void AuctionHouseBot::populateItemCandidateList()
 
         // Store the item ID
         itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+
+        // Store a second copy if it's a trade good of certain types to double the chances
+        if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
+        {
+            if (itr->second.SubClass == ITEM_SUBCLASS_CLOTH || itr->second.SubClass == ITEM_SUBCLASS_LEATHER ||
+                itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING || itr->second.SubClass == ITEM_SUBCLASS_HERB ||
+                itr->second.SubClass == ITEM_SUBCLASS_METAL_STONE)
+            {
+                itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+            }
+        }
     }
 }
 
