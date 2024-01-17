@@ -37,6 +37,34 @@ AuctionHouseBot.GUID = 3
 AuctionHouseBot.ItemsPerCycle = 50
 
 ###############################################################################
+#    AuctionHouseBot.<faction>.MinItems
+#    AuctionHouseBot.<faction>.MaxItems
+#        The minimum and maximum number of items to post on that auction house
+#    Default: 15000 for both
+#
+#    AuctionHouseBot.<faction>.BidInterval
+#        How long to wait between bidding
+#    Default: 1
+#
+#    AuctionHouseBot.<faction>.BidInterval
+#        How many to bid on at a time
+#    Default: 1
+###############################################################################
+
+AuctionHouseBot.Alliance.MinItems = 20000
+AuctionHouseBot.Alliance.MaxItems = 20000
+AuctionHouseBot.Alliance.BidInterval = 1
+AuctionHouseBot.Alliance.BidsPerInterval = 1
+AuctionHouseBot.Horde.MinItems = 20000
+AuctionHouseBot.Horde.MaxItems = 20000
+AuctionHouseBot.Horde.BidInterval = 1
+AuctionHouseBot.Horde.BidsPerInterval = 1
+AuctionHouseBot.Neutral.MinItems = 20000
+AuctionHouseBot.Neutral.MaxItems = 20000
+AuctionHouseBot.Neutral.BidInterval = 1
+AuctionHouseBot.Neutral.BidsPerInterval = 1
+
+###############################################################################
 #    AuctionHouseBot.RandomStackRatio.*
 #        Used to determine how often a stack of the class will be single or randomly-size stacked when posted
 #        Value needs to be between 0 and 100, no decimal.  Anything higher than 100 will be treated as 100
@@ -77,6 +105,12 @@ AuctionHouseBot.RandomStackRatio.Misc = 100
 AuctionHouseBot.RandomStackRatio.Glyph = 0
 
 ###############################################################################
+#    AuctionHouseBot.PrimaryProfTradeGoodRelativeMultiplier
+#        This is 
+#    Default: 15000 for both
+###############################################################################
+
+###############################################################################
 #    AuctionHouseBot.DisabledItemTextFilter
 #        If true, this will hide items with bad names like "OLD" and "D'Sak"
 #    Default: True
@@ -84,6 +118,7 @@ AuctionHouseBot.RandomStackRatio.Glyph = 0
 #    AuctionHouseBot.DisabledItemIDs
 #        Comma separated list of itemIDs to exclude from listing by the seller
 #        Ranges using a dash (-) can also be used
+#
 #    AuctionHouseBot.DisabledCraftedItemIDs
 #        Additional Comma separated list of itemIDs to exclude from listing by the seller
 #        Ranges using a dash (-) can also be used

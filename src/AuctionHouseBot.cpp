@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2023+ Nathan Handley <https://github.com/NathanHandley>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,7 +183,7 @@ void AuctionHouseBot::populateItemClassSeedList()
     uint32 itemClassSeedWeightArmor = 6;
     uint32 itemClassSeedWeightReagent = 1;
     uint32 itemClassSeedWeightProjectile = 2;
-    uint32 itemClassSeedWeightTradeGoods = 14;
+    uint32 itemClassSeedWeightTradeGoods = 22;
     uint32 itemClassSeedWeightGeneric = 1;
     uint32 itemClassSeedWeightRecipe = 3;
     uint32 itemClassSeedWeightQuiver = 1;
@@ -248,6 +249,10 @@ void AuctionHouseBot::populateItemCandidateList()
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
     for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
     {
+        // Never store itemID zero
+        if (itr->second.ItemId == 0)
+            continue;
+
         // Always store items that are exceptions
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
@@ -392,6 +397,14 @@ void AuctionHouseBot::populateItemCandidateList()
             {
                 itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
             }
+        }
+    }
+
+    if (debug_Out)
+    {
+        for (auto& itemCandidatesInClass : itemCandidatesByItemClass)
+        {
+            LOG_INFO("module", "Item count in class {} is {}", itemCandidatesInClass.first, itemCandidatesInClass.second.size());
         }
     }
 }
@@ -705,14 +718,6 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
     }
 }
 
-void AuctionHouseBot::addProducedItemsToDisabledItems()
-{
-
-
-
-
-}
-
 void AuctionHouseBot::Update()
 {
     time_t _newrun = time(NULL);
@@ -761,38 +766,9 @@ void AuctionHouseBot::Update()
 
 void AuctionHouseBot::Initialize()
 {
-    //End Filters
-    if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
-    {
-        LoadValues(&AllianceConfig);
-        LoadValues(&HordeConfig);
-    }
-    LoadValues(&NeutralConfig);
-
-    //
-    // check if the AHBot account/GUID in the config actually exists
-    //
-
-    if ((AHBplayerAccount != 0) || (AHBplayerGUID != 0))
-    {
-        QueryResult result = CharacterDatabase.Query("SELECT 1 FROM characters WHERE account = {} AND guid = {}", AHBplayerAccount, AHBplayerGUID);
-        if (!result)
-        {
-           LOG_ERROR("module", "AuctionHouseBot: The account/GUID-information set for your AHBot is incorrect (account: {} guid: {})", AHBplayerAccount, AHBplayerGUID);
-           return;
-        }
-    }
-
-    if (AHBSeller)
-    {
-        // Build a list of items that can be pulled from for auction
-        populateItemClassSeedList();
-        populateItemCandidateList();
-
-        LOG_INFO("module", "AuctionHouseBot:");
-    }
-
-    LOG_INFO("module", "AuctionHouseBot and AuctionHouseBuyer have been loaded.");
+    // Build a list of items that can be pulled from for auction
+    populateItemClassSeedList();
+    populateItemCandidateList();
 }
 
 void AuctionHouseBot::InitializeConfiguration()
@@ -829,6 +805,33 @@ void AuctionHouseBot::InitializeConfiguration()
     DisabledItems.clear();
     AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
     AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""));
+
+    if ((AHBplayerAccount != 0) || (AHBplayerGUID != 0))
+    {
+        QueryResult result = CharacterDatabase.Query("SELECT 1 FROM characters WHERE account = {} AND guid = {}", AHBplayerAccount, AHBplayerGUID);
+        if (!result)
+        {
+            LOG_ERROR("module", "AuctionHouseBot: The account/GUID-information set for your AHBot is incorrect (account: {} guid: {})", AHBplayerAccount, AHBplayerGUID);
+            return;
+        }
+    }
+
+    if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
+    {
+        AllianceConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.MinItems", 15000));
+        AllianceConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.MaxItems", 15000));
+        AllianceConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.BidInterval", 1));
+        AllianceConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.BidsPerInterval", 1));
+
+        HordeConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.MinItems", 15000));
+        HordeConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.MaxItems", 15000));
+        HordeConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.BidInterval", 1));
+        HordeConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.BidsPerInterval", 1));
+    }
+    NeutralConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MinItems", 15000));
+    NeutralConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MaxItems", 15000));
+    NeutralConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidInterval", 1));
+    NeutralConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidsPerInterval", 1));
 }
 
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
@@ -892,112 +895,4 @@ void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
             AddToDisabledItems(DisabledItems, itemId);
         }
     }
-}
-
-void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, char* args)
-{
-    AHBConfig *config = NULL;
-    switch (ahMapID)
-    {
-    case 2:
-        config = &AllianceConfig;
-        break;
-    case 6:
-        config = &HordeConfig;
-        break;
-    case 7:
-        config = &NeutralConfig;
-        break;
-    }
-    switch (command)
-    {
-    case 0:     //ahexpire
-        {
-            AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config->GetAHFID());
-
-            AuctionHouseObject::AuctionEntryMap::iterator itr;
-            itr = auctionHouse->GetAuctionsBegin();
-
-            while (itr != auctionHouse->GetAuctionsEnd())
-            {
-                if (itr->second->owner.GetCounter() == AHBplayerGUID)
-                {
-                    itr->second->expire_time = GameTime::GetGameTime().count();
-                    uint32 id = itr->second->Id;
-                    uint32 expire_time = itr->second->expire_time;
-                    CharacterDatabase.Execute("UPDATE auctionhouse SET time = '{}' WHERE id = '{}'", expire_time, id);
-                }
-                ++itr;
-            }
-        }
-        break;
-    case 1:     //min items
-        {
-            char * param1 = strtok(args, " ");
-            uint32 minItems = (uint32) strtoul(param1, NULL, 0);
-            WorldDatabase.Execute("UPDATE mod_auctionhousebot SET minitems = '{}' WHERE auctionhouse = '{}'", minItems, ahMapID);
-            config->SetMinItems(minItems);
-        }
-        break;
-    case 2:     //max items
-        {
-            char * param1 = strtok(args, " ");
-            uint32 maxItems = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET maxitems = '{}' WHERE auctionhouse = '{}'", maxItems, ahMapID);
-            config->SetMaxItems(maxItems);
-        }
-        break;
-    case 12:        //buyer bidding interval
-        {
-            char * param1 = strtok(args, " ");
-            uint32 bidInterval = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET buyerbiddinginterval = '{}' WHERE auctionhouse = '{}'", bidInterval, ahMapID);
-            config->SetBiddingInterval(bidInterval);
-        }
-        break;
-    case 13:        //buyer bids per interval
-        {
-            char * param1 = strtok(args, " ");
-            uint32 bidsPerInterval = (uint32) strtoul(param1, NULL, 0);
-			WorldDatabase.Execute("UPDATE mod_auctionhousebot SET buyerbidsperinterval = '{}' WHERE auctionhouse = '{}'", bidsPerInterval, ahMapID);
-            config->SetBidsPerInterval(bidsPerInterval);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-void AuctionHouseBot::LoadValues(AHBConfig *config)
-{
-    if (debug_Out)
-        LOG_ERROR("module", "Start Settings for {} Auctionhouses:", WorldDatabase.Query("SELECT name FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<std::string_view>());
-
-    if (AHBSeller)
-    {
-        //load min and max items
-		config->SetMinItems(WorldDatabase.Query("SELECT minitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-		config->SetMaxItems(WorldDatabase.Query("SELECT maxitems FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        if (debug_Out)
-        {
-            LOG_ERROR("module", "minItems                = {}", config->GetMinItems());
-            LOG_ERROR("module", "maxItems                = {}", config->GetMaxItems());
-        }
-    }
-
-    if (AHBBuyer)
-    {
-        //load bidding interval
-		config->SetBiddingInterval(WorldDatabase.Query("SELECT buyerbiddinginterval FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        //load bids per interval
-		config->SetBidsPerInterval(WorldDatabase.Query("SELECT buyerbidsperinterval FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<uint32>());
-        if (debug_Out)
-        {
-            LOG_ERROR("module", "buyerBiddingInterval    = {}", config->GetBiddingInterval());
-            LOG_ERROR("module", "buyerBidsPerInterval    = {}", config->GetBidsPerInterval());
-        }
-    }
-
-    if (debug_Out)
-        LOG_ERROR("module", "End Settings for {} Auctionhouses:", WorldDatabase.Query("SELECT name FROM mod_auctionhousebot WHERE auctionhouse = {}", config->GetAHID())->Fetch()->Get<std::string>());
 }

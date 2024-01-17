@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008-2010 Trinity <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2023+ Nathan Handley <https://github.com/NathanHandley>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -169,7 +170,6 @@ private:
     void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
-    void addProducedItemsToDisabledItems();
 
     AuctionHouseBot();
 
@@ -184,11 +184,9 @@ public:
     void Update();
     void Initialize();
     void InitializeConfiguration();
-    void LoadValues(AHBConfig*);
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
     void AddDisabledItems(std::string disabledItemIdString);
-    void Commands(uint32 command, uint32 ahMapID, char* args);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };
 

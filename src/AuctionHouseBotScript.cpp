@@ -14,7 +14,7 @@ class AHBot_WorldScript : public WorldScript
 public:
     AHBot_WorldScript() : WorldScript("AHBot_WorldScript") { }
 
-    void OnBeforeConfigLoad(bool /*reload*/) override
+    void OnAfterConfigLoad(bool /*reload*/) override
     {
         auctionbot->InitializeConfiguration();
     }
