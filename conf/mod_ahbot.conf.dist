@@ -34,7 +34,7 @@ AuctionHouseBot.EnableSeller = 1
 AuctionHouseBot.EnableBuyer = 1
 AuctionHouseBot.Account = 14
 AuctionHouseBot.GUID = 3
-AuctionHouseBot.ItemsPerCycle = 100
+AuctionHouseBot.ItemsPerCycle = 75
 
 ###############################################################################
 #    AuctionHouseBot.<faction>.MinItems
