@@ -90,8 +90,8 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
 
-    // Set a minimum base buyoutPrice to 5-15 silver for non-projectiles and non-common trade goods
-    if (outBuyoutPrice < 500 && (itemProto->Class != ITEM_CLASS_PROJECTILE && !(itemProto->Class == ITEM_CLASS_TRADE_GOODS && itemProto->Quality == ITEM_QUALITY_NORMAL)))
+    // Set a minimum base buyoutPrice to 5-15 silver for non projectiles and non trade goods
+    if (outBuyoutPrice < 500 && itemProto->Class != ITEM_CLASS_PROJECTILE && itemProto->Class != ITEM_CLASS_TRADE_GOODS)
     {
         // TODO: Move to a config
         outBuyoutPrice = urand(500, 1500);
@@ -107,10 +107,18 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
             outBuyoutPrice = urand(twoTimesSellPrice, threeTimeSellPrice);
         }
 
-        // Calculate a minimum base price for trade goods factoring in the item level
+        // Calculate a minimum base price for trade goods factoring in the item level and quality
         if (itemProto->ItemLevel > 0)
         {
-            uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, 1.8));
+            double powValue = 1.8;
+            switch (itemProto->Quality)
+            {
+            case ITEM_QUALITY_UNCOMMON:     powValue = 1.8; break;
+            case ITEM_QUALITY_RARE:         powValue = 2; break;
+            case ITEM_QUALITY_EPIC:         powValue = 2.3; break;
+            default: break;
+            }
+            uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, powValue));
             if (minPossiblePrice > outBuyoutPrice)
             {
                 outBuyoutPrice = urand(minPossiblePrice, minPossiblePrice * 1.2);
