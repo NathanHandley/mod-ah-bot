@@ -114,14 +114,14 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
             switch (itemProto->Quality)
             {
             case ITEM_QUALITY_UNCOMMON:     powValue = 1.8; break;
-            case ITEM_QUALITY_RARE:         powValue = 2; break;
-            case ITEM_QUALITY_EPIC:         powValue = 2.3; break;
+            case ITEM_QUALITY_RARE:         powValue = 1.9; break;
+            case ITEM_QUALITY_EPIC:         powValue = 2.1; break;
             default: break;
             }
             uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, powValue));
             if (minPossiblePrice > outBuyoutPrice)
             {
-                outBuyoutPrice = urand(minPossiblePrice, minPossiblePrice * 1.2);
+                outBuyoutPrice = urand(minPossiblePrice, minPossiblePrice * 1.1);
             }
         }
     }
