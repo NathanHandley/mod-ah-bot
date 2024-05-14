@@ -2,8 +2,6 @@
 
 You have to use at least AzerothCore commit [9adba48](https://github.com/azerothcore/azerothcore-wotlk/commit/9adba482c236f1087d66a672e97a99f763ba74b3).
 
-If you use an old version of this module (such as the parent fork), re-run the mod_auctionhousebot.sql found in the data/sql/db-world/base/ folder
-
 ## Description
 
 A fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house.  It also fixes many bugs such as glyphs not showing up
