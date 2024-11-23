@@ -27,6 +27,7 @@ This character will sell and buy items in the auction house so give him a good n
 Notes:
 - The account used does not need any security level and can be a player account.
 - The character used by the ahbot is not meant to be used ingame. If you use it to browse the auction house, you might have issues like "Searching for items..." displaying forever.
+- Important!  By default, most player crafted items (except glyphs) are disabled from showing up in the auction house in order to encourage player crafting on lower pop servers.  If you want different behavior, alter the config variable "AuctionHouseBot.DisabledCraftedItemIDs" by deleting IDs you wish to show up.
 
 ## Credits
 
