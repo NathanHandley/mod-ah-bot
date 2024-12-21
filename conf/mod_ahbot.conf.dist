@@ -105,12 +105,6 @@ AuctionHouseBot.RandomStackRatio.Misc = 100
 AuctionHouseBot.RandomStackRatio.Glyph = 0
 
 ###############################################################################
-#    AuctionHouseBot.PrimaryProfTradeGoodRelativeMultiplier
-#        This is 
-#    Default: 15000 for both
-###############################################################################
-
-###############################################################################
 #    AuctionHouseBot.DisabledItemTextFilter
 #        If true, this will hide items with bad names like "OLD" and "D'Sak"
 #    Default: True

@@ -1,10 +1,16 @@
 ## Important notes
 
-You have to use at least AzerothCore commit [9adba48](https://github.com/azerothcore/azerothcore-wotlk/commit/9adba482c236f1087d66a672e97a99f763ba74b3).
+You have to use at least AzerothCore commit https://github.com/azerothcore/azerothcore-wotlk/commit/4d349e87b53b4921568163d8189369a62ab2d0f5.
 
 ## Description
 
-A fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house.  It also fixes many bugs such as glyphs not showing up
+A fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house.  Most notable differences:
+ - Things like Glyphs show up
+ - Auction item stack sizes are customizable and more 'realistic'
+ - The buyer bot's buying amounts and behavior was changed substantially
+ - A separate set of exclusion item IDs was added to have crafted items listed, to encourage gathing professions.
+	- Empty the list to have crafted goods appear in the AH, or use other IDs you want to keep separate
+ - Moved database configuration completely to config
 
 ## Installation
 
