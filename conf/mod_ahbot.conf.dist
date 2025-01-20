@@ -67,7 +67,7 @@ AuctionHouseBot.Neutral.BidsPerInterval = 1
 ###############################################################################
 #    AuctionHouseBot.ListProportion.*
 #        Determines how many of the listings, proportionally, show up as new auctions
-#		 "0" will mean the item never shows up
+#		 "0" will mean the item never shows up.  Values must be whole numbers.
 #       Defaults:    Consumable: 2
 #                    Container: 2
 #                    Weapon: 6
@@ -100,6 +100,39 @@ AuctionHouseBot.ListProportion.Quest = 2
 AuctionHouseBot.ListProportion.Key = 1
 AuctionHouseBot.ListProportion.Misc = 0
 AuctionHouseBot.ListProportion.Glyph = 2
+
+###############################################################################
+#    AuctionHouseBot.PriceMultiplier.*
+#        Category/Quality-level modifier values for the prices of items, which can be
+#        represented as decimal numbers, and must be > 0.  Keep in mind that
+#		 the pricing algorithm has many steps to it and this is just a tuning
+#        modifier.
+###############################################################################
+
+AuctionHouseBot.PriceMultiplier.Category.Consumable = 1
+AuctionHouseBot.PriceMultiplier.Category.Container = 1
+AuctionHouseBot.PriceMultiplier.Category.Weapon = 1
+AuctionHouseBot.PriceMultiplier.Category.Gem = 1
+AuctionHouseBot.PriceMultiplier.Category.Armor = 1
+AuctionHouseBot.PriceMultiplier.Category.Reagent = 1 
+AuctionHouseBot.PriceMultiplier.Category.Projectile = 1
+AuctionHouseBot.PriceMultiplier.Category.TradeGood = 2
+AuctionHouseBot.PriceMultiplier.Category.Generic = 1
+AuctionHouseBot.PriceMultiplier.Category.Recipe = 1
+AuctionHouseBot.PriceMultiplier.Category.Quiver = 1
+AuctionHouseBot.PriceMultiplier.Category.Quest = 1
+AuctionHouseBot.PriceMultiplier.Category.Key = 1
+AuctionHouseBot.PriceMultiplier.Category.Misc = 1
+AuctionHouseBot.PriceMultiplier.Category.Glyph = 1
+
+AuctionHouseBot.PriceMultiplier.Quality.Poor = 1
+AuctionHouseBot.PriceMultiplier.Quality.Normal = 1
+AuctionHouseBot.PriceMultiplier.Quality.Uncommon = 1.8
+AuctionHouseBot.PriceMultiplier.Quality.Rare = 1.9
+AuctionHouseBot.PriceMultiplier.Quality.Epic = 2.1
+AuctionHouseBot.PriceMultiplier.Quality.Legendary = 3
+AuctionHouseBot.PriceMultiplier.Quality.Artifact = 3
+AuctionHouseBot.PriceMultiplier.Quality.Heirloom = 3
 
 ###############################################################################
 #    AuctionHouseBot.RandomStackRatio.*

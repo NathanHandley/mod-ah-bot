@@ -113,12 +113,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
             double powValue = 1.8;
             switch (itemProto->Quality)
             {
-            case ITEM_QUALITY_UNCOMMON:     powValue = 1.8; break;
-            case ITEM_QUALITY_RARE:         powValue = 1.9; break;
-            case ITEM_QUALITY_EPIC:         powValue = 2.1; break;
-            default: break;
-            }
-            uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, powValue));
+            uint32 minPossiblePrice = (uint32)(pow((double)itemProto->ItemLevel, qualityPriceMultplier));
             if (minPossiblePrice > outBuyoutPrice)
             {
                 outBuyoutPrice = urand(minPossiblePrice, minPossiblePrice * 1.1);
@@ -133,14 +128,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     }
 
     // Multiply the price based on quality
-    switch (itemProto->Quality)
-    {
-    case ITEM_QUALITY_UNCOMMON:     outBuyoutPrice *= 2; break;
-    case ITEM_QUALITY_RARE:         outBuyoutPrice *= 5; break;
-    case ITEM_QUALITY_EPIC:         outBuyoutPrice *= 8; break;
-    case ITEM_QUALITY_LEGENDARY:    outBuyoutPrice *= 13; break;
-    default: break;
-    }
+    outBuyoutPrice *= qualityPriceMultplier;
 
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
