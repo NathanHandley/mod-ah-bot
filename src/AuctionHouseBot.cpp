@@ -792,21 +792,21 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
 
     // List Proportions
-    ListProportionConsumable = GetRandomStackValue("AuctionHouseBot.ListProportion.Consumable", 2);
-    ListProportionContainer = GetRandomStackValue("AuctionHouseBot.ListProportion.Container", 2);
-    ListProportionWeapon = GetRandomStackValue("AuctionHouseBot.ListProportion.Weapon", 6);
-    ListProportionGem = GetRandomStackValue("AuctionHouseBot.ListProportion.Gem", 2);
-    ListProportionArmor = GetRandomStackValue("AuctionHouseBot.ListProportion.Armor", 6);
-    ListProportionReagent = GetRandomStackValue("AuctionHouseBot.ListProportion.Reagent", 1);
-    ListProportionProjectile = GetRandomStackValue("AuctionHouseBot.ListProportion.Projectile", 2);
-    ListProportionTradeGood = GetRandomStackValue("AuctionHouseBot.ListProportion.TradeGood", 22);
-    ListProportionGeneric = GetRandomStackValue("AuctionHouseBot.ListProportion.Generic", 1);
-    ListProportionRecipe = GetRandomStackValue("AuctionHouseBot.ListProportion.Recipe", 3);
-    ListProportionQuiver = GetRandomStackValue("AuctionHouseBot.ListProportion.Quiver", 1);
-    ListProportionQuest = GetRandomStackValue("AuctionHouseBot.ListProportion.Quest", 2);
-    ListProportionKey = GetRandomStackValue("AuctionHouseBot.ListProportion.Key", 1);
-    ListProportionMisc = GetRandomStackValue("AuctionHouseBot.ListProportion.Misc", 0);
-    ListProportionGlyph = GetRandomStackValue("AuctionHouseBot.ListProportion.Glyph", 2);
+    ListProportionConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Consumable", 2);
+    ListProportionContainer = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Container", 2);
+    ListProportionWeapon = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Weapon", 6);
+    ListProportionGem = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Gem", 2);
+    ListProportionArmor = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Armor", 6);
+    ListProportionReagent = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Reagent", 1);
+    ListProportionProjectile = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Projectile", 2);
+    ListProportionTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.TradeGood", 22);
+    ListProportionGeneric = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Generic", 1);
+    ListProportionRecipe = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Recipe", 3);
+    ListProportionQuiver = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Quiver", 1);
+    ListProportionQuest = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Quest", 2);
+    ListProportionKey = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Key", 1);
+    ListProportionMisc = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Misc", 0);
+    ListProportionGlyph = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Glyph", 2);
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
