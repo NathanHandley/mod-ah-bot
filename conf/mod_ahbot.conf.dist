@@ -65,6 +65,43 @@ AuctionHouseBot.Neutral.BidInterval = 1
 AuctionHouseBot.Neutral.BidsPerInterval = 1
 
 ###############################################################################
+#    AuctionHouseBot.ListProportion.*
+#        Determines how many of the listings, proportionally, show up as new auctions
+#		 "0" will mean the item never shows up
+#       Defaults:    Consumable: 2
+#                    Container: 2
+#                    Weapon: 6
+#                    Gem: 2
+#                    Armor: 6
+#                    Reagent: 1
+#                    Projectile: 2
+#                    TradeGood: 22
+#                    Generic: 1
+#                    Recipe: 3
+#                    Quiver: 1
+#                    Quest: 2
+#                    Key: 1
+#                    Misc: 0
+#                    Glyph: 2
+###############################################################################
+
+AuctionHouseBot.ListProportion.Consumable = 2
+AuctionHouseBot.ListProportion.Container = 2
+AuctionHouseBot.ListProportion.Weapon = 6
+AuctionHouseBot.ListProportion.Gem = 2
+AuctionHouseBot.ListProportion.Armor = 6
+AuctionHouseBot.ListProportion.Reagent = 1 
+AuctionHouseBot.ListProportion.Projectile = 2
+AuctionHouseBot.ListProportion.TradeGood = 22
+AuctionHouseBot.ListProportion.Generic = 1
+AuctionHouseBot.ListProportion.Recipe = 3
+AuctionHouseBot.ListProportion.Quiver = 1
+AuctionHouseBot.ListProportion.Quest = 2
+AuctionHouseBot.ListProportion.Key = 1
+AuctionHouseBot.ListProportion.Misc = 0
+AuctionHouseBot.ListProportion.Glyph = 2
+
+###############################################################################
 #    AuctionHouseBot.RandomStackRatio.*
 #        Used to determine how often a stack of the class will be single or randomly-size stacked when posted
 #        Value needs to be between 0 and 100, no decimal.  Anything higher than 100 will be treated as 100
@@ -115,6 +152,8 @@ AuctionHouseBot.RandomStackRatio.Glyph = 0
 #
 #    AuctionHouseBot.DisabledCraftedItemIDs
 #        Additional Comma separated list of itemIDs to exclude from listing by the seller
+#        which were originally put in to remove crafted items and fish, in order
+#        encourage people to level their tradeskills
 #        Ranges using a dash (-) can also be used
 ###############################################################################
 

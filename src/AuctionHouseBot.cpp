@@ -176,49 +176,32 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
 {
     for (uint32 i = 0; i < itemClassSeedWeight; ++i)
-        itemCandidateClassWeightedSeedList.push_back(itemClass);
+        itemCandidateClassWeightedProportionList.push_back(itemClass);
 }
 
-void AuctionHouseBot::populateItemClassSeedList()
+void AuctionHouseBot::populateItemClassProportionList()
 {
     // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
 
-    // TODO: Move these weight items to a config
-    uint32 itemClassSeedWeightConsumable = 2;
-    uint32 itemClassSeedWeightContainer = 2;
-    uint32 itemClassSeedWeightWeapon = 6;
-    uint32 itemClassSeedWeightGem = 2;
-    uint32 itemClassSeedWeightArmor = 6;
-    uint32 itemClassSeedWeightReagent = 1;
-    uint32 itemClassSeedWeightProjectile = 2;
-    uint32 itemClassSeedWeightTradeGoods = 22;
-    uint32 itemClassSeedWeightGeneric = 1;
-    uint32 itemClassSeedWeightRecipe = 3;
-    uint32 itemClassSeedWeightQuiver = 1;
-    uint32 itemClassSeedWeightQuest = 2;
-    uint32 itemClassSeedWeightKey = 1;
-    uint32 itemClassSeedWeightMisc = 0;
-    uint32 itemClassSeedWeightGlyph = 2;
-
     // Clear old list
-    itemCandidateClassWeightedSeedList.clear();
+    itemCandidateClassWeightedProportionList.clear();
 
     // Fill the list
-    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, itemClassSeedWeightConsumable);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, itemClassSeedWeightContainer);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, itemClassSeedWeightWeapon);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, itemClassSeedWeightGem);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_ARMOR, itemClassSeedWeightArmor);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_REAGENT, itemClassSeedWeightReagent);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_PROJECTILE, itemClassSeedWeightProjectile);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_TRADE_GOODS, itemClassSeedWeightTradeGoods);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GENERIC, itemClassSeedWeightGeneric);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_RECIPE, itemClassSeedWeightRecipe);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_QUIVER, itemClassSeedWeightQuiver);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_QUEST, itemClassSeedWeightQuest);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_KEY, itemClassSeedWeightKey);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_MISC, itemClassSeedWeightMisc);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, itemClassSeedWeightGlyph);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, ListProportionConsumable);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, ListProportionContainer);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, ListProportionWeapon);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, ListProportionGem);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_ARMOR, ListProportionArmor);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_REAGENT, ListProportionReagent);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_PROJECTILE, ListProportionProjectile);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_TRADE_GOODS, ListProportionTradeGood);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GENERIC, ListProportionGeneric);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_RECIPE, ListProportionRecipe);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUIVER, ListProportionQuiver);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_QUEST, ListProportionQuest);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_KEY, ListProportionKey);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_MISC, ListProportionMisc);
+    populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, ListProportionGlyph);
 }
 
 void AuctionHouseBot::populateItemCandidateList()
@@ -278,7 +261,7 @@ void AuctionHouseBot::populateItemCandidateList()
         }
 
         // Skip any items not in the seed list
-        if (std::find(itemCandidateClassWeightedSeedList.begin(), itemCandidateClassWeightedSeedList.end(), itr->second.Class) == itemCandidateClassWeightedSeedList.end())
+        if (std::find(itemCandidateClassWeightedProportionList.begin(), itemCandidateClassWeightedProportionList.end(), itr->second.Class) == itemCandidateClassWeightedProportionList.end())
             continue;
 
         // Skip any BOP items
@@ -485,7 +468,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
         // Pull a random item out of the candidate list
-        uint32 chosenItemClass = itemCandidateClassWeightedSeedList[urand(0, itemCandidateClassWeightedSeedList.size() - 1)];
+        uint32 chosenItemClass = itemCandidateClassWeightedProportionList[urand(0, itemCandidateClassWeightedProportionList.size() - 1)];
         uint32 itemID = 0;
         if (itemCandidatesByItemClass[chosenItemClass].size() != 0)
             itemID = itemCandidatesByItemClass[chosenItemClass][urand(0, itemCandidatesByItemClass[chosenItemClass].size() - 1)];
@@ -775,7 +758,7 @@ void AuctionHouseBot::Update()
 void AuctionHouseBot::Initialize()
 {
     // Build a list of items that can be pulled from for auction
-    populateItemClassSeedList();
+    populateItemClassProportionList();
     populateItemCandidateList();
 }
 
@@ -807,6 +790,23 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Key", 10);
     RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Misc", 100);
     RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
+
+    // List Proportions
+    ListProportionConsumable = GetRandomStackValue("AuctionHouseBot.ListProportion.Consumable", 2);
+    ListProportionContainer = GetRandomStackValue("AuctionHouseBot.ListProportion.Container", 2);
+    ListProportionWeapon = GetRandomStackValue("AuctionHouseBot.ListProportion.Weapon", 6);
+    ListProportionGem = GetRandomStackValue("AuctionHouseBot.ListProportion.Gem", 2);
+    ListProportionArmor = GetRandomStackValue("AuctionHouseBot.ListProportion.Armor", 6);
+    ListProportionReagent = GetRandomStackValue("AuctionHouseBot.ListProportion.Reagent", 1);
+    ListProportionProjectile = GetRandomStackValue("AuctionHouseBot.ListProportion.Projectile", 2);
+    ListProportionTradeGood = GetRandomStackValue("AuctionHouseBot.ListProportion.TradeGood", 22);
+    ListProportionGeneric = GetRandomStackValue("AuctionHouseBot.ListProportion.Generic", 1);
+    ListProportionRecipe = GetRandomStackValue("AuctionHouseBot.ListProportion.Recipe", 3);
+    ListProportionQuiver = GetRandomStackValue("AuctionHouseBot.ListProportion.Quiver", 1);
+    ListProportionQuest = GetRandomStackValue("AuctionHouseBot.ListProportion.Quest", 2);
+    ListProportionKey = GetRandomStackValue("AuctionHouseBot.ListProportion.Key", 1);
+    ListProportionMisc = GetRandomStackValue("AuctionHouseBot.ListProportion.Misc", 0);
+    ListProportionGlyph = GetRandomStackValue("AuctionHouseBot.ListProportion.Glyph", 2);
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);

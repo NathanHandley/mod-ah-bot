@@ -151,8 +151,23 @@ private:
     uint32 RandomStackRatioKey;
     uint32 RandomStackRatioMisc;
     uint32 RandomStackRatioGlyph;
-    std::vector<uint32> itemCandidateClassWeightedSeedList;
+    std::vector<uint32> itemCandidateClassWeightedProportionList;
     std::map<uint32, std::vector<uint32>> itemCandidatesByItemClass;
+    uint32 ListProportionConsumable;
+    uint32 ListProportionContainer;
+    uint32 ListProportionWeapon;
+    uint32 ListProportionGem;
+    uint32 ListProportionArmor;
+    uint32 ListProportionReagent;
+    uint32 ListProportionProjectile;
+    uint32 ListProportionTradeGood;
+    uint32 ListProportionGeneric;
+    uint32 ListProportionRecipe;
+    uint32 ListProportionQuiver;
+    uint32 ListProportionQuest;
+    uint32 ListProportionKey;
+    uint32 ListProportionMisc;
+    uint32 ListProportionGlyph;
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
@@ -166,7 +181,7 @@ private:
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
-    void populateItemClassSeedList();
+    void populateItemClassProportionList();
     void populateItemCandidateList();
     void addNewAuctions(Player *AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session);
