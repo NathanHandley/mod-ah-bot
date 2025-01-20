@@ -102,6 +102,30 @@ AuctionHouseBot.ListProportion.Misc = 0
 AuctionHouseBot.ListProportion.Glyph = 2
 
 ###############################################################################
+#    AuctionHouseBot.PriceMinimumCenterBase.*
+#        Category-level price minimums, in copper, before any multipliers come
+#        into play.  Value shouldn't be zero, and the base minimum price will
+#        actually be a +/- 50% range of this value.  Used to catch 0 cost or
+#        extremely low cost items
+###############################################################################
+
+AuctionHouseBot.PriceMinimumCenterBase.Consumable = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Container = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Weapon = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Gem = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Armor = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Reagent = 1000 
+AuctionHouseBot.PriceMinimumCenterBase.Projectile = 5
+AuctionHouseBot.PriceMinimumCenterBase.TradeGood = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Generic = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Recipe = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Quiver = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Quest = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Key = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Misc = 1000
+AuctionHouseBot.PriceMinimumCenterBase.Glyph = 1000
+
+###############################################################################
 #    AuctionHouseBot.PriceMultiplier.*
 #        Category/Quality-level modifier values for the prices of items, which can be
 #        represented as decimal numbers, and must be > 0.  Keep in mind that
