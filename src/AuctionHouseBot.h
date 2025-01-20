@@ -206,6 +206,7 @@ private:
     uint32 PriceMinimumCenterBaseKey;
     uint32 PriceMinimumCenterBaseMisc;
     uint32 PriceMinimumCenterBaseGlyph;
+    std::unordered_map<uint32, uint64> PriceMinimumCenterBaseOverridesByItemID;
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
@@ -240,6 +241,7 @@ public:
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
     void AddDisabledItems(std::string disabledItemIdString);
+    void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
     ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
 };
 

@@ -127,30 +127,38 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     }
 
     // Grab the minimum prices
-    int PriceMinimumCenterBase = 1000;
-    switch (itemProto->Class)
+    uint64 PriceMinimumCenterBase = 1000;
+    auto it = PriceMinimumCenterBaseOverridesByItemID.find(itemProto->ItemId);
+    if (it != PriceMinimumCenterBaseOverridesByItemID.end())
+        PriceMinimumCenterBase = it->second;
+    else
     {
-    case ITEM_CLASS_CONSUMABLE:     PriceMinimumCenterBase = PriceMinimumCenterBaseConsumable; break;
-    case ITEM_CLASS_CONTAINER:      PriceMinimumCenterBase = PriceMinimumCenterBaseContainer; break;
-    case ITEM_CLASS_WEAPON:         PriceMinimumCenterBase = PriceMinimumCenterBaseWeapon; break;
-    case ITEM_CLASS_GEM:            PriceMinimumCenterBase = PriceMinimumCenterBaseGem; break;
-    case ITEM_CLASS_REAGENT:        PriceMinimumCenterBase = PriceMinimumCenterBaseReagent; break;
-    case ITEM_CLASS_ARMOR:          PriceMinimumCenterBase = PriceMinimumCenterBaseArmor; break;
-    case ITEM_CLASS_PROJECTILE:     PriceMinimumCenterBase = PriceMinimumCenterBaseProjectile; break;
-    case ITEM_CLASS_TRADE_GOODS:    PriceMinimumCenterBase = PriceMinimumCenterBaseTradeGood; break;
-    case ITEM_CLASS_GENERIC:        PriceMinimumCenterBase = PriceMinimumCenterBaseGeneric; break;
-    case ITEM_CLASS_RECIPE:         PriceMinimumCenterBase = PriceMinimumCenterBaseRecipe; break;
-    case ITEM_CLASS_QUIVER:         PriceMinimumCenterBase = PriceMinimumCenterBaseQuiver; break;
-    case ITEM_CLASS_QUEST:          PriceMinimumCenterBase = PriceMinimumCenterBaseQuest; break;
-    case ITEM_CLASS_KEY:            PriceMinimumCenterBase = PriceMinimumCenterBaseKey; break;
-    case ITEM_CLASS_MISC:           PriceMinimumCenterBase = PriceMinimumCenterBaseMisc; break;
-    case ITEM_CLASS_GLYPH:          PriceMinimumCenterBase = PriceMinimumCenterBaseGlyph; break;
-    default:                        break;
+        switch (itemProto->Class)
+        {
+        case ITEM_CLASS_CONSUMABLE:     PriceMinimumCenterBase = PriceMinimumCenterBaseConsumable; break;
+        case ITEM_CLASS_CONTAINER:      PriceMinimumCenterBase = PriceMinimumCenterBaseContainer; break;
+        case ITEM_CLASS_WEAPON:         PriceMinimumCenterBase = PriceMinimumCenterBaseWeapon; break;
+        case ITEM_CLASS_GEM:            PriceMinimumCenterBase = PriceMinimumCenterBaseGem; break;
+        case ITEM_CLASS_REAGENT:        PriceMinimumCenterBase = PriceMinimumCenterBaseReagent; break;
+        case ITEM_CLASS_ARMOR:          PriceMinimumCenterBase = PriceMinimumCenterBaseArmor; break;
+        case ITEM_CLASS_PROJECTILE:     PriceMinimumCenterBase = PriceMinimumCenterBaseProjectile; break;
+        case ITEM_CLASS_TRADE_GOODS:    PriceMinimumCenterBase = PriceMinimumCenterBaseTradeGood; break;
+        case ITEM_CLASS_GENERIC:        PriceMinimumCenterBase = PriceMinimumCenterBaseGeneric; break;
+        case ITEM_CLASS_RECIPE:         PriceMinimumCenterBase = PriceMinimumCenterBaseRecipe; break;
+        case ITEM_CLASS_QUIVER:         PriceMinimumCenterBase = PriceMinimumCenterBaseQuiver; break;
+        case ITEM_CLASS_QUEST:          PriceMinimumCenterBase = PriceMinimumCenterBaseQuest; break;
+        case ITEM_CLASS_KEY:            PriceMinimumCenterBase = PriceMinimumCenterBaseKey; break;
+        case ITEM_CLASS_MISC:           PriceMinimumCenterBase = PriceMinimumCenterBaseMisc; break;
+        case ITEM_CLASS_GLYPH:          PriceMinimumCenterBase = PriceMinimumCenterBaseGlyph; break;
+        default:                        break;
+        }
     }
 
     // Set the minimum price
     if (outBuyoutPrice < PriceMinimumCenterBase)
         outBuyoutPrice = urand(PriceMinimumCenterBase * 0.5, PriceMinimumCenterBase * 1.5);
+    else
+        outBuyoutPrice = urand(outBuyoutPrice * 0.5, outBuyoutPrice * 1.5);
 
     // Multiply the price based on multipliers
     outBuyoutPrice *= qualityPriceMultplier;
@@ -161,23 +169,20 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBuyoutPrice = itemProto->SellPrice;
 
     // Calculate buyout price with a variance
-    uint64 sellVarianceBuyoutPriceTopPercent = 130;
-    uint64 sellVarianceBuyoutPriceBottomPercent = 70;
+    float sellVarianceBuyoutPriceTopPercent = 1.30;
+    float sellVarianceBuyoutPriceBottomPercent = 0.70;
     outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
-    outBuyoutPrice /= 100;
 
     // Calculate a bid price based on a variance against buyout price
-    uint64 sellVarianceBidPriceTopPercent = 100;
-    uint64 sellVarianceBidPriceBottomPercent = 75;
+    float sellVarianceBidPriceTopPercent = 1;
+    float sellVarianceBidPriceBottomPercent = .75;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
-    outBidPrice /= 100;
 
     // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
     if (outBuyoutPrice < itemProto->SellPrice)
     {
-        uint64 minLowPriceAddVariancePercent = 125;
-        outBuyoutPrice = urand(100 * itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
-        outBuyoutPrice /= 100;
+        float minLowPriceAddVariancePercent = 1.25;
+        outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
     }
 
     // Bid price can never be below sell price
@@ -254,7 +259,7 @@ void AuctionHouseBot::populateItemCandidateList()
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
     for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
     {
-        // Never store itemID zero
+        // Never store curBlock zero
         if (itr->second.ItemId == 0)
             continue;
 
@@ -863,6 +868,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMinimumCenterBaseKey = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Key", 1000);
     PriceMinimumCenterBaseMisc = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Misc", 1000);
     PriceMinimumCenterBaseGlyph = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Glyph", 1000);
+    AddPriceMinimumOverrides(sConfigMgr->GetOption<std::string>("AuctionHouseBot.PriceMinimumCenterBase.OverrideItems", ""));
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
@@ -957,6 +963,30 @@ void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
         {
             auto itemId = atoi(valueOne.c_str());
             AddToDisabledItems(DisabledItems, itemId);
+        }
+    }
+}
+
+void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverridesString)
+{
+    std::string delimitedValue;
+    std::stringstream priceMinimumStream;
+    priceMinimumStream.str(priceMinimimOverridesString);
+    while (std::getline(priceMinimumStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    {
+        std::string curBlock;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> curBlock;
+
+        // Only process if it has a colon (:)
+        if (curBlock.find(":") != std::string::npos)
+        {
+            std::string itemIDString = curBlock.substr(0, curBlock.find(":"));
+            auto itemId = atoi(itemIDString.c_str());
+            std::string priceInCopper = curBlock.substr(curBlock.find(":") + 1);
+            auto copperPrice = atoi(priceInCopper.c_str());
+            if (itemId > 0 && copperPrice > 0)
+                PriceMinimumCenterBaseOverridesByItemID.insert({itemId, copperPrice});
         }
     }
 }

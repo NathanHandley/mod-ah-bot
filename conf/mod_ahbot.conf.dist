@@ -126,6 +126,15 @@ AuctionHouseBot.PriceMinimumCenterBase.Misc = 1000
 AuctionHouseBot.PriceMinimumCenterBase.Glyph = 1000
 
 ###############################################################################
+#    AuctionHouseBot.PriceMinimumCenterBase.OverrideItems
+#        Comma separated list of items in the format of "itemID:PriceMinCopper"
+#	 Example: "2589:1000000,4306:100000" would set the minimum price center
+#      of linen cloth to 100 gold and silk cloth to 10 gold each
+###############################################################################
+
+AuctionHouseBot.PriceMinimumCenterBase.OverrideItems = 
+
+###############################################################################
 #    AuctionHouseBot.PriceMultiplier.*
 #        Category/Quality-level modifier values for the prices of items, which can be
 #        represented as decimal numbers, and must be > 0.  Keep in mind that
