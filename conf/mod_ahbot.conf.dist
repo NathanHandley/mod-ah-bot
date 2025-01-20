@@ -105,7 +105,7 @@ AuctionHouseBot.ListProportion.Glyph = 2
 #    AuctionHouseBot.PriceMinimumCenterBase.*
 #        Category-level price minimums, in copper, before any multipliers come
 #        into play.  Value shouldn't be zero, and the base minimum price will
-#        actually be a +/- 50% range of this value.  Used to catch 0 cost or
+#        actually be a +/- 25% range of this value.  Used to catch 0 cost or
 #        extremely low cost items
 ###############################################################################
 
@@ -128,6 +128,8 @@ AuctionHouseBot.PriceMinimumCenterBase.Glyph = 1000
 ###############################################################################
 #    AuctionHouseBot.PriceMinimumCenterBase.OverrideItems
 #        Comma separated list of items in the format of "itemID:PriceMinCopper"
+#        which is an override of the PriceMinimumCenterBase", a value that is
+#        used before variation and multipliers
 #	 Example: "2589:1000000,4306:100000" would set the minimum price center
 #      of linen cloth to 100 gold and silk cloth to 10 gold each
 ###############################################################################

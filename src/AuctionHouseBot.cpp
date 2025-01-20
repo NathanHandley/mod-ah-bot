@@ -156,9 +156,9 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Set the minimum price
     if (outBuyoutPrice < PriceMinimumCenterBase)
-        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.5, PriceMinimumCenterBase * 1.5);
+        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.75, PriceMinimumCenterBase * 1.25);
     else
-        outBuyoutPrice = urand(outBuyoutPrice * 0.5, outBuyoutPrice * 1.5);
+        outBuyoutPrice = urand(outBuyoutPrice * 0.75, outBuyoutPrice * 1.25);
 
     // Multiply the price based on multipliers
     outBuyoutPrice *= qualityPriceMultplier;
