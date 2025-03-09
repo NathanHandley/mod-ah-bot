@@ -2,7 +2,6 @@
 
 ###############################################################################
 # AUCTION HOUSE BOT SETTINGS
-#
 #    AuctionHouseBot.DEBUG
 #        Enable/Disable Debugging output
 #    Default 0 (disabled)
@@ -19,21 +18,32 @@
 #        Enable/Disable the part of AHBot that buys items from players
 #    Default 0 (disabled)
 #
-#    Auction House Bot character data
-#        AuctionHouseBot.Account is the account number
-#         (in realmd->account table) of the player you want to run
-#         as the auction bot.
-#        AuctionHouseBot.GUID is the GUID (in characters->characters table)
-#         of the player you want to run as the auction bot.
-#    Default: 0 (Auction House Bot disabled)
+#    AuctionHouseBot.GUIDs
+#        These are the character GUIDS (from characters->characters table) that
+#        will be used to create auctions and otherwise interact with auctions.
+#        It can be a single value or multiple values that are separated by a
+#        comma.  Note: a GUID of "0" will be ignored!
+#    Examples:
+#        AuctionHouseBot.GUIDs = 3 <- Only character with GUID 3
+#        AuctionHouseBot.GUIDs = 3,4 <- Both characters with GUID 3 and 4
+#
+#    AuctionHouseBot.BotsPerCycle
+#        If using more than one GUID, this is how many of them will come on
+#        to do auction behaviors each cycle.  Too many might impact performance
+#        since the bot sessions are created and destroyed.
+#    Default 1 (single random bot from GUID list)
+#
+#    AuctionHouseBot.ItemsPerCycle
+#        How many items to post on the auction house every house update
+#    Default 75
 ###############################################################################
 
 AuctionHouseBot.DEBUG = 0
 AuctionHouseBot.DEBUG_FILTERS = 0
 AuctionHouseBot.EnableSeller = 1
 AuctionHouseBot.EnableBuyer = 1
-AuctionHouseBot.Account = 14
-AuctionHouseBot.GUID = 3
+AuctionHouseBot.GUIDs = 42,43,44,45,46
+AuctionHouseBot.BotsPerCycle = 1
 AuctionHouseBot.ItemsPerCycle = 75
 
 ###############################################################################

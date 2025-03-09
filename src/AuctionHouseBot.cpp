@@ -728,10 +728,34 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
     }
 }
 
+void AuctionHouseBot::LoadBotSessions(std::vector<Player>& outPlayerSessions)
+{
+    // Determine number to load
+    uint32 numOfBotsToLoad = BotsPerCycle;
+    if (AHCharacters.size() < BotsPerCycle)
+        numOfBotsToLoad = AHCharacters.size();
+
+    // Build a shufflebag for char indices to pick from
+    std::deque<uint32> charGUIDBag;
+    for (AuctionHouseBotCharacter ahBot : AHCharacters)
+        charGUIDBag.push_back(ahBot.CharacterGUID);
+
+    // Pluck out the guids and load them one at a time
+    for (uint32 i = 0; i < numOfBotsToLoad; i++)
+    {
+
+
+
+
+    }
+}
+
 void AuctionHouseBot::Update()
 {
     time_t _newrun = time(NULL);
     if ((!AHBSeller) && (!AHBBuyer))
+        return;
+    if (AHCharacters.size() == 0)
         return;
 
     std::string accountName = "AuctionHouseBot" + std::to_string(AHBplayerAccount);
@@ -789,9 +813,11 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBSeller = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
 
-    AHBplayerAccount = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Account", 0);
-    AHBplayerGUID = sConfigMgr->GetOption<uint32>("AuctionHouseBot.GUID", 0);
-    ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 200);
+    AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", 0));
+    if (AHCharacters.size() == 0)
+        AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUID", 0)); // Backwards compat
+    ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
+    BotsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.BotsPerCycle", 1);
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
@@ -876,16 +902,6 @@ void AuctionHouseBot::InitializeConfiguration()
     AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
     AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""));
 
-    if ((AHBplayerAccount != 0) || (AHBplayerGUID != 0))
-    {
-        QueryResult result = CharacterDatabase.Query("SELECT 1 FROM characters WHERE account = {} AND guid = {}", AHBplayerAccount, AHBplayerGUID);
-        if (!result)
-        {
-            LOG_ERROR("module", "AuctionHouseBot: The account/GUID-information set for your AHBot is incorrect (account: {} guid: {})", AHBplayerAccount, AHBplayerGUID);
-            return;
-        }
-    }
-
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
         AllianceConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.MinItems", 15000));
@@ -926,6 +942,65 @@ void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemID
     {
         workingDisabledItemIDs.insert(disabledItemID);
     }
+}
+
+void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
+{
+    std::string delimitedValue;
+    std::stringstream characterGUIDStream;
+    std::set<uint32> characterGUIDs;
+
+    // Grab from the string
+    characterGUIDStream.str(characterGUIDString);
+    while (std::getline(characterGUIDStream, delimitedValue, ',')) // Process each charecter GUID in the string, delimited by the comma ","
+    {
+        std::string valueOne;
+        std::stringstream characterGUIDStream(delimitedValue);
+        characterGUIDStream >> valueOne;
+        auto characterGUID = atoi(valueOne.c_str());
+        if (characterGUID == 0)
+            continue;
+        if (characterGUIDs.find(characterGUID) != characterGUIDs.end())
+        {
+            if (debug_Out)
+                LOG_ERROR("module", "AuctionHouseBot: Duplicate character with GUID of {} found, skipping", characterGUID);
+        }
+        else
+            characterGUIDs.insert(characterGUID);
+    }
+
+    // Lookup accounts and add them
+    if (characterGUIDs.empty() == true)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: No character GUIDs were supplied. Be sure to set AuctionHouseBot.GUIDs");
+        return;
+    }
+    AHCharactersGUIDsForQuery = "";
+    bool first = true;
+    for (uint32 curGUID : characterGUIDs)
+    {
+        if (first == false)
+        {
+            AHCharactersGUIDsForQuery += ", ";
+        }
+        AHCharactersGUIDsForQuery += std::to_string(curGUID);
+        first = false;
+    }
+    QueryResult queryResult = CharacterDatabase.Query("SELECT `guid`, `account` FROM `characters` WHERE guid IN ({})", AHCharactersGUIDsForQuery);
+    if (!queryResult || queryResult->GetRowCount() == 0)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: No character GUIDs found when looking up values from AuctionHouseBot.GUIDs from the character database 'characters.guid'.");
+        return;
+    }
+    do
+    {
+        // Pull the data out
+        Field* fields = queryResult->Fetch();
+        uint32 guid = fields[0].Get<uint32>();
+        uint32 account = fields[1].Get<uint32>();
+        AuctionHouseBotCharacter curChar = AuctionHouseBotCharacter(account, guid);
+        AHCharacters.push_back(curChar);
+    } while (queryResult->NextRow());
 }
 
 void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
