@@ -135,6 +135,7 @@ class AuctionHouseBot
 {
 public:
     std::vector<AuctionHouseBotCharacter> AHCharacters;
+    uint32 CurrentBotCharGUID;
 
 private:
     bool debug_Out;
@@ -145,7 +146,6 @@ private:
 
     std::string AHCharactersGUIDsForQuery;
     uint32 ItemsPerCycle;
-    uint32 BotsPerCycle;
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
     uint32 RandomStackRatioConsumable;
@@ -234,8 +234,8 @@ private:
     void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
     void populateItemClassProportionList();
     void populateItemCandidateList();
-    void addNewAuctions(std::vector<Player*>& playerSessions, AHBConfig *config);
-    void addNewAuctionBuyerBotBid(std::vector<Player*>& playerSessions, AHBConfig *config);
+    void addNewAuctions(Player* AHBplayer, AHBConfig *config);
+    void addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config);
 
     AuctionHouseBot();
 
@@ -256,8 +256,6 @@ public:
     void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
     void AddDisabledItems(std::string disabledItemIdString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
-    //ObjectGuid::LowType GetAHBplayerGUID() { return AHBplayerGUID; };
-    void LoadBotSessions(std::vector<Player*>& outPlayerSessions);
 };
 
 #define auctionbot AuctionHouseBot::instance()
