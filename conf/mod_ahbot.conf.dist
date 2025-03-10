@@ -42,7 +42,7 @@ AuctionHouseBot.DEBUG = 0
 AuctionHouseBot.DEBUG_FILTERS = 0
 AuctionHouseBot.EnableSeller = 1
 AuctionHouseBot.EnableBuyer = 1
-AuctionHouseBot.GUIDs = 42,43,44,45,46
+AuctionHouseBot.GUIDs = 3
 AuctionHouseBot.BotsPerCycle = 1
 AuctionHouseBot.ItemsPerCycle = 75
 

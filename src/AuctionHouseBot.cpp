@@ -419,7 +419,7 @@ void AuctionHouseBot::populateItemCandidateList()
     }
 }
 
-void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
+void AuctionHouseBot::addNewAuctions(std::vector<Player*>& playerSessions, AHBConfig *config)
 {
     if (!AHBSeller)
     {
@@ -483,6 +483,9 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
     // only insert a few at a time, so as not to peg the processor
     for (uint32 cnt = 1; cnt <= items; cnt++)
     {
+        // Pick a random player session
+        Player* playerSession = playerSessions[urand(0, playerSessions.size() - 1)];
+
         if (debug_Out)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
@@ -508,14 +511,14 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
             continue;
         }
 
-        Item* item = Item::CreateItem(itemID, 1, AHBplayer);
+        Item* item = Item::CreateItem(itemID, 1, playerSession);
         if (item == NULL)
         {
             if (debug_Out)
                 LOG_ERROR("module", "AHSeller: Item::CreateItem() returned NULL");
             break;
         }
-        item->AddToUpdateQueueOf(AHBplayer);
+        item->AddToUpdateQueueOf(playerSession);
 
         uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(itemID);
         if (randomPropertyId != 0)
@@ -542,7 +545,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
 		auctionEntry->item_guid = item->GetGUID();
         auctionEntry->item_template = item->GetEntry();
         auctionEntry->itemCount = item->GetCount();
-        auctionEntry->owner = AHBplayer->GetGUID();
+        auctionEntry->owner = playerSession->GetGUID();
         auctionEntry->startbid = bidPrice * stackCount;
         auctionEntry->buyout = buyoutPrice * stackCount;
         auctionEntry->bid = 0;
@@ -550,7 +553,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
         auctionEntry->expire_time = (time_t) etime + time(NULL);
         auctionEntry->auctionHouseEntry = ahEntry;
         item->SaveToDB(trans);
-        item->RemoveFromUpdateQueueOf(AHBplayer);
+        item->RemoveFromUpdateQueueOf(playerSession);
         sAuctionMgr->AddAItem(item);
         auctionHouse->AddAuction(auctionEntry);
         auctionEntry->SaveToDB(trans);
@@ -558,7 +561,7 @@ void AuctionHouseBot::addNewAuctions(Player *AHBplayer, AHBConfig *config)
     }
 }
 
-void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *config, WorldSession *session)
+void AuctionHouseBot::addNewAuctionBuyerBotBid(std::vector<Player*>& playerSessions, AHBConfig *config)
 {
     if (!AHBBuyer)
     {
@@ -567,7 +570,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
         return;
     }
 
-    QueryResult result = CharacterDatabase.Query("SELECT id FROM auctionhouse WHERE itemowner<>{} AND buyguid<>{}", AHBplayerGUID, AHBplayerGUID);
+    QueryResult result = CharacterDatabase.Query("SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({})", AHCharactersGUIDsForQuery, AHCharactersGUIDsForQuery);
 
     if (!result)
         return;
@@ -587,6 +590,9 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
 
     for (uint32 count = 1; count <= config->GetBidsPerInterval(); ++count)
     {
+        // Pick a random player session
+        Player* playerSession = playerSessions[urand(0, playerSessions.size() - 1)];
+
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
@@ -683,7 +689,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
                 // Return money of prior bidder
                 if (auction->bidder)
                 {
-                    if (auction->bidder == AHBplayer->GetGUID())
+                    if (auction->bidder == playerSession->GetGUID())
                     {
                         //pl->ModifyMoney(-int32(price - auction->bid));
                     }
@@ -691,13 +697,13 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
                     {
                         // mail to last bidder and return money
                         auto trans = CharacterDatabase.BeginTransaction();
-                        sAuctionMgr->SendAuctionOutbiddedMail(auction, minBidPrice, session->GetPlayer(), trans);
+                        sAuctionMgr->SendAuctionOutbiddedMail(auction, minBidPrice, playerSession, trans);
                         CharacterDatabase.CommitTransaction(trans);
                         //pl->ModifyMoney(-int32(price));
                     }
                 }
 
-                auction->bidder = AHBplayer->GetGUID();
+                auction->bidder = playerSession->GetGUID();
                 auction->bid = minBidPrice;
 
                 // Saving auction into database
@@ -707,11 +713,11 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
             {
                 auto trans = CharacterDatabase.BeginTransaction();
                 //buyout
-                if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
+                if ((auction->bidder) && (playerSession->GetGUID() != auction->bidder))
                 {
-                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, session->GetPlayer(), trans);
+                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, playerSession, trans);
                 }
-                auction->bidder = AHBplayer->GetGUID();
+                auction->bidder = playerSession->GetGUID();
                 auction->bid = auction->buyout;
 
                 // Send mails to buyer & seller
@@ -728,7 +734,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player *AHBplayer, AHBConfig *con
     }
 }
 
-void AuctionHouseBot::LoadBotSessions(std::vector<Player>& outPlayerSessions)
+void AuctionHouseBot::LoadBotSessions(std::vector<Player*>& outPlayerSessions)
 {
     // Determine number to load
     uint32 numOfBotsToLoad = BotsPerCycle;
@@ -736,17 +742,22 @@ void AuctionHouseBot::LoadBotSessions(std::vector<Player>& outPlayerSessions)
         numOfBotsToLoad = AHCharacters.size();
 
     // Build a shufflebag for char indices to pick from
-    std::deque<uint32> charGUIDBag;
+    std::deque<uint32> charIndicesBag;
     for (AuctionHouseBotCharacter ahBot : AHCharacters)
-        charGUIDBag.push_back(ahBot.CharacterGUID);
+        charIndicesBag.push_back(ahBot.CharacterGUID);
 
     // Pluck out the guids and load them one at a time
     for (uint32 i = 0; i < numOfBotsToLoad; i++)
     {
-
-
-
-
+        uint32 index = urand(0, charIndicesBag.size()-1);
+        uint32 charIndex = charIndicesBag[index];
+        charIndicesBag.erase(charIndicesBag.begin() + index);
+        std::string accountName = "AuctionHouseBotGUID" + std::to_string(AHCharacters[charIndex].CharacterGUID);
+        WorldSession _session(AHCharacters[charIndex].AccountID, std::move(accountName), nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
+        Player playerSession(&_session);
+        playerSession.Initialize(AHCharacters[charIndex].CharacterGUID);
+        ObjectAccessor::AddObject(&playerSession);
+        outPlayerSessions.push_back(&playerSession);
     }
 }
 
@@ -758,44 +769,45 @@ void AuctionHouseBot::Update()
     if (AHCharacters.size() == 0)
         return;
 
-    std::string accountName = "AuctionHouseBot" + std::to_string(AHBplayerAccount);
-
-    WorldSession _session(AHBplayerAccount, std::move(accountName), nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
-    Player _AHBplayer(&_session);
-    _AHBplayer.Initialize(AHBplayerGUID);
-    ObjectAccessor::AddObject(&_AHBplayer);
+    // Load the bots
+    std::vector<Player*> playerSessions;
+    LoadBotSessions(playerSessions);
 
     // Add New Bids
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
-        addNewAuctions(&_AHBplayer, &AllianceConfig);
+        addNewAuctions(playerSessions, &AllianceConfig);
         if (((_newrun - _lastrun_a) >= (AllianceConfig.GetBiddingInterval() * MINUTE)) && (AllianceConfig.GetBidsPerInterval() > 0))
         {
             //if (debug_Out) sLog->outError( "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_a));
             //if (debug_Out) sLog->outError( "AHBuyer: Bidding on Alliance Auctions");
-            addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig, &_session);
+            addNewAuctionBuyerBotBid(playerSessions, &AllianceConfig);
             _lastrun_a = _newrun;
         }
 
-        addNewAuctions(&_AHBplayer, &HordeConfig);
+        addNewAuctions(playerSessions, &HordeConfig);
         if (((_newrun - _lastrun_h) >= (HordeConfig.GetBiddingInterval() * MINUTE)) && (HordeConfig.GetBidsPerInterval() > 0))
         {
             //if (debug_Out) sLog->outError( "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_h));
             //if (debug_Out) sLog->outError( "AHBuyer: Bidding on Horde Auctions");
-            addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig, &_session);
+            addNewAuctionBuyerBotBid(playerSessions, &HordeConfig);
             _lastrun_h = _newrun;
         }
     }
 
-    addNewAuctions(&_AHBplayer, &NeutralConfig);
+    addNewAuctions(playerSessions, &NeutralConfig);
     if (((_newrun - _lastrun_n) >= (NeutralConfig.GetBiddingInterval() * MINUTE)) && (NeutralConfig.GetBidsPerInterval() > 0))
     {
         //if (debug_Out) sLog->outError( "AHBuyer: %u seconds have passed since last bid", (_newrun - _lastrun_n));
         //if (debug_Out) sLog->outError( "AHBuyer: Bidding on Neutral Auctions");
-        addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig, &_session);
+        addNewAuctionBuyerBotBid(playerSessions, &NeutralConfig);
         _lastrun_n = _newrun;
     }
-    ObjectAccessor::RemoveObject(&_AHBplayer);
+
+    // Remove the player sessions
+    for (int i = 0; i < playerSessions.size(); i++)
+        ObjectAccessor::RemoveObject(playerSessions[i]);
+    playerSessions.clear();
 }
 
 void AuctionHouseBot::Initialize()
@@ -813,9 +825,9 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBSeller = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
 
-    AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", 0));
+    AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0"));
     if (AHCharacters.size() == 0)
-        AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUID", 0)); // Backwards compat
+        AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUID", "0")); // Backwards compat
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
     BotsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.BotsPerCycle", 1);
 
