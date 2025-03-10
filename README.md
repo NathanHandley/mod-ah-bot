@@ -1,7 +1,3 @@
-## Important notes
-
-You have to use at least AzerothCore commit https://github.com/azerothcore/azerothcore-wotlk/commit/4d349e87b53b4921568163d8189369a62ab2d0f5.
-
 ## Description
 
 A fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house.  Most notable differences:
@@ -19,14 +15,9 @@ A fork of the auction house bot for AzerothCore.  This fork gives a much more bl
 2. Re-run cmake and launch a clean build of AzerothCore.
 ```
 
-## Edit module configuration (optional)
-
-If you need to change the module configuration, go to your server configuration folder (where your `worldserver` or `worldserver.exe` is)
-edit the file mod_ahbot.conf.dist / mod_ahbot.conf.
-
 ## Usage
 
-Edit the module configuration and add a character GUID ID to the "AuctionHouseBot.GUIDs" variable, which is sourced from your character table in the character database.  These names will be visable in the auction house, so pick good names.
+Edit the module configuration and add a character GUID ID to the "AuctionHouseBot.GUIDs" variable, which is sourced from your character table in the character database.  These names will be visable in the auction house, so pick good names.  Find the configuration as named mod_ahbot.conf.dist / mod_ahbot.conf
 
 Notes:
 - These accounts do not need any security level and can be a player accounts.
