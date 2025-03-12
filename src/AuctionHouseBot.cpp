@@ -785,8 +785,14 @@ void AuctionHouseBot::InitializeConfiguration()
     AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
     if (AHBSeller == false && AHBBuyer == false)
         return;
-
-    AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0"));
+    string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
+    if (charString == "0")
+    {
+        AHBBuyer = false;
+        AHBSeller = false;
+        LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is '0' so this module will be disabled");
+    }
+    AddCharacters(charString);
 
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
 
