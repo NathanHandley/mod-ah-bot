@@ -726,11 +726,11 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
 
 void AuctionHouseBot::Update()
 {
-    time_t _newrun = time(NULL);
-    if ((!AHBSeller) && (!AHBBuyer))
+    if ((AHBSeller == false) && (AHBBuyer == false))
         return;
     if (AHCharacters.size() == 0)
         return;
+    time_t _newrun = time(NULL);
 
     // Randomly select the bot to load, and load it
     uint32 botIndex = urand(0, AHCharacters.size() - 1);
@@ -783,10 +783,11 @@ void AuctionHouseBot::InitializeConfiguration()
 
     AHBSeller = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
+    if (AHBSeller == false && AHBBuyer == false)
+        return;
 
     AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0"));
-    if (AHCharacters.size() == 0)
-        AddCharacters(sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUID", "0")); // Backwards compat
+
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
 
     // Stack Ratios
