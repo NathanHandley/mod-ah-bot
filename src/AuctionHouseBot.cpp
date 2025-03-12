@@ -791,6 +791,7 @@ void AuctionHouseBot::InitializeConfiguration()
         AHBBuyer = false;
         AHBSeller = false;
         LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is '0' so this module will be disabled");
+        return;
     }
     AddCharacters(charString);
 
