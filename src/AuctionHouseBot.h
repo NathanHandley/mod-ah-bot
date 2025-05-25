@@ -148,6 +148,10 @@ private:
     uint32 ItemsPerCycle;
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
+    bool ListedItemLevelRestrictedEnabled;
+    int32 ListedItemLevelMax;
+    int32 ListedItemLevelMin;
+    std::set<uint32> ListedItemLevelExceptionItems;
     uint32 RandomStackRatioConsumable;
     uint32 RandomStackRatioContainer;
     uint32 RandomStackRatioWeapon;
@@ -255,6 +259,8 @@ public:
     void AddCharacters(std::string characterGUIDString);
     void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
     void AddDisabledItems(std::string disabledItemIdString);
+    void AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID);
+    void AddItemLevelExceptionItems(std::string itemLevelExceptionIdString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
 };
 

@@ -263,12 +263,17 @@ void AuctionHouseBot::populateItemCandidateList()
         if (itr->second.ItemId == 0)
             continue;
 
-        // Always store items that are exceptions
-        if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
+        // If there is an iLevel exception, honor it
+        if (ListedItemLevelRestrictedEnabled == true)
         {
-            // Store the item ID
-            itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
-            continue;
+            // Only test if it's not an exception
+            if (ListedItemLevelExceptionItems.find(itr->second.ItemId) == ListedItemLevelExceptionItems.end())
+            {
+                if (itr->second.ItemLevel < ListedItemLevelMin)
+                    continue;
+                if (itr->second.ItemLevel > ListedItemLevelMax)
+                    continue;
+            }
         }
 
         // Disabled items by Id
@@ -276,6 +281,14 @@ void AuctionHouseBot::populateItemCandidateList()
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
+            continue;
+        }
+
+        // These items should be included and would otherwise be skipped due to conditions below
+        if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
+        {
+            // Store the item ID
+            itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
             continue;
         }
 
@@ -797,6 +810,12 @@ void AuctionHouseBot::InitializeConfiguration()
 
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
 
+    // Item level Restrictions
+    ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
+    ListedItemLevelMax = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
+    ListedItemLevelMin = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
+    AddItemLevelExceptionItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""));
+
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
     RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Container", 0);
@@ -909,6 +928,20 @@ uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 
     return stackValue;
 }
 
+void AuctionHouseBot::AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID)
+{
+    if (workingExceptionItemIDs.find(itemLevelExceptionItemID) != workingExceptionItemIDs.end())
+    {
+        if (debug_Out)
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate item level exxception item ID of {} found, skipping", itemLevelExceptionItemID);
+    }
+    else
+    {
+        workingExceptionItemIDs.insert(itemLevelExceptionItemID);
+    }
+}
+
+
 void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID)
 {
     if (workingDisabledItemIDs.find(disabledItemID) != workingDisabledItemIDs.end())
@@ -1016,6 +1049,45 @@ void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
         {
             auto itemId = atoi(valueOne.c_str());
             AddToDisabledItems(DisabledItems, itemId);
+        }
+    }
+}
+
+void AuctionHouseBot::AddItemLevelExceptionItems(std::string itemLevelExceptionIdString)
+{
+    std::string delimitedValue;
+    std::stringstream itemLevelExceptionItemIdStream;
+
+    itemLevelExceptionItemIdStream.str(itemLevelExceptionIdString);
+    while (std::getline(itemLevelExceptionItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    {
+        std::string valueOne;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> valueOne;
+        // If it has a hypen, then it's a range of numbers
+        if (valueOne.find("-") != std::string::npos)
+        {
+            std::string leftIDString = valueOne.substr(0, valueOne.find("-"));
+            std::string rightIDString = valueOne.substr(valueOne.find("-") + 1);
+
+            auto leftId = atoi(leftIDString.c_str());
+            auto rightId = atoi(rightIDString.c_str());
+
+            if (leftId > rightId)
+            {
+                LOG_ERROR("module", "AuctionHouseBot: Duplicate item level exception item ID range of {} to {} needs to be smallest to largest, skipping", leftId, rightId);
+            }
+            else
+            {
+                for (int32 i = leftId; i <= rightId; ++i)
+                    AddToListedItemLevelExceptionItems(ListedItemLevelExceptionItems, i);
+            }
+
+        }
+        else
+        {
+            auto itemId = atoi(valueOne.c_str());
+            AddToListedItemLevelExceptionItems(ListedItemLevelExceptionItems, itemId);
         }
     }
 }
