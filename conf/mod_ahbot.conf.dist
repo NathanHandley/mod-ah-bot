@@ -42,6 +42,29 @@ AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 75
 
 ###############################################################################
+#    AuctionHouseBot.ListedItemLevelRestrict.Enabled
+#        If true, the item level will be restricted in listings
+#    Default: false
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel
+#        The highest item level that will show up in listings
+#    Default: 999
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel
+#        The lowest item level that will show up in listings
+#    Default: 0
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs
+#        Comma separated list of itemIDs to exclude from any item level restriction logic
+#        Ranges using a dash (-) can also be used
+#        NOTE: The disabled item list will still be honored even if it's listed here
+###############################################################################
+AuctionHouseBot.ListedItemLevelRestrict.Enabled = false
+AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel = 999
+AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel = 0
+AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs = 
+
+###############################################################################
 #    AuctionHouseBot.<faction>.MinItems
 #    AuctionHouseBot.<faction>.MaxItems
 #        The minimum and maximum number of items to post on that auction house
