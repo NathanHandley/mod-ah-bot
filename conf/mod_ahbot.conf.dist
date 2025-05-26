@@ -79,16 +79,16 @@ AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs =
 #    Default: 1
 ###############################################################################
 
-AuctionHouseBot.Alliance.MinItems = 20000
-AuctionHouseBot.Alliance.MaxItems = 20000
+AuctionHouseBot.Alliance.MinItems = 15000
+AuctionHouseBot.Alliance.MaxItems = 15000
 AuctionHouseBot.Alliance.BidInterval = 1
 AuctionHouseBot.Alliance.BidsPerInterval = 1
-AuctionHouseBot.Horde.MinItems = 20000
-AuctionHouseBot.Horde.MaxItems = 20000
+AuctionHouseBot.Horde.MinItems = 15000
+AuctionHouseBot.Horde.MaxItems = 15000
 AuctionHouseBot.Horde.BidInterval = 1
 AuctionHouseBot.Horde.BidsPerInterval = 1
-AuctionHouseBot.Neutral.MinItems = 20000
-AuctionHouseBot.Neutral.MaxItems = 20000
+AuctionHouseBot.Neutral.MinItems = 15000
+AuctionHouseBot.Neutral.MaxItems = 15000
 AuctionHouseBot.Neutral.BidInterval = 1
 AuctionHouseBot.Neutral.BidsPerInterval = 1
 
