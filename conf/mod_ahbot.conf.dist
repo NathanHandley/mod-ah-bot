@@ -68,7 +68,7 @@ AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs =
 #    AuctionHouseBot.<faction>.MinItems
 #    AuctionHouseBot.<faction>.MaxItems
 #        The minimum and maximum number of items to post on that auction house
-#    Default: 15000 for both
+#    Default: 20000 for each faction
 #
 #    AuctionHouseBot.<faction>.BidInterval
 #        How long to wait between bidding
