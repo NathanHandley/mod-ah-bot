@@ -200,6 +200,7 @@ AuctionHouseBot.PriceMultiplier.Quality.Heirloom = 3
 # Multiplier applied to item level when determining auction price
 # Final multiplier = itemLevel * this value
 # Default: 0.1
+# Set to 0 to disable this multiplier.
 AuctionHouseBot.PriceMultiplier.ItemLevel = 0.1
 
 ###############################################################################

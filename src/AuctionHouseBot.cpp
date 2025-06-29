@@ -165,10 +165,11 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     outBuyoutPrice *= classPriceMultiplier;
 
     // Apply item level multiplier
-    if (itemProto->ItemLevel > 0)
+    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0)
     {
-    outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
+        outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
     }
+
 
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
