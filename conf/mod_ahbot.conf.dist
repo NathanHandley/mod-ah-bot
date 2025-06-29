@@ -197,6 +197,11 @@ AuctionHouseBot.PriceMultiplier.Quality.Legendary = 3
 AuctionHouseBot.PriceMultiplier.Quality.Artifact = 3
 AuctionHouseBot.PriceMultiplier.Quality.Heirloom = 3
 
+# Multiplier applied to item level when determining auction price
+# Final multiplier = itemLevel * this value
+# Default: 0.1
+AuctionHouseBot.PriceMultiplier.ItemLevel = 0.1
+
 ###############################################################################
 #    AuctionHouseBot.RandomStackRatio.*
 #        Used to determine how often a stack of the class will be single or randomly-size stacked when posted
