@@ -165,11 +165,17 @@ AuctionHouseBot.PriceMinimumCenterBase.Glyph = 1000
 AuctionHouseBot.PriceMinimumCenterBase.OverrideItems = 
 
 ###############################################################################
-#    AuctionHouseBot.PriceMultiplier.*
+#    AuctionHouseBot.PriceMultiplier.Category.*
+#    AuctionHouseBot.PriceMultiplier.Quality.*
 #        Category/Quality-level modifier values for the prices of items, which can be
 #        represented as decimal numbers, and must be > 0.  Keep in mind that
 #		 the pricing algorithm has many steps to it and this is just a tuning
 #        modifier.
+#
+#    AuctionHouseBot.PriceMultiplier.ItemLevel.*
+#        Multiplier applied to item level when determining auction price
+#        Final multiplier = itemLevel * this value.  Set to 0 (or less) to disable.
+#        Default: 0 (Disabled)
 ###############################################################################
 
 AuctionHouseBot.PriceMultiplier.Category.Consumable = 1
@@ -197,11 +203,7 @@ AuctionHouseBot.PriceMultiplier.Quality.Legendary = 3
 AuctionHouseBot.PriceMultiplier.Quality.Artifact = 3
 AuctionHouseBot.PriceMultiplier.Quality.Heirloom = 3
 
-# Multiplier applied to item level when determining auction price
-# Final multiplier = itemLevel * this value
-# Default: 0.1
-# Set to 0 to disable this multiplier.
-AuctionHouseBot.PriceMultiplier.ItemLevel = 0.1
+AuctionHouseBot.PriceMultiplier.ItemLevel = 0
 
 ###############################################################################
 #    AuctionHouseBot.RandomStackRatio.*

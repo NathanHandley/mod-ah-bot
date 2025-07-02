@@ -170,7 +170,6 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
     }
 
-
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
@@ -881,6 +880,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
+	ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 0);
 
     // Price minimums
     PriceMinimumCenterBaseConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Consumable",1000);
@@ -922,9 +922,6 @@ void AuctionHouseBot::InitializeConfiguration()
     NeutralConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MaxItems", 15000));
     NeutralConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidInterval", 1));
     NeutralConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidsPerInterval", 1));
-
-    ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 1.0f);
-
 }
 
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
