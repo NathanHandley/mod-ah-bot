@@ -164,6 +164,12 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     outBuyoutPrice *= qualityPriceMultplier;
     outBuyoutPrice *= classPriceMultiplier;
 
+    // Apply item level multiplier
+    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0)
+    {
+        outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
+    }
+
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
@@ -874,6 +880,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
+	ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 0);
 
     // Price minimums
     PriceMinimumCenterBaseConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Consumable",1000);

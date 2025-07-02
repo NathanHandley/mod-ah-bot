@@ -223,6 +223,8 @@ private:
     uint32 PriceMinimumCenterBaseMisc;
     uint32 PriceMinimumCenterBaseGlyph;
     std::unordered_map<uint32, uint64> PriceMinimumCenterBaseOverridesByItemID;
+    float ItemLevelPriceMultiplier;
+
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
