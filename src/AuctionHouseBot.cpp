@@ -755,7 +755,7 @@ void AuctionHouseBot::Update()
     uint32 botIndex = urand(0, AHCharacters.size() - 1);
     CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
     std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
-    WorldSession _session(AHCharacters[botIndex].AccountID, std::move(accountName), nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
+    WorldSession _session(AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
     Player _AHBplayer(&_session);
     _AHBplayer.Initialize(AHCharacters[botIndex].CharacterGUID);
     ObjectAccessor::AddObject(&_AHBplayer);
