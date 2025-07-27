@@ -8,6 +8,9 @@ A fork of the auction house bot for AzerothCore.  This fork gives a much more bl
 	- Empty the list to have crafted goods appear in the AH, or use other IDs you want to keep separate
  - Moved database configuration completely to config
 
+## Requirements
+Requires an AzerothCore version that is caught up to at least change set 3f46e05 (https://github.com/azerothcore/azerothcore-wotlk/commit/3f46e05d3691895b6b8a5b3832d17ecb1e210791)
+
 ## Installation
 
 ```
