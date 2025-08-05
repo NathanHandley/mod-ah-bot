@@ -23,6 +23,8 @@
 #        will be used to create auctions and otherwise interact with auctions.
 #        It can be a single value or multiple values that are separated by a
 #        comma (do not have spaces!).  Note: a GUID of "0" will be ignored!
+#        Important: Do not use a bot character (such as playerbot bots)
+#        or it will likely crash the server
 #    Examples:
 #        AuctionHouseBot.GUIDs = 3 <- Only character with GUID 3
 #        AuctionHouseBot.GUIDs = 3,4 <- Both characters with GUID 3 and 4
