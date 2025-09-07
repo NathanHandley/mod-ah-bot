@@ -150,8 +150,8 @@ private:
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
     bool ListedItemLevelRestrictedEnabled;
-    int32 ListedItemLevelMax;
-    int32 ListedItemLevelMin;
+    uint32 ListedItemLevelMax;
+    uint32 ListedItemLevelMin;
     std::set<uint32> ListedItemLevelExceptionItems;
     uint32 RandomStackRatioConsumable;
     uint32 RandomStackRatioContainer;
@@ -209,6 +209,8 @@ private:
     float PriceMultiplierQualityArtifact;
     float PriceMultiplierQualityHeirloom;
     float PriceMultiplierCategoryQuality[MAX_ITEM_CLASS][MAX_ITEM_QUALITY];
+    float PriceMultiplierCategoryMountQualityRare;
+    float PriceMultiplierCategoryMountQualityEpic;
     uint32 PriceMinimumCenterBaseConsumable;
     uint32 PriceMinimumCenterBaseContainer;
     uint32 PriceMinimumCenterBaseWeapon;
