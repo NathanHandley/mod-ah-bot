@@ -32,6 +32,7 @@ class Player;
 class WorldSession;
 
 #include "ItemTemplate.h"
+#include "SharedDefines.h"
 
 class AHBConfig
 {
@@ -207,6 +208,7 @@ private:
     float PriceMultiplierQualityLegendary;
     float PriceMultiplierQualityArtifact;
     float PriceMultiplierQualityHeirloom;
+    float PriceMultiplierCategoryQuality[MAX_ITEM_CLASS][MAX_ITEM_QUALITY];
     uint32 PriceMinimumCenterBaseConsumable;
     uint32 PriceMinimumCenterBaseContainer;
     uint32 PriceMinimumCenterBaseWeapon;
@@ -264,6 +266,8 @@ public:
     void AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID);
     void AddItemLevelExceptionItems(std::string itemLevelExceptionIdString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
+    const char* GetQualityName(ItemQualities quality);
+    const char* GetCategoryName(ItemClass category);
 };
 
 #define auctionbot AuctionHouseBot::instance()

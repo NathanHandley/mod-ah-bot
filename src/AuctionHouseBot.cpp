@@ -26,6 +26,9 @@
 #include "WorldSession.h"
 #include "GameTime.h"
 #include "DatabaseEnv.h"
+#include "ItemTemplate.h"
+#include "SharedDefines.h"
+#include <cmath>
 
 #include <set>
 
@@ -126,6 +129,36 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     default: break;
     }
 
+    float classQualityPriceMultiplier = PriceMultiplierCategoryQuality[itemProto->Class][itemProto->Quality];
+
+    // Try to approximate real world prices for trade goods based on subclass and item level
+    double subclassPriceMultiplier = 1.0f;
+    if (itemProto->Class == ITEM_CLASS_TRADE_GOODS) 
+    {
+        switch (itemProto->SubClass)
+        {
+            case ITEM_SUBCLASS_CLOTH:
+            {    
+                subclassPriceMultiplier = std::pow(1.1,(itemProto->ItemLevel/3.5)) - (itemProto->ItemLevel/50.0); 
+                break;
+            }
+            case ITEM_SUBCLASS_HERB:
+            {
+                double herbMultiplierHelper = std::log(1.0 + (5.0 * itemProto->ItemLevel));
+                subclassPriceMultiplier = (std::pow(herbMultiplierHelper,3.0) / (1 + (1.8 * herbMultiplierHelper))) - 4.2; 
+                break;
+            }
+            case ITEM_SUBCLASS_METAL_STONE:
+            {
+                double metalMultiplierHelper = std::log(1.0 + (75.0 * itemProto->ItemLevel));
+                subclassPriceMultiplier =  ((std::pow(metalMultiplierHelper,3.0)) / (1 + (7.0 * metalMultiplierHelper))) + (0.001 * std::pow(metalMultiplierHelper,3.5)) - 5.2;
+                break;
+            }
+            default:                        
+                break;
+        }
+    }
+
     // Grab the minimum prices
     uint64 PriceMinimumCenterBase = 1000;
     auto it = PriceMinimumCenterBaseOverridesByItemID.find(itemProto->ItemId);
@@ -156,28 +189,33 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Set the minimum price
     if (outBuyoutPrice < PriceMinimumCenterBase)
-        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.75, PriceMinimumCenterBase * 1.25);
+        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.85, PriceMinimumCenterBase * 1.25);
     else
-        outBuyoutPrice = urand(outBuyoutPrice * 0.75, outBuyoutPrice * 1.25);
+        outBuyoutPrice = urand(outBuyoutPrice * 0.85, outBuyoutPrice * 1.25);
 
+    // Ensure no multipliers are zero or negative
+    if (classPriceMultiplier <= 0.0f)
+        classPriceMultiplier = 1.0f;
+    if (qualityPriceMultplier <= 0.0f)
+        qualityPriceMultplier = 1.0f;
+    if (classQualityPriceMultiplier <= 0.0f)
+        classQualityPriceMultiplier = 1.0f;
+    if (subclassPriceMultiplier <= 0.0f)
+        subclassPriceMultiplier = 1.0f;
+    
     // Multiply the price based on multipliers
     outBuyoutPrice *= qualityPriceMultplier;
     outBuyoutPrice *= classPriceMultiplier;
+    outBuyoutPrice *= classQualityPriceMultiplier;
+    outBuyoutPrice *= static_cast<float>(subclassPriceMultiplier);
 
-    // Apply item level multiplier
-    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0)
-    {
+    // Apply item level multiplier. Only if no subclass multiplier was applied
+    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0 && subclassPriceMultiplier == 1.0f)
         outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
-    }
 
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
-
-    // Calculate buyout price with a variance
-    float sellVarianceBuyoutPriceTopPercent = 1.30;
-    float sellVarianceBuyoutPriceBottomPercent = 0.70;
-    outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
 
     // Calculate a bid price based on a variance against buyout price
     float sellVarianceBidPriceTopPercent = 1;
@@ -193,9 +231,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Bid price can never be below sell price
     if (outBidPrice < itemProto->SellPrice)
-    {
         outBidPrice = itemProto->SellPrice;
-    }
 }
 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
@@ -864,7 +900,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierCategoryArmor = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Armor", 1);
     PriceMultiplierCategoryReagent = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Reagent", 1);
     PriceMultiplierCategoryProjectile = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Projectile", 1);
-    PriceMultiplierCategoryTradeGood = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.TradeGood", 2);
+    PriceMultiplierCategoryTradeGood = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.TradeGood", 1);
     PriceMultiplierCategoryGeneric = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Generic", 1);
     PriceMultiplierCategoryRecipe = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Recipe", 1);
     PriceMultiplierCategoryQuiver = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Quiver", 1);
@@ -881,6 +917,17 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
 	ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 0);
+    for (int category = 0; category < MAX_ITEM_CLASS; category++)
+    {
+        for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
+        {
+            std::string key = std::string("AuctionHouseBot.PriceMultiplier.Category") + GetCategoryName((ItemClass)category) +
+                            ".Quality" + GetQualityName((ItemQualities)quality);
+
+            float multiplier = sConfigMgr->GetOption<float>(key.c_str(), 1.0f);
+            PriceMultiplierCategoryQuality[category][quality] = multiplier;
+        }
+    }
 
     // Price minimums
     PriceMinimumCenterBaseConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Consumable",1000);
@@ -890,7 +937,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMinimumCenterBaseArmor = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Armor", 1000);
     PriceMinimumCenterBaseReagent = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Reagent", 1000);
     PriceMinimumCenterBaseProjectile = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Projectile", 5);
-    PriceMinimumCenterBaseTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.TradeGood", 1000);
+    PriceMinimumCenterBaseTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.TradeGood", 850);
     PriceMinimumCenterBaseGeneric = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Generic", 1000);
     PriceMinimumCenterBaseRecipe = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Recipe", 1000);
     PriceMinimumCenterBaseQuiver = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Quiver", 1000);
@@ -1120,5 +1167,46 @@ void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverrides
             if (itemId > 0 && copperPrice > 0)
                 PriceMinimumCenterBaseOverridesByItemID.insert({itemId, copperPrice});
         }
+    }
+}
+
+const char* AuctionHouseBot::GetQualityName(ItemQualities quality)
+{
+    switch (quality)
+    {
+        case ITEM_QUALITY_POOR:       return "Poor";
+        case ITEM_QUALITY_NORMAL:     return "Normal";
+        case ITEM_QUALITY_UNCOMMON:   return "Uncommon";
+        case ITEM_QUALITY_RARE:       return "Rare";
+        case ITEM_QUALITY_EPIC:       return "Epic";
+        case ITEM_QUALITY_LEGENDARY:  return "Legendary";
+        case ITEM_QUALITY_ARTIFACT:   return "Artifact";
+        case ITEM_QUALITY_HEIRLOOM:   return "Heirloom";
+        default:                      return "Unknown";
+    }
+}
+
+const char* AuctionHouseBot::GetCategoryName(ItemClass category)
+{
+    switch (category)
+    {
+        case ITEM_CLASS_CONSUMABLE:   return "Consumable";
+        case ITEM_CLASS_CONTAINER:    return "Container";
+        case ITEM_CLASS_WEAPON:       return "Weapon";
+        case ITEM_CLASS_GEM:          return "Gem";
+        case ITEM_CLASS_ARMOR:        return "Armor";
+        case ITEM_CLASS_REAGENT:      return "Reagent";
+        case ITEM_CLASS_PROJECTILE:   return "Projectile";
+        case ITEM_CLASS_TRADE_GOODS:  return "TradeGood";
+        case ITEM_CLASS_GENERIC:      return "Generic";
+        case ITEM_CLASS_RECIPE:       return "Recipe";
+        case ITEM_CLASS_MONEY:        return "Money";
+        case ITEM_CLASS_QUIVER:       return "Quiver";
+        case ITEM_CLASS_QUEST:        return "Quest";
+        case ITEM_CLASS_KEY:          return "Key";
+        case ITEM_CLASS_PERMANENT:    return "Permanent";
+        case ITEM_CLASS_MISC:         return "Misc";
+        case ITEM_CLASS_GLYPH:        return "Glyph";
+        default:                      return "Unknown";
     }
 }
