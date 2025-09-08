@@ -138,8 +138,9 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         switch (itemProto->SubClass)
         {
             case ITEM_SUBCLASS_CLOTH:
-            {    
-                subclassPriceMultiplier = std::pow(1.1,(itemProto->ItemLevel/3.5)) - (itemProto->ItemLevel/50.0); 
+            {
+                double clothMultiplierHelper = std::log(1.0 + (itemProto->ItemLevel));
+                subclassPriceMultiplier = ((std::pow(clothMultiplierHelper,2.0)) / (1 + (0.8 * clothMultiplierHelper))) + (0.001 * std::pow(clothMultiplierHelper,3.5)) - 0.3;
                 break;
             }
             case ITEM_SUBCLASS_HERB:
