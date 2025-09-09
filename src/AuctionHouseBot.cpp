@@ -21,6 +21,7 @@
 #include "ObjectMgr.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot.h"
+#include "AuctionHouseSearcher.h"
 #include "Config.h"
 #include "Player.h"
 #include "WorldSession.h"
@@ -37,7 +38,7 @@ AuctionHouseBot::AuctionHouseBot() :
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
     CyclesBetweenBuyOrSell(1),
-    BuyingBotBuyCanditatesPerBuyoutCycle(1),
+    BuyingBotBuyCanditatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
@@ -675,13 +676,13 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         possibleBids.push_back(tmpdata);
     }while (result->NextRow());
 
-    for (uint32 count = 1; count <= BuyingBotBuyCanditatesPerBuyoutCycle; ++count)
+    for (uint32 count = 1; count <= BuyingBotBuyCanditatesPerBuyCycle; ++count)
     {
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
             //if (debug_Out) sLog->outError( "AHBuyer: I have no items to bid on.");
-            count = BuyingBotBuyCanditatesPerBuyoutCycle;
+            count = BuyingBotBuyCanditatesPerBuyCycle;
             continue;
         }
 
@@ -716,15 +717,20 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         uint64 discardBidPrice = 0;
         calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
         willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
-        uint64 willingToSpendForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
 
-        // Buy it if the price is greater than buy out, otherwise skip
+        uint64 willingToPayForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
+        uint64 bidAmount = 0;
+
+        // Determine if it's a bid, buyout, or skip
         bool doBuyout = false;
-        uint32 minBuyoutPrice = 0;
-        if (auction->buyout != 0 && willingToSpendForStackPrice >= auction->buyout)
-            doBuyout = true;
+        bool doBid = false;
 
-        if (doBuyout == true)
+        if (auction->buyout != 0 && auction->buyout < willingToPayForStackPrice)
+            doBuyout = true;
+        else if (auction->startbid < willingToPayForStackPrice && auction->GetAuctionOutBid() < willingToPayForStackPrice)
+            doBid = true;
+
+        if (doBuyout == true || doBid == true)
         {
             if (debug_Out)
             {
@@ -738,8 +744,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                 LOG_INFO("module", "AHBuyer: Buyout: {}", auction->buyout);
                 LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
                 LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
-                LOG_INFO("module", "AHBuyer: Willing To Spend For Stack Price: {}", willingToSpendForStackPrice);
-                LOG_INFO("module", "AHBuyer: Minimum Buyout Price: {}", minBuyoutPrice);
+                LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price: {}", willingToPayForStackPrice);
                 LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
                 LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
                 LOG_INFO("module", "AHBuyer: Item Info:");
@@ -753,23 +758,52 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                 LOG_INFO("module", "-------------------------------------------------");
             }
 
-            auto trans = CharacterDatabase.BeginTransaction();
-
-            if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
+            if (doBid)
             {
-                sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
+                auto trans = CharacterDatabase.BeginTransaction();
+
+                // Perform outbid
+                uint32 bidAmount = 0;
+                if (auction->bid == 0)
+                    bidAmount = auction->startbid;
+                else
+                    bidAmount = auction->GetAuctionOutBid();
+
+                if (auction->bidder)
+                {
+                    sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
+                    CharacterDatabase.CommitTransaction(trans);
+                }
+
+                auction->bidder = AHBplayer->GetGUID();
+                auction->bid = bidAmount;
+
+                sAuctionMgr->GetAuctionHouseSearcher()->UpdateBid(auction);
+
+                CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_AUCTION_BID);
+                stmt->SetData(0, auction->bidder.GetCounter());
+                stmt->SetData(1, auction->bid);
+                stmt->SetData(2, auction->Id);
+                trans->Append(stmt);
             }
-            auction->bidder = AHBplayer->GetGUID();
-            auction->bid = auction->buyout;
+            else if (doBuyout)
+            {
+                auto trans = CharacterDatabase.BeginTransaction();
 
-            // Send mails to buyer & seller
-            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-            sAuctionMgr->SendAuctionWonMail(auction, trans);
-            auction->DeleteFromDB(trans);
+                if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
+                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
+                auction->bidder = AHBplayer->GetGUID();
+                auction->bid = auction->buyout;
 
-            sAuctionMgr->RemoveAItem(auction->item_guid);
-            auctionHouse->RemoveAuction(auction);
-            CharacterDatabase.CommitTransaction(trans);
+                // Send mails to buyer & seller
+                sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
+                sAuctionMgr->SendAuctionWonMail(auction, trans);
+                auction->DeleteFromDB(trans);
+
+                sAuctionMgr->RemoveAItem(auction->item_guid);
+                auctionHouse->RemoveAuction(auction);
+                CharacterDatabase.CommitTransaction(trans);
+            }
         }
     }
 }
@@ -800,16 +834,16 @@ void AuctionHouseBot::Update()
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
         addNewAuctions(&_AHBplayer, &AllianceConfig);
-        if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
+        if (BuyingBotBuyCanditatesPerBuyCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
 
         addNewAuctions(&_AHBplayer, &HordeConfig);
-        if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
+        if (BuyingBotBuyCanditatesPerBuyCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
     }
 
     addNewAuctions(&_AHBplayer, &NeutralConfig);
-    if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
+    if (BuyingBotBuyCanditatesPerBuyCycle > 0)
         addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
 
     ObjectAccessor::RemoveObject(&_AHBplayer);
@@ -831,7 +865,7 @@ void AuctionHouseBot::InitializeConfiguration()
     // Buyer Bot
     BuyingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
     CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
-    BuyingBotBuyCanditatesPerBuyoutCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCanditatesPerBuyoutCycle", 1);
+    BuyingBotBuyCanditatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCanditatesPerBuyCycle", 1);
     BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
         
     if (SellingBotEnabled == false && BuyingBotEnabled == false)
