@@ -34,6 +34,7 @@ Notes:
 1. **Determining Items to Buy:** Every minute the buyer bot will select (BuyCanditatesPerBuyoutCycle) items currently up for auction which are listed by players as potential purchase items.
 2. **Price Willing to Pay:** The buyer bot will use the same item price calculation the seller bot uses, including the random +/- 25%, and that calculated price is then multiplied by (AcceptablePriceModifier) which then becomes the price the buyer will be willing to spend.
 3. **Buying it:** If the price calculated is higher than the buy out price, then the bot will buy it out.
+
 The above behavior is replicated on each enabled auction house.  If left to default settings, 1 item in each auction house will attempt to be bought from, if the price calculation seems favorable. Note that any item buy attempt, even items above buying price, consumes a buy candidate. That means that too many overpriced items can drown out potential sales.
 
 ## Credits
