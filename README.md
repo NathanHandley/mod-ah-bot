@@ -20,7 +20,7 @@ Requires an AzerothCore version that is caught up to at least change set 3f46e05
 
 ## Usage
 
-Edit the module configuration and add a character GUID ID to the "AuctionHouseBot.GUIDs" variable, which is sourced from your character table in the character database.  These names will be visable in the auction house, so pick good names.  Find the configuration as named mod_ahbot.conf.dist / mod_ahbot.conf.  IMPORTANT: If you are using a bot mod (like playerbots), then ensure you use regular non-bot characters for your auctionhouse character(s)
+Edit the module configuration and add a character GUID ID to the "AuctionHouseBot.GUIDs" variable, which is sourced from your character table in the character database.  These names will be visable in the auction house, so pick good names.  IMPORTANT: If you are using a bot mod (like playerbots), then ensure you use regular non-bot characters for your auctionhouse character(s)
 
 Notes:
 - These accounts do not need any security level and can be a player accounts.
