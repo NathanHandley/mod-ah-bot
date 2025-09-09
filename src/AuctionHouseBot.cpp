@@ -31,17 +31,91 @@
 
 using namespace std;
 
-AuctionHouseBot::AuctionHouseBot()
+AuctionHouseBot::AuctionHouseBot() :
+    debug_Out(false),
+    debug_Out_Filters(false),
+    SellingBotEnabled(false),
+    BuyingBotEnabled(false),
+    CyclesBetweenBuyOrSell(1),
+    BuyingBotBuyCanditatesPerBuyoutCycle(1),
+    BuyingBotAcceptablePriceModifier(1),
+    AHCharactersGUIDsForQuery(""),
+    ItemsPerCycle(75),
+    DisabledItemTextFilter(true),
+    ListedItemLevelRestrictedEnabled(false),
+    ListedItemLevelMax(999),
+    ListedItemLevelMin(0),
+    RandomStackRatioConsumable(1),
+    RandomStackRatioContainer(1),
+    RandomStackRatioWeapon(1),
+    RandomStackRatioGem(1),
+    RandomStackRatioArmor(1),
+    RandomStackRatioReagent(1),
+    RandomStackRatioProjectile(1),
+    RandomStackRatioTradeGood(1),
+    RandomStackRatioGeneric(1),
+    RandomStackRatioRecipe(1),
+    RandomStackRatioQuiver(1),
+    RandomStackRatioQuest(1),
+    RandomStackRatioKey(1),
+    RandomStackRatioMisc(1),
+    RandomStackRatioGlyph(1),
+    ListProportionConsumable(1),
+    ListProportionContainer(1),
+    ListProportionWeapon(1),
+    ListProportionGem(1),
+    ListProportionArmor(1),
+    ListProportionReagent(1),
+    ListProportionProjectile(1),
+    ListProportionTradeGood(1),
+    ListProportionGeneric(1),
+    ListProportionRecipe(1),
+    ListProportionQuiver(1),
+    ListProportionQuest(1),
+    ListProportionKey(1),
+    ListProportionMisc(1),
+    ListProportionGlyph(1),
+    PriceMultiplierCategoryConsumable(1),
+    PriceMultiplierCategoryContainer(1),
+    PriceMultiplierCategoryWeapon(1),
+    PriceMultiplierCategoryGem(1),
+    PriceMultiplierCategoryArmor(1),
+    PriceMultiplierCategoryReagent(1),
+    PriceMultiplierCategoryProjectile(1),
+    PriceMultiplierCategoryTradeGood(1),
+    PriceMultiplierCategoryGeneric(1),
+    PriceMultiplierCategoryRecipe(1),
+    PriceMultiplierCategoryQuiver(1),
+    PriceMultiplierCategoryQuest(1),
+    PriceMultiplierCategoryKey(1),
+    PriceMultiplierCategoryMisc(1),
+    PriceMultiplierCategoryGlyph(1),
+    PriceMultiplierQualityPoor(1),
+    PriceMultiplierQualityNormal(1),
+    PriceMultiplierQualityUncommon(1),
+    PriceMultiplierQualityRare(1),
+    PriceMultiplierQualityEpic(1),
+    PriceMultiplierQualityLegendary(1),
+    PriceMultiplierQualityArtifact(1),
+    PriceMultiplierQualityHeirloom(1),
+    PriceMinimumCenterBaseConsumable(1),
+    PriceMinimumCenterBaseContainer(1),
+    PriceMinimumCenterBaseWeapon(1),
+    PriceMinimumCenterBaseGem(1),
+    PriceMinimumCenterBaseArmor(1),
+    PriceMinimumCenterBaseReagent(1),
+    PriceMinimumCenterBaseProjectile(1),
+    PriceMinimumCenterBaseTradeGood(1),
+    PriceMinimumCenterBaseGeneric(1),
+    PriceMinimumCenterBaseRecipe(1),
+    PriceMinimumCenterBaseQuiver(1),
+    PriceMinimumCenterBaseQuest(1),
+    PriceMinimumCenterBaseKey(1),
+    PriceMinimumCenterBaseMisc(1),
+    PriceMinimumCenterBaseGlyph(1),
+    ItemLevelPriceMultiplier(1),
+    LastCycleCount(0)
 {
-    debug_Out = false;
-    debug_Out_Filters = false;
-    AHBSeller = false;
-    AHBBuyer = false;
-
-    _lastrun_a = time(NULL);
-    _lastrun_h = time(NULL);
-    _lastrun_n = time(NULL);
-
     AllianceConfig = AHBConfig(2);
     HordeConfig = AHBConfig(6);
     NeutralConfig = AHBConfig(7);
@@ -440,7 +514,7 @@ void AuctionHouseBot::populateItemCandidateList()
 
 void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
 {
-    if (!AHBSeller)
+    if (!SellingBotEnabled)
     {
         if (debug_Out)
             LOG_INFO("module", "AHSeller: Disabled");
@@ -576,7 +650,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
 
 void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config)
 {
-    if (!AHBBuyer)
+    if (!BuyingBotEnabled)
     {
         if (debug_Out)
             LOG_ERROR("module", "AHBuyer: Disabled");
@@ -601,13 +675,13 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         possibleBids.push_back(tmpdata);
     }while (result->NextRow());
 
-    for (uint32 count = 1; count <= config->GetBidsPerInterval(); ++count)
+    for (uint32 count = 1; count <= BuyingBotBuyCanditatesPerBuyoutCycle; ++count)
     {
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
             //if (debug_Out) sLog->outError( "AHBuyer: I have no items to bid on.");
-            count = config->GetBidsPerInterval();
+            count = BuyingBotBuyCanditatesPerBuyoutCycle;
             continue;
         }
 
@@ -641,31 +715,16 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         uint64 willingToSpendPerItemPrice = 0;
         uint64 discardBidPrice = 0;
         calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
+        willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
         uint64 willingToSpendForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
 
-        // Buy it if the price is greater than buy out, bid if the price is greater than current bid, otherwise skip
+        // Buy it if the price is greater than buy out, otherwise skip
         bool doBuyout = false;
-        bool doBid = false;
-        uint32 minBidPrice = 0;
+        uint32 minBuyoutPrice = 0;
         if (auction->buyout != 0 && willingToSpendForStackPrice >= auction->buyout)
             doBuyout = true;
-        else
-        {            
-            if (auction->bid >= auction->startbid)
-                minBidPrice = auction->GetAuctionOutBid();
-            else
-                minBidPrice = auction->startbid;
 
-            if (minBidPrice <= willingToSpendForStackPrice)
-            {
-                if (auction->buyout != 0 && minBidPrice >= auction->buyout)
-                    doBuyout = true;
-                else
-                    doBid = true;
-            }
-        }
-
-        if (doBuyout == true || doBid == true)
+        if (doBuyout == true)
         {
             if (debug_Out)
             {
@@ -680,7 +739,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                 LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
                 LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
                 LOG_INFO("module", "AHBuyer: Willing To Spend For Stack Price: {}", willingToSpendForStackPrice);
-                LOG_INFO("module", "AHBuyer: Minimum Bid Price: {}", minBidPrice);
+                LOG_INFO("module", "AHBuyer: Minimum Buyout Price: {}", minBuyoutPrice);
                 LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
                 LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
                 LOG_INFO("module", "AHBuyer: Item Info:");
@@ -694,62 +753,39 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                 LOG_INFO("module", "-------------------------------------------------");
             }
 
-            if (doBid)
+            auto trans = CharacterDatabase.BeginTransaction();
+
+            if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
             {
-                // Return money of prior bidder
-                if (auction->bidder)
-                {
-                    if (auction->bidder == AHBplayer->GetGUID())
-                    {
-                        //pl->ModifyMoney(-int32(price - auction->bid));
-                    }
-                    else
-                    {
-                        // mail to last bidder and return money
-                        auto trans = CharacterDatabase.BeginTransaction();
-                        sAuctionMgr->SendAuctionOutbiddedMail(auction, minBidPrice, AHBplayer, trans);
-                        CharacterDatabase.CommitTransaction(trans);
-                        //pl->ModifyMoney(-int32(price));
-                    }
-                }
-
-                auction->bidder = AHBplayer->GetGUID();
-                auction->bid = minBidPrice;
-
-                // Saving auction into database
-                CharacterDatabase.Execute("UPDATE auctionhouse SET buyguid = '{}',lastbid = '{}' WHERE id = '{}'", auction->bidder.GetCounter(), auction->bid, auction->Id);
+                sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
             }
-            else if (doBuyout)
-            {
-                auto trans = CharacterDatabase.BeginTransaction();
-                //buyout
-                if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
-                {
-                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
-                }
-                auction->bidder = AHBplayer->GetGUID();
-                auction->bid = auction->buyout;
+            auction->bidder = AHBplayer->GetGUID();
+            auction->bid = auction->buyout;
 
-                // Send mails to buyer & seller
-                sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-                sAuctionMgr->SendAuctionWonMail(auction, trans);
-                auction->DeleteFromDB(trans);
+            // Send mails to buyer & seller
+            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
+            sAuctionMgr->SendAuctionWonMail(auction, trans);
+            auction->DeleteFromDB(trans);
 
-                sAuctionMgr->RemoveAItem(auction->item_guid);
-                auctionHouse->RemoveAuction(auction);
-                CharacterDatabase.CommitTransaction(trans);
-            }
+            sAuctionMgr->RemoveAItem(auction->item_guid);
+            auctionHouse->RemoveAuction(auction);
+            CharacterDatabase.CommitTransaction(trans);
         }
     }
 }
 
 void AuctionHouseBot::Update()
 {
-    if ((AHBSeller == false) && (AHBBuyer == false))
+    if ((SellingBotEnabled == false) && (BuyingBotEnabled == false))
         return;
     if (AHCharacters.size() == 0)
         return;
-    time_t _newrun = time(NULL);
+
+    // Only update if the update cycle has been hit
+    LastCycleCount++;
+    if (LastCycleCount < CyclesBetweenBuyOrSell)
+        return;
+    LastCycleCount = 0;
 
     // Randomly select the bot to load, and load it
     uint32 botIndex = urand(0, AHCharacters.size() - 1);
@@ -764,26 +800,17 @@ void AuctionHouseBot::Update()
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
         addNewAuctions(&_AHBplayer, &AllianceConfig);
-        if (((_newrun - _lastrun_a) >= (AllianceConfig.GetBiddingInterval() * MINUTE)) && (AllianceConfig.GetBidsPerInterval() > 0))
-        {
+        if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
-            _lastrun_a = _newrun;
-        }
 
         addNewAuctions(&_AHBplayer, &HordeConfig);
-        if (((_newrun - _lastrun_h) >= (HordeConfig.GetBiddingInterval() * MINUTE)) && (HordeConfig.GetBidsPerInterval() > 0))
-        {
+        if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
-            _lastrun_h = _newrun;
-        }
     }
 
     addNewAuctions(&_AHBplayer, &NeutralConfig);
-    if (((_newrun - _lastrun_n) >= (NeutralConfig.GetBiddingInterval() * MINUTE)) && (NeutralConfig.GetBidsPerInterval() > 0))
-    {
+    if (BuyingBotBuyCanditatesPerBuyoutCycle > 0)
         addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
-        _lastrun_n = _newrun;
-    }
 
     ObjectAccessor::RemoveObject(&_AHBplayer);
 }
@@ -799,16 +826,21 @@ void AuctionHouseBot::InitializeConfiguration()
 {
     debug_Out = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG", false);
     debug_Out_Filters = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG_FILTERS", false);
+    SellingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
 
-    AHBSeller = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
-    AHBBuyer = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableBuyer", false);
-    if (AHBSeller == false && AHBBuyer == false)
+    // Buyer Bot
+    BuyingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
+    CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
+    BuyingBotBuyCanditatesPerBuyoutCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCanditatesPerBuyoutCycle", 1);
+    BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
+        
+    if (SellingBotEnabled == false && BuyingBotEnabled == false)
         return;
     string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
     if (charString == "0")
     {
-        AHBBuyer = false;
-        AHBSeller = false;
+        BuyingBotEnabled = false;
+        SellingBotEnabled = false;
         LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is '0' so this module will be disabled");
         return;
     }
@@ -910,18 +942,12 @@ void AuctionHouseBot::InitializeConfiguration()
     {
         AllianceConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.MinItems", 15000));
         AllianceConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.MaxItems", 15000));
-        AllianceConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.BidInterval", 1));
-        AllianceConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Alliance.BidsPerInterval", 1));
 
         HordeConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.MinItems", 15000));
         HordeConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.MaxItems", 15000));
-        HordeConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.BidInterval", 1));
-        HordeConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Horde.BidsPerInterval", 1));
     }
     NeutralConfig.SetMinItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MinItems", 15000));
     NeutralConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MaxItems", 15000));
-    NeutralConfig.SetBiddingInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidInterval", 1));
-    NeutralConfig.SetBidsPerInterval(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.BidsPerInterval", 1));
 }
 
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)

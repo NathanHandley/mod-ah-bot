@@ -28,6 +28,15 @@ Notes:
 - Important!  By default, most player crafted items (except glyphs, bolts, maybe a few other things) are disabled from showing up in the auction house in order to encourage player crafting on lower pop servers.  If you want different behavior, alter the config variable "AuctionHouseBot.DisabledCraftedItemIDs" by deleting IDs you wish to show up.  Note that fish are also disabled to encourage fishing, and that's also managed by disabled lists.
 - It takes a few hours for the auction house to fully populate, as only 75 items gets added by default every 'tick'.  You can change this in the config with the AuctionHouseBot.ItemsPerCycle variable.
 
+
+## Buying Bot Behavior
+
+1. **Determining Items to Buy:** Every minute the buyer bot will select (BuyCanditatesPerBuyoutCycle) items currently up for auction which are listed by players as potential purchase items.
+2. **Price Willing to Pay:** The buyer bot will use the same item price calculation the seller bot uses, including the random +/- 25%, and that calculated price is then multiplied by (AcceptablePriceModifier) which then becomes the price the buyer will be willing to spend.
+3. **Buying it:** If the price calculated is higher than the buy out price, then the bot will buy it out.
+
+The above behavior is replicated on each enabled auction house.  If left to default settings, 1 item in each auction house will attempt to be bought from, if the price calculation seems favorable. Note that any item buy attempt, even items above buying price, consumes a buy candidate. That means that too many overpriced items can drown out potential sales.
+
 ## Credits
 
 - NathanHandley: Created this rewrite of the one that was ported to AzerothCore
