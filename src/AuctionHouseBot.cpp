@@ -770,10 +770,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                     bidAmount = auction->GetAuctionOutBid();
 
                 if (auction->bidder)
-                {
                     sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
-                    CharacterDatabase.CommitTransaction(trans);
-                }
 
                 auction->bidder = AHBplayer->GetGUID();
                 auction->bid = bidAmount;
@@ -785,6 +782,8 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
                 stmt->SetData(1, auction->bid);
                 stmt->SetData(2, auction->Id);
                 trans->Append(stmt);
+
+                CharacterDatabase.CommitTransaction(trans);
             }
             else if (doBuyout)
             {
@@ -814,6 +813,7 @@ void AuctionHouseBot::Update()
         return;
     if (AHCharacters.size() == 0)
         return;
+
 
     // Only update if the update cycle has been hit
     LastCycleCount++;
