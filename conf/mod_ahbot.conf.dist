@@ -84,13 +84,13 @@ AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
 #    Default: 1 (1 item per auction house is considered per minute)
 #
 #    AuctionHouseBot.Buyer.AcceptablePriceModifier
-#        The buying bot will calculate the item price the same way the selling
-#        bot does, and then multiply that number by this number to determine
-#        how much it is willing to spend.  Having a value of 1 would mean it
-#        will generally spend as much as the buyer bot lists for. Similarly, a value
-#        of 1.5 means it would pay approximately 50% more than a buyer bot will
-#        list for.
-#    Default: 1 (pays about the same a buyer bot does)
+#        The buyer bot calculates item prices the same way the selling
+#        bot does, then multiplies that value by this number to determine
+#        how much it is willing to spend.
+#        A value of 1 means the buyer bot will generally pay the same as the
+#        seller bot lists. Similarly, a value of 1.5 means it will pay roughly
+#        50% more than the seller bot's listed price.
+#    Default: 1
 ###############################################################################
 
 AuctionHouseBot.Buyer.Enabled = 0
