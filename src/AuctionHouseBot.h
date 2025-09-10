@@ -125,7 +125,7 @@ private:
     bool BuyingBotEnabled;
     int CyclesBetweenBuyOrSell;
 
-    int BuyingBotBuyCanditatesPerBuyCycle;
+    uint32 BuyingBotBuyCandidatesPerBuyCycle;
     float BuyingBotAcceptablePriceModifier;
 
     std::string AHCharactersGUIDsForQuery;
@@ -192,8 +192,22 @@ private:
     float PriceMultiplierQualityArtifact;
     float PriceMultiplierQualityHeirloom;
     float PriceMultiplierCategoryQuality[MAX_ITEM_CLASS][MAX_ITEM_QUALITY];
+    float PriceMultiplierCategoryMountQualityPoor;
+    float PriceMultiplierCategoryMountQualityNormal;
+    float PriceMultiplierCategoryMountQualityUncommon;
     float PriceMultiplierCategoryMountQualityRare;
     float PriceMultiplierCategoryMountQualityEpic;
+    float PriceMultiplierCategoryMountQualityLegendary;
+    float PriceMultiplierCategoryMountQualityArtifact;
+    float PriceMultiplierCategoryMountQualityHeirloom;
+    bool AdvancedPricingTradeGoodClothEnabled;
+    bool AdvancedPricingTradeGoodHerbEnabled;
+    bool AdvancedPricingTradeGoodMetalStoneEnabled;
+    bool AdvancedPricingTradeGoodLeatherEnabled;
+    bool AdvancedPricingTradeGoodEnchantingEnabled;
+    bool AdvancedPricingTradeGoodElementalEnabled;
+    bool AdvancedPricingMiscJunkEnabled;
+    bool AdvancedPricingMiscMountEnabled;
     uint32 PriceMinimumCenterBaseConsumable;
     uint32 PriceMinimumCenterBaseContainer;
     uint32 PriceMinimumCenterBaseWeapon;
