@@ -42,9 +42,6 @@ private:
     uint32 minItems;
     uint32 maxItems;
 
-    uint32 buyerBiddingInterval;
-    uint32 buyerBidsPerInterval;
-
 public:
     AHBConfig(uint32 ahid)
     {
@@ -99,24 +96,6 @@ public:
     {
         return maxItems;
     }
-
-    void SetBiddingInterval(uint32 value)
-    {
-        buyerBiddingInterval = value;
-    }
-    uint32 GetBiddingInterval()
-    {
-        return buyerBiddingInterval;
-    }
-
-    void SetBidsPerInterval(uint32 value)
-    {
-        buyerBidsPerInterval = value;
-    }
-    uint32 GetBidsPerInterval()
-    {
-        return buyerBidsPerInterval;
-    }
     ~AHBConfig()
     {
     }
@@ -142,8 +121,12 @@ private:
     bool debug_Out;
     bool debug_Out_Filters;
 
-    bool AHBSeller;
-    bool AHBBuyer;
+    bool SellingBotEnabled;
+    bool BuyingBotEnabled;
+    int CyclesBetweenBuyOrSell;
+
+    int BuyingBotBuyCanditatesPerBuyCycle;
+    float BuyingBotAcceptablePriceModifier;
 
     std::string AHCharactersGUIDsForQuery;
     uint32 ItemsPerCycle;
@@ -229,14 +212,11 @@ private:
     std::unordered_map<uint32, uint64> PriceMinimumCenterBaseOverridesByItemID;
     float ItemLevelPriceMultiplier;
 
-
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
     AHBConfig NeutralConfig;
 
-    time_t _lastrun_a;
-    time_t _lastrun_h;
-    time_t _lastrun_n;
+    int LastCycleCount;
 
     inline uint32 minValue(uint32 a, uint32 b) { return a <= b ? a : b; };
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
