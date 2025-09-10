@@ -124,7 +124,7 @@ private:
     bool BuyingBotEnabled;
     int CyclesBetweenBuyOrSell;
 
-    int BuyingBotBuyCanditatesPerBuyoutCycle;
+    int BuyingBotBuyCanditatesPerBuyCycle;
     float BuyingBotAcceptablePriceModifier;
 
     std::string AHCharactersGUIDsForQuery;
