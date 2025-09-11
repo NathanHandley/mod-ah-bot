@@ -851,79 +851,79 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         else if (auction->startbid < willingToPayForStackPrice && auction->GetAuctionOutBid() < willingToPayForStackPrice)
             doBid = true;
 
-        if (doBuyout == true || doBid == true)
+        if (debug_Out)
         {
-            if (debug_Out)
-            {
-                LOG_INFO("module", "-------------------------------------------------");
-                LOG_INFO("module", "AHBuyer: Info for Auction #{}:", auction->Id);
-                LOG_INFO("module", "AHBuyer: AuctionHouse: {}", auction->GetHouseId());
-                LOG_INFO("module", "AHBuyer: Owner: {}", auction->owner.ToString());
-                LOG_INFO("module", "AHBuyer: Bidder: {}", auction->bidder.ToString());
-                LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
-                LOG_INFO("module", "AHBuyer: Current Bid: {}", auction->bid);
-                LOG_INFO("module", "AHBuyer: Buyout: {}", auction->buyout);
-                LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
-                LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
-                LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price: {}", willingToPayForStackPrice);
-                LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
-                LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
-                LOG_INFO("module", "AHBuyer: Item Info:");
-                LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
-                LOG_INFO("module", "AHBuyer: Buy Price: {}", prototype->BuyPrice);
-                LOG_INFO("module", "AHBuyer: Sell Price: {}", prototype->SellPrice);
-                LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
-                LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
-                LOG_INFO("module", "AHBuyer: Item Level: {}", prototype->ItemLevel);
-                LOG_INFO("module", "AHBuyer: Ammo Type: {}", prototype->AmmoType);
-                LOG_INFO("module", "-------------------------------------------------");
-            }
+            LOG_INFO("module", "-------------------------------------------------");
+            LOG_INFO("module", "AHBuyer: Info for Auction #{}:", auction->Id);
+            LOG_INFO("module", "AHBuyer: AuctionHouse: {}", auction->GetHouseId());
+            LOG_INFO("module", "AHBuyer: Owner: {}", auction->owner.ToString());
+            LOG_INFO("module", "AHBuyer: Bidder: {}", auction->bidder.ToString());
+            LOG_INFO("module", "AHBuyer: Expire Time: {}", uint32(auction->expire_time));
+            LOG_INFO("module", "AHBuyer: Item GUID: {}", auction->item_guid.ToString());
+            LOG_INFO("module", "AHBuyer: Item Template: {}", auction->item_template);
+            LOG_INFO("module", "AHBuyer: Item Info:");
+            LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
+            LOG_INFO("module", "AHBuyer: Vendor Buy Price: {}", prototype->BuyPrice);
+            LOG_INFO("module", "AHBuyer: Vendor Sell Price: {}", prototype->SellPrice);
+            LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
+            LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
+            LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
+            LOG_INFO("module", "AHBuyer: Item Level: {}", prototype->ItemLevel);
+            LOG_INFO("module", "AHBuyer: Ammo Type: {}", prototype->AmmoType);
+            LOG_INFO("module", "AHBuyer: Stack Size: {}", pItem->GetCount());
+            LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
+            LOG_INFO("module", "AHBuyer: Current Bid: {}", auction->bid);
+            LOG_INFO("module", "AHBuyer: Buyout Price: {}", auction->buyout);
+            LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price: {}", willingToSpendPerItemPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price: {}", willingToPayForStackPrice);
+            LOG_INFO("module", "AHBuyer: Decided to Buyout?: {}", doBuyout);
+            LOG_INFO("module", "AHBuyer: Decided to Bid?: {}", doBid);
+            LOG_INFO("module", "-------------------------------------------------");
+        }
+        if (doBid)
+        {
+            auto trans = CharacterDatabase.BeginTransaction();
 
-            if (doBid)
-            {
-                auto trans = CharacterDatabase.BeginTransaction();
+            // Perform outbid
+            uint32 bidAmount = 0;
+            if (auction->bid == 0)
+                bidAmount = auction->startbid;
+            else
+                bidAmount = auction->GetAuctionOutBid();
 
-                // Perform outbid
-                uint32 bidAmount = 0;
-                if (auction->bid == 0)
-                    bidAmount = auction->startbid;
-                else
-                    bidAmount = auction->GetAuctionOutBid();
+            if (auction->bidder)
+                sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
 
-                if (auction->bidder)
-                    sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
+            auction->bidder = AHBplayer->GetGUID();
+            auction->bid = bidAmount;
 
-                auction->bidder = AHBplayer->GetGUID();
-                auction->bid = bidAmount;
+            sAuctionMgr->GetAuctionHouseSearcher()->UpdateBid(auction);
 
-                sAuctionMgr->GetAuctionHouseSearcher()->UpdateBid(auction);
+            CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_AUCTION_BID);
+            stmt->SetData(0, auction->bidder.GetCounter());
+            stmt->SetData(1, auction->bid);
+            stmt->SetData(2, auction->Id);
+            trans->Append(stmt);
 
-                CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_AUCTION_BID);
-                stmt->SetData(0, auction->bidder.GetCounter());
-                stmt->SetData(1, auction->bid);
-                stmt->SetData(2, auction->Id);
-                trans->Append(stmt);
+            CharacterDatabase.CommitTransaction(trans);
+        }
+        else if (doBuyout)
+        {
+            auto trans = CharacterDatabase.BeginTransaction();
 
-                CharacterDatabase.CommitTransaction(trans);
-            }
-            else if (doBuyout)
-            {
-                auto trans = CharacterDatabase.BeginTransaction();
+            if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
+                sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
+            auction->bidder = AHBplayer->GetGUID();
+            auction->bid = auction->buyout;
 
-                if ((auction->bidder) && (AHBplayer->GetGUID() != auction->bidder))
-                    sAuctionMgr->SendAuctionOutbiddedMail(auction, auction->buyout, AHBplayer, trans);
-                auction->bidder = AHBplayer->GetGUID();
-                auction->bid = auction->buyout;
+            // Send mails to buyer & seller
+            sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
+            sAuctionMgr->SendAuctionWonMail(auction, trans);
+            auction->DeleteFromDB(trans);
 
-                // Send mails to buyer & seller
-                sAuctionMgr->SendAuctionSuccessfulMail(auction, trans);
-                sAuctionMgr->SendAuctionWonMail(auction, trans);
-                auction->DeleteFromDB(trans);
-
-                sAuctionMgr->RemoveAItem(auction->item_guid);
-                auctionHouse->RemoveAuction(auction);
-                CharacterDatabase.CommitTransaction(trans);
-            }
+            sAuctionMgr->RemoveAItem(auction->item_guid);
+            auctionHouse->RemoveAuction(auction);
+            CharacterDatabase.CommitTransaction(trans);
         }
     }
 }
