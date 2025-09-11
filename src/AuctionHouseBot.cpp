@@ -27,6 +27,9 @@
 #include "WorldSession.h"
 #include "GameTime.h"
 #include "DatabaseEnv.h"
+#include "ItemTemplate.h"
+#include "SharedDefines.h"
+#include <cmath>
 
 #include <set>
 
@@ -38,7 +41,7 @@ AuctionHouseBot::AuctionHouseBot() :
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
     CyclesBetweenBuyOrSell(1),
-    BuyingBotBuyCanditatesPerBuyCycle(1),
+    BuyingBotBuyCandidatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
@@ -201,6 +204,122 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     default: break;
     }
 
+    float classQualityPriceMultiplier = PriceMultiplierCategoryQuality[itemProto->Class][itemProto->Quality];
+
+    /* "ADVANCED" SUBCLASS PRICE MULTIPLIER FORMULA NOTES
+
+      1. multiplierHelper = log(1 + b * ItemLevel)
+      2. 
+            clothMultiplierHelper ^ p
+        ---------------------------------   +   c * (clothMultiplierHelper ^ r)  -  d
+          1 + a * clothMultiplierHelper
+
+      Variables:
+        b  // Influences the growth rate at low item levels
+        p  // Exponent for first term (controls curve steepness)
+        a  // Coefficient in denominator (dampens growth, especially at high item levels)
+        c  // Scaling coefficient for second term
+        r  // Exponent for second term (adds nonlinear boost)
+        d  // Constant shift (adjusts baseline multiplier). This becomes apparent if you graph the equation - it shifts the entire curve down.
+     
+      Notes:
+      - This formula produces a multiplier that grows logarithmically with ItemLevel (uses natural log, not base10)
+      - The first term (before '+') heavily influences low item levels, the second term adds some fine-tuning for higher levels.
+      - The subtraction of 'r' can help ensure low-level items don't get inflated excessively. Sometimes it isn't necessary
+    */
+
+    // Try to approximate real world prices for Trade Goods based on subclass and item level
+    double subclassPriceMultiplier = 1.0f;
+    if (itemProto->Class == ITEM_CLASS_TRADE_GOODS) 
+    {
+        switch (itemProto->SubClass)
+        {
+            case ITEM_SUBCLASS_CLOTH:
+            {
+                if (!AdvancedPricingTradeGoodClothEnabled) 
+                    break;
+                double clothMultiplierHelper = std::log(1.0 + (itemProto->ItemLevel));
+                subclassPriceMultiplier = ((std::pow(clothMultiplierHelper,2.0)) / (1 + (0.8 * clothMultiplierHelper))) + (0.001 * std::pow(clothMultiplierHelper,3.5)) - 0.3;
+                break;
+            }
+            case ITEM_SUBCLASS_HERB:
+            {
+                if (!AdvancedPricingTradeGoodHerbEnabled) 
+                    break;
+                double herbMultiplierHelper = std::log(1.0 + (5.0 * itemProto->ItemLevel));
+                subclassPriceMultiplier = (std::pow(herbMultiplierHelper,3.0) / (1 + (1.8 * herbMultiplierHelper))) - 4.2; 
+                break;
+            }
+            case ITEM_SUBCLASS_METAL_STONE:
+            {
+                if (!AdvancedPricingTradeGoodMetalStoneEnabled) 
+                    break;
+                double metalMultiplierHelper = std::log(1.0 + (75.0 * itemProto->ItemLevel));
+                subclassPriceMultiplier =  ((std::pow(metalMultiplierHelper,3.0)) / (1 + (7.0 * metalMultiplierHelper))) + (0.001 * std::pow(metalMultiplierHelper,3.5)) - 5.2;
+                break;
+            }
+            case ITEM_SUBCLASS_LEATHER:
+            {
+                if (!AdvancedPricingTradeGoodLeatherEnabled) 
+                    break;
+                double leatherMultiplierHelper = std::log(1.0 + (0.25 * itemProto->ItemLevel));
+                subclassPriceMultiplier = ((std::pow(leatherMultiplierHelper,0.15)) / (1 + (2.0 * leatherMultiplierHelper))) + (0.4 * std::pow(leatherMultiplierHelper,3.0)) - 0.2;
+                break;
+            }
+            case ITEM_SUBCLASS_ENCHANTING:
+            {
+                if (!AdvancedPricingTradeGoodEnchantingEnabled) 
+                    break;
+                double enchantingMultiplierHelper = std::log(1.0 + (0.25 * itemProto->ItemLevel));
+                subclassPriceMultiplier = ((std::pow(enchantingMultiplierHelper,0.15)) / (1 + (2.0 * enchantingMultiplierHelper))) + (0.4 * std::pow(enchantingMultiplierHelper,3.0)) - 0.2; 
+                break;
+            }
+            case ITEM_SUBCLASS_ELEMENTAL:
+            {
+                if (!AdvancedPricingTradeGoodElementalEnabled) 
+                    break;
+                subclassPriceMultiplier = 85 - (itemProto->ItemLevel / 0.97);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    else if (itemProto->Class == ITEM_CLASS_MISC)
+    {
+        switch (itemProto->SubClass)
+        {
+            // Tuned for pricing lockboxes
+            case ITEM_SUBCLASS_JUNK:
+            {
+                if (!AdvancedPricingMiscJunkEnabled) 
+                    break;
+                double miscMultiplierHelper = std::log(1.0 + (0.12 * itemProto->ItemLevel));
+                subclassPriceMultiplier = (std::pow(miscMultiplierHelper,3.2) / (1 + miscMultiplierHelper)); 
+                break;
+            }
+            case ITEM_SUBCLASS_JUNK_MOUNT:
+            {
+                if (!AdvancedPricingMiscMountEnabled) 
+                    break;
+                switch (itemProto->Quality)
+                {
+                    case ITEM_QUALITY_POOR:         subclassPriceMultiplier = PriceMultiplierCategoryMountQualityPoor;      break;
+                    case ITEM_QUALITY_NORMAL:       subclassPriceMultiplier = PriceMultiplierCategoryMountQualityNormal;    break;
+                    case ITEM_QUALITY_UNCOMMON:     subclassPriceMultiplier = PriceMultiplierCategoryMountQualityUncommon;  break;
+                    case ITEM_QUALITY_RARE:         subclassPriceMultiplier = PriceMultiplierCategoryMountQualityRare;      break;
+                    case ITEM_QUALITY_EPIC:         subclassPriceMultiplier = PriceMultiplierCategoryMountQualityEpic;      break;
+                    case ITEM_QUALITY_LEGENDARY:    subclassPriceMultiplier = PriceMultiplierCategoryMountQualityLegendary; break;
+                    case ITEM_QUALITY_ARTIFACT:     subclassPriceMultiplier = PriceMultiplierCategoryMountQualityArtifact;  break;
+                    case ITEM_QUALITY_HEIRLOOM:     subclassPriceMultiplier = PriceMultiplierCategoryMountQualityHeirloom;  break;
+                    default: break;
+                }
+                break;
+            }
+            default: break;
+        }
+    }
+
     // Grab the minimum prices
     uint64 PriceMinimumCenterBase = 1000;
     auto it = PriceMinimumCenterBaseOverridesByItemID.find(itemProto->ItemId);
@@ -231,28 +350,33 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Set the minimum price
     if (outBuyoutPrice < PriceMinimumCenterBase)
-        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.75, PriceMinimumCenterBase * 1.25);
+        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.85, PriceMinimumCenterBase * 1.25);
     else
-        outBuyoutPrice = urand(outBuyoutPrice * 0.75, outBuyoutPrice * 1.25);
+        outBuyoutPrice = urand(outBuyoutPrice * 0.85, outBuyoutPrice * 1.25);
 
+    // Ensure no multipliers are zero or negative
+    if (classPriceMultiplier <= 0.0f)
+        classPriceMultiplier = 1.0f;
+    if (qualityPriceMultplier <= 0.0f)
+        qualityPriceMultplier = 1.0f;
+    if (classQualityPriceMultiplier <= 0.0f)
+        classQualityPriceMultiplier = 1.0f;
+    if (subclassPriceMultiplier <= 0.0f)
+        subclassPriceMultiplier = 1.0f;
+    
     // Multiply the price based on multipliers
     outBuyoutPrice *= qualityPriceMultplier;
     outBuyoutPrice *= classPriceMultiplier;
+    outBuyoutPrice *= classQualityPriceMultiplier;
+    outBuyoutPrice *= static_cast<float>(subclassPriceMultiplier);
 
-    // Apply item level multiplier
-    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0)
-    {
+    // Apply item level multiplier. Only if no subclass multiplier was applied
+    if (ItemLevelPriceMultiplier > 0.0f && itemProto->ItemLevel > 0 && subclassPriceMultiplier == 1.0f)
         outBuyoutPrice *= itemProto->ItemLevel * ItemLevelPriceMultiplier;
-    }
 
     // If a vendor sells this item, make the price at least that high
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
-
-    // Calculate buyout price with a variance
-    float sellVarianceBuyoutPriceTopPercent = 1.30;
-    float sellVarianceBuyoutPriceBottomPercent = 0.70;
-    outBuyoutPrice = urand(sellVarianceBuyoutPriceBottomPercent * outBuyoutPrice, sellVarianceBuyoutPriceTopPercent * outBuyoutPrice);
 
     // Calculate a bid price based on a variance against buyout price
     float sellVarianceBidPriceTopPercent = 1;
@@ -268,9 +392,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Bid price can never be below sell price
     if (outBidPrice < itemProto->SellPrice)
-    {
         outBidPrice = itemProto->SellPrice;
-    }
 }
 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
@@ -676,13 +798,13 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         possibleBids.push_back(tmpdata);
     }while (result->NextRow());
 
-    for (uint32 count = 1; count <= BuyingBotBuyCanditatesPerBuyCycle; ++count)
+    for (uint32 count = 1; count <= BuyingBotBuyCandidatesPerBuyCycle; ++count)
     {
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
             //if (debug_Out) sLog->outError( "AHBuyer: I have no items to bid on.");
-            count = BuyingBotBuyCanditatesPerBuyCycle;
+            count = BuyingBotBuyCandidatesPerBuyCycle;
             continue;
         }
 
@@ -719,7 +841,6 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
 
         uint64 willingToPayForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
-        uint64 bidAmount = 0;
 
         // Determine if it's a bid, buyout, or skip
         bool doBuyout = false;
@@ -834,16 +955,16 @@ void AuctionHouseBot::Update()
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
         addNewAuctions(&_AHBplayer, &AllianceConfig);
-        if (BuyingBotBuyCanditatesPerBuyCycle > 0)
+        if (BuyingBotBuyCandidatesPerBuyCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
 
         addNewAuctions(&_AHBplayer, &HordeConfig);
-        if (BuyingBotBuyCanditatesPerBuyCycle > 0)
+        if (BuyingBotBuyCandidatesPerBuyCycle > 0)
             addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
     }
 
     addNewAuctions(&_AHBplayer, &NeutralConfig);
-    if (BuyingBotBuyCanditatesPerBuyCycle > 0)
+    if (BuyingBotBuyCandidatesPerBuyCycle > 0)
         addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
 
     ObjectAccessor::RemoveObject(&_AHBplayer);
@@ -865,7 +986,7 @@ void AuctionHouseBot::InitializeConfiguration()
     // Buyer Bot
     BuyingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
     CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
-    BuyingBotBuyCanditatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCanditatesPerBuyCycle", 1);
+    BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
     BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
         
     if (SellingBotEnabled == false && BuyingBotEnabled == false)
@@ -884,8 +1005,8 @@ void AuctionHouseBot::InitializeConfiguration()
 
     // Item level Restrictions
     ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
-    ListedItemLevelMax = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
-    ListedItemLevelMin = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
+    ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
+    ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
     AddItemLevelExceptionItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""));
 
     // Stack Ratios
@@ -930,7 +1051,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierCategoryArmor = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Armor", 1);
     PriceMultiplierCategoryReagent = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Reagent", 1);
     PriceMultiplierCategoryProjectile = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Projectile", 1);
-    PriceMultiplierCategoryTradeGood = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.TradeGood", 2);
+    PriceMultiplierCategoryTradeGood = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.TradeGood", 1);
     PriceMultiplierCategoryGeneric = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Generic", 1);
     PriceMultiplierCategoryRecipe = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Recipe", 1);
     PriceMultiplierCategoryQuiver = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Quiver", 1);
@@ -946,7 +1067,36 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
-	ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 0);
+    ItemLevelPriceMultiplier = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.ItemLevel", 0);
+    for (int category = 0; category < MAX_ITEM_CLASS; category++)
+    {
+        for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
+        {
+            std::string key = std::string("AuctionHouseBot.PriceMultiplier.Category") + GetCategoryName((ItemClass)category) +
+                            ".Quality" + GetQualityName((ItemQualities)quality);
+
+            float multiplier = sConfigMgr->GetOption<float>(key.c_str(), 1.0f);
+            PriceMultiplierCategoryQuality[category][quality] = multiplier;
+        }
+    }
+    PriceMultiplierCategoryMountQualityPoor = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityPoor", 1.0);
+    PriceMultiplierCategoryMountQualityNormal = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityNormal", 1.0);
+    PriceMultiplierCategoryMountQualityUncommon = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityUncommon", 1.0);
+    PriceMultiplierCategoryMountQualityRare = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityRare", 3000.0);
+    PriceMultiplierCategoryMountQualityEpic = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityEpic", 5750.0);
+    PriceMultiplierCategoryMountQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityLegendary", 1.0);
+    PriceMultiplierCategoryMountQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityArtifact", 1.0);
+    PriceMultiplierCategoryMountQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityHeirloom", 1.0);
+
+    // Advanced Pricing
+    AdvancedPricingTradeGoodClothEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled", true);
+    AdvancedPricingTradeGoodHerbEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Herb.Enabled", true);
+    AdvancedPricingTradeGoodMetalStoneEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.MetalStone.Enabled", true);
+    AdvancedPricingTradeGoodLeatherEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Leather.Enabled", true);
+    AdvancedPricingTradeGoodEnchantingEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Enchanting.Enabled", true);
+    AdvancedPricingTradeGoodElementalEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Elemental.Enabled", true);
+    AdvancedPricingMiscJunkEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Misc.Junk.Enabled", true);
+    AdvancedPricingMiscMountEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled", true);
 
     // Price minimums
     PriceMinimumCenterBaseConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Consumable",1000);
@@ -956,7 +1106,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMinimumCenterBaseArmor = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Armor", 1000);
     PriceMinimumCenterBaseReagent = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Reagent", 1000);
     PriceMinimumCenterBaseProjectile = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Projectile", 5);
-    PriceMinimumCenterBaseTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.TradeGood", 1000);
+    PriceMinimumCenterBaseTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.TradeGood", 850);
     PriceMinimumCenterBaseGeneric = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Generic", 1000);
     PriceMinimumCenterBaseRecipe = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Recipe", 1000);
     PriceMinimumCenterBaseQuiver = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Quiver", 1000);
@@ -1180,5 +1330,46 @@ void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverrides
             if (itemId > 0 && copperPrice > 0)
                 PriceMinimumCenterBaseOverridesByItemID.insert({itemId, copperPrice});
         }
+    }
+}
+
+const char* AuctionHouseBot::GetQualityName(ItemQualities quality)
+{
+    switch (quality)
+    {
+        case ITEM_QUALITY_POOR:       return "Poor";
+        case ITEM_QUALITY_NORMAL:     return "Normal";
+        case ITEM_QUALITY_UNCOMMON:   return "Uncommon";
+        case ITEM_QUALITY_RARE:       return "Rare";
+        case ITEM_QUALITY_EPIC:       return "Epic";
+        case ITEM_QUALITY_LEGENDARY:  return "Legendary";
+        case ITEM_QUALITY_ARTIFACT:   return "Artifact";
+        case ITEM_QUALITY_HEIRLOOM:   return "Heirloom";
+        default:                      return "Unknown";
+    }
+}
+
+const char* AuctionHouseBot::GetCategoryName(ItemClass category)
+{
+    switch (category)
+    {
+        case ITEM_CLASS_CONSUMABLE:   return "Consumable";
+        case ITEM_CLASS_CONTAINER:    return "Container";
+        case ITEM_CLASS_WEAPON:       return "Weapon";
+        case ITEM_CLASS_GEM:          return "Gem";
+        case ITEM_CLASS_ARMOR:        return "Armor";
+        case ITEM_CLASS_REAGENT:      return "Reagent";
+        case ITEM_CLASS_PROJECTILE:   return "Projectile";
+        case ITEM_CLASS_TRADE_GOODS:  return "TradeGood";
+        case ITEM_CLASS_GENERIC:      return "Generic";
+        case ITEM_CLASS_RECIPE:       return "Recipe";
+        case ITEM_CLASS_MONEY:        return "Money";
+        case ITEM_CLASS_QUIVER:       return "Quiver";
+        case ITEM_CLASS_QUEST:        return "Quest";
+        case ITEM_CLASS_KEY:          return "Key";
+        case ITEM_CLASS_PERMANENT:    return "Permanent";
+        case ITEM_CLASS_MISC:         return "Misc";
+        case ITEM_CLASS_GLYPH:        return "Glyph";
+        default:                      return "Unknown";
     }
 }

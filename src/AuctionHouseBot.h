@@ -32,6 +32,7 @@ class Player;
 class WorldSession;
 
 #include "ItemTemplate.h"
+#include "SharedDefines.h"
 
 class AHBConfig
 {
@@ -124,7 +125,7 @@ private:
     bool BuyingBotEnabled;
     int CyclesBetweenBuyOrSell;
 
-    int BuyingBotBuyCanditatesPerBuyCycle;
+    uint32 BuyingBotBuyCandidatesPerBuyCycle;
     float BuyingBotAcceptablePriceModifier;
 
     std::string AHCharactersGUIDsForQuery;
@@ -132,8 +133,8 @@ private:
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
     bool ListedItemLevelRestrictedEnabled;
-    int32 ListedItemLevelMax;
-    int32 ListedItemLevelMin;
+    uint32 ListedItemLevelMax;
+    uint32 ListedItemLevelMin;
     std::set<uint32> ListedItemLevelExceptionItems;
     uint32 RandomStackRatioConsumable;
     uint32 RandomStackRatioContainer;
@@ -190,6 +191,23 @@ private:
     float PriceMultiplierQualityLegendary;
     float PriceMultiplierQualityArtifact;
     float PriceMultiplierQualityHeirloom;
+    float PriceMultiplierCategoryQuality[MAX_ITEM_CLASS][MAX_ITEM_QUALITY];
+    float PriceMultiplierCategoryMountQualityPoor;
+    float PriceMultiplierCategoryMountQualityNormal;
+    float PriceMultiplierCategoryMountQualityUncommon;
+    float PriceMultiplierCategoryMountQualityRare;
+    float PriceMultiplierCategoryMountQualityEpic;
+    float PriceMultiplierCategoryMountQualityLegendary;
+    float PriceMultiplierCategoryMountQualityArtifact;
+    float PriceMultiplierCategoryMountQualityHeirloom;
+    bool AdvancedPricingTradeGoodClothEnabled;
+    bool AdvancedPricingTradeGoodHerbEnabled;
+    bool AdvancedPricingTradeGoodMetalStoneEnabled;
+    bool AdvancedPricingTradeGoodLeatherEnabled;
+    bool AdvancedPricingTradeGoodEnchantingEnabled;
+    bool AdvancedPricingTradeGoodElementalEnabled;
+    bool AdvancedPricingMiscJunkEnabled;
+    bool AdvancedPricingMiscMountEnabled;
     uint32 PriceMinimumCenterBaseConsumable;
     uint32 PriceMinimumCenterBaseContainer;
     uint32 PriceMinimumCenterBaseWeapon;
@@ -244,6 +262,8 @@ public:
     void AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID);
     void AddItemLevelExceptionItems(std::string itemLevelExceptionIdString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
+    const char* GetQualityName(ItemQualities quality);
+    const char* GetCategoryName(ItemClass category);
 };
 
 #define auctionbot AuctionHouseBot::instance()
