@@ -118,6 +118,9 @@ AuctionHouseBot::AuctionHouseBot() :
     PriceMinimumCenterBaseMisc(1),
     PriceMinimumCenterBaseGlyph(1),
     ItemLevelPriceMultiplier(1),
+    ListedItemIDRestrictedEnabled(false),
+    ListedItemIDMin(0),
+    ListedItemIDMax(200000),
     LastCycleCount(0)
 {
     AllianceConfig = AHBConfig(2);
@@ -473,9 +476,38 @@ void AuctionHouseBot::populateItemCandidateList()
             if (ListedItemLevelExceptionItems.find(itr->second.ItemId) == ListedItemLevelExceptionItems.end())
             {
                 if (itr->second.ItemLevel < ListedItemLevelMin)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item level is lower than ListedItemLevelRestrict.MinItemLevel", itr->second.ItemId);
                     continue;
+                }
                 if (itr->second.ItemLevel > ListedItemLevelMax)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item level is higher than ListedItemLevelRestrict.MaxItemLevel", itr->second.ItemId);
                     continue;
+                }
+            }
+        }
+
+        // If there is an item ID exception, honor it
+        if (ListedItemIDRestrictedEnabled == true)
+        {
+            // Only test if it's not an exception
+            if (ListedItemIDExceptionItems.find(itr->second.ItemId) == ListedItemIDExceptionItems.end())
+            {
+                if (itr->second.ItemId < ListedItemIDMin)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item id is lower than ListedItemLevelRestrict.MinItemID", itr->second.ItemId);
+                    continue;
+                }
+                if (itr->second.ItemId > ListedItemIDMax)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item id is higher than ListedItemLevelRestrict.MaxItemID", itr->second.ItemId);
+                    continue;
+                }
             }
         }
 
@@ -483,7 +515,7 @@ void AuctionHouseBot::populateItemCandidateList()
         if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
             if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (PTR/Beta/Unused Item)", itr->second.ItemId);
+                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Configured by DisabledItemIDs and DisabledCraftedItemIDs)", itr->second.ItemId);
             continue;
         }
 
@@ -1003,13 +1035,6 @@ void AuctionHouseBot::InitializeConfiguration()
 
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
 
-    // Item level Restrictions
-    ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
-    ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
-    ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
-    ListedItemLevelExceptionItems.clear();
-    AddItemIDsFromString(ListedItemLevelExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""), "ListedItemLevelRestrict.ExceptionItemIDs");
-
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
     RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Container", 0);
@@ -1116,6 +1141,20 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMinimumCenterBaseMisc = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Misc", 1000);
     PriceMinimumCenterBaseGlyph = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Glyph", 1000);
     AddPriceMinimumOverrides(sConfigMgr->GetOption<std::string>("AuctionHouseBot.PriceMinimumCenterBase.OverrideItems", ""));
+
+    // Item level Restrictions
+    ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
+    ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
+    ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
+    ListedItemLevelExceptionItems.clear();
+    AddItemIDsFromString(ListedItemLevelExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""), "ListedItemLevelRestrict.ExceptionItemIDs");
+
+    // Item ID Restrictions
+    ListedItemIDRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemIDRestrict.Enabled", false);
+    ListedItemIDMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemIDRestrict.MinItemID", 0);
+    ListedItemIDMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemIDRestrict.MaxItemID", 200000);
+    ListedItemIDExceptionItems.clear();
+    AddItemIDsFromString(ListedItemIDExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs", ""), "ListedItemIDRestrict.ExceptionItemIDs");
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);

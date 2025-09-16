@@ -98,30 +98,6 @@ AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
 
 ###############################################################################
-#    AuctionHouseBot.ListedItemLevelRestrict.Enabled
-#        If true, the item level will be restricted in listings
-#    Default: false
-#
-#    AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel
-#        The highest item level that will show up in listings
-#    Default: 999
-#
-#    AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel
-#        The lowest item level that will show up in listings
-#    Default: 0
-#
-#    AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs
-#        Comma separated list of itemIDs to exclude from any item level restriction logic
-#        Ranges using a dash (-) can also be used
-#        NOTE: The disabled item list will still be honored even if it's listed here
-###############################################################################
-
-AuctionHouseBot.ListedItemLevelRestrict.Enabled = false
-AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel = 999
-AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel = 0
-AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs = 
-
-###############################################################################
 #    AuctionHouseBot.<faction>.MinItems
 #    AuctionHouseBot.<faction>.MaxItems
 #        The minimum and maximum number of items to post on that auction house
@@ -220,6 +196,11 @@ AuctionHouseBot.PriceMinimumCenterBase.OverrideItems =
 #       Note that the AdvancedPricing logic also relies on values 
 #       set by AuctionHouseBot.PriceMultiplier.Category*.Quality* 
 #    Defaults: 1 (Enabled)
+#
+#    Note that all price multpliers (along with the advanced pricing) are applied
+#     multiplicative.  Example: A Category of 1.5x, Quality of 2x, and CategoryQuality
+#     of 1.4x would make the multiplier 4.2 (1.5 x 2 x 1.4).  The advanced pricing
+#     (below) would then multiply that value further.
 ###############################################################################
 
 AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled         = 1
@@ -250,6 +231,11 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #        This allows more precise control than Category.* or Quality.* alone,
 #        for example making Uncommon Weapons more expensive without affecting
 #        Uncommon Trade Goods.
+#
+#    Note that all price multpliers (along with the advanced pricing) are applied
+#     multiplicative.  Example: A Category of 1.5x, Quality of 2x, and CategoryQuality
+#     of 1.4x would make the multiplier 4.2 (1.5 x 2 x 1.4).  The advanced pricing
+#     (above) would then multiply that value further.
 ###############################################################################
 
 AuctionHouseBot.PriceMultiplier.Category.Consumable = 1
@@ -498,6 +484,59 @@ AuctionHouseBot.RandomStackRatio.Quest = 10
 AuctionHouseBot.RandomStackRatio.Key = 10
 AuctionHouseBot.RandomStackRatio.Misc = 100
 AuctionHouseBot.RandomStackRatio.Glyph = 0
+
+###############################################################################
+#    AuctionHouseBot.ListedItemLevelRestrict.Enabled
+#        If true, the item level will be restricted in listings
+#    Default: false
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel
+#        The lowest item level that will show up in listings
+#    Default: 0
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel
+#        The highest item level that will show up in listings
+#    Default: 999
+#
+#    AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs
+#        Comma separated list of itemIDs to exclude from any item level restriction logic
+#        Ranges using a dash (-) can also be used
+#        NOTE: Other filtering will still be honored even if it's listed here
+#		 Example: "100,150-200" would cause item level 100, and all item levels
+#         between 150 and 200 (inclusively) to not be subjected to this restriction
+###############################################################################
+
+AuctionHouseBot.ListedItemLevelRestrict.Enabled = false
+AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel = 0
+AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel = 999
+AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs = 
+
+###############################################################################
+#    AuctionHouseBot.ListedItemIDRestrict.Enabled
+#        If true, the item ids (item_temtplate.entry) will be restricted in listings
+#    Default: false
+#
+#    AuctionHouseBot.ListedItemIDRestrict.MinItemID
+#        The lowest item id that will show up in listings
+#    Default: 0
+#
+#    AuctionHouseBot.ListedItemIDRestrict.MaxItemID
+#        The highest item id that will show up in listings
+#    Default: 200000
+#
+#    AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs
+#        Comma separated list of itemIDs to exclude from any item id restriction logic
+#        Ranges using a dash (-) can also be used
+#        NOTE: Other filtering will still be honored even if it's listed here
+#		 Example: "2589,3200-3202" would cause Linen Cloth (2589), Burnt Leather Bracers (3200),
+#         Barbarian War Axe (3201), and Forest Leather Bracers (3202) to not 
+#         be subjected to this restriction
+###############################################################################
+
+AuctionHouseBot.ListedItemIDRestrict.Enabled = false
+AuctionHouseBot.ListedItemIDRestrict.MinItemID = 0
+AuctionHouseBot.ListedItemIDRestrict.MaxItemID = 200000
+AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs = 
 
 ###############################################################################
 #    AuctionHouseBot.DisabledItemTextFilter
