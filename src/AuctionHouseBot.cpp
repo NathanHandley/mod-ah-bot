@@ -1007,7 +1007,8 @@ void AuctionHouseBot::InitializeConfiguration()
     ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
     ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
     ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
-    AddItemLevelExceptionItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""));
+    ListedItemLevelExceptionItems.clear();
+    AddItemIDsFromString(ListedItemLevelExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""), "ListedItemLevelRestrict.ExceptionItemIDs");
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
@@ -1119,8 +1120,8 @@ void AuctionHouseBot::InitializeConfiguration()
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
     DisabledItems.clear();
-    AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""));
-    AddDisabledItems(sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""));
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""), "AuctionHouseBot.DisabledItemIDs");
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""), "AuctionHouseBot.DisabledCraftedItemIDs");
 
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
@@ -1143,33 +1144,6 @@ uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 
         stackValue = defaultValue;
     }
     return stackValue;
-}
-
-void AuctionHouseBot::AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID)
-{
-    if (workingExceptionItemIDs.find(itemLevelExceptionItemID) != workingExceptionItemIDs.end())
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AuctionHouseBot: Duplicate item level exxception item ID of {} found, skipping", itemLevelExceptionItemID);
-    }
-    else
-    {
-        workingExceptionItemIDs.insert(itemLevelExceptionItemID);
-    }
-}
-
-
-void AuctionHouseBot::AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID)
-{
-    if (workingDisabledItemIDs.find(disabledItemID) != workingDisabledItemIDs.end())
-    {
-        if (debug_Out)
-            LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID of {} found, skipping", disabledItemID);
-    }
-    else
-    {
-        workingDisabledItemIDs.insert(disabledItemID);
-    }
 }
 
 void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
@@ -1231,84 +1205,6 @@ void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
     } while (queryResult->NextRow());
 }
 
-void AuctionHouseBot::AddDisabledItems(std::string disabledItemIdString)
-{
-    std::string delimitedValue;
-    std::stringstream disabledItemIdStream;
-
-    disabledItemIdStream.str(disabledItemIdString);
-    while (std::getline(disabledItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
-    {
-        std::string valueOne;
-        std::stringstream itemPairStream(delimitedValue);
-        itemPairStream >> valueOne;
-        // If it has a hypen, then it's a range of numbers
-        if (valueOne.find("-") != std::string::npos)
-        {
-            std::string leftIDString = valueOne.substr(0, valueOne.find("-"));
-            std::string rightIDString = valueOne.substr(valueOne.find("-")+1);
-
-            auto leftId = atoi(leftIDString.c_str());
-            auto rightId = atoi(rightIDString.c_str());
-
-            if (leftId > rightId)
-            {
-                LOG_ERROR("module", "AuctionHouseBot: Duplicate disabled item ID range of {} to {} needs to be smallest to largest, skipping", leftId, rightId);
-            }
-            else
-            {
-                for (int32 i = leftId; i <= rightId; ++i)
-                    AddToDisabledItems(DisabledItems, i);
-            }
-
-        }
-        else
-        {
-            auto itemId = atoi(valueOne.c_str());
-            AddToDisabledItems(DisabledItems, itemId);
-        }
-    }
-}
-
-void AuctionHouseBot::AddItemLevelExceptionItems(std::string itemLevelExceptionIdString)
-{
-    std::string delimitedValue;
-    std::stringstream itemLevelExceptionItemIdStream;
-
-    itemLevelExceptionItemIdStream.str(itemLevelExceptionIdString);
-    while (std::getline(itemLevelExceptionItemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
-    {
-        std::string valueOne;
-        std::stringstream itemPairStream(delimitedValue);
-        itemPairStream >> valueOne;
-        // If it has a hypen, then it's a range of numbers
-        if (valueOne.find("-") != std::string::npos)
-        {
-            std::string leftIDString = valueOne.substr(0, valueOne.find("-"));
-            std::string rightIDString = valueOne.substr(valueOne.find("-") + 1);
-
-            auto leftId = atoi(leftIDString.c_str());
-            auto rightId = atoi(rightIDString.c_str());
-
-            if (leftId > rightId)
-            {
-                LOG_ERROR("module", "AuctionHouseBot: Duplicate item level exception item ID range of {} to {} needs to be smallest to largest, skipping", leftId, rightId);
-            }
-            else
-            {
-                for (int32 i = leftId; i <= rightId; ++i)
-                    AddToListedItemLevelExceptionItems(ListedItemLevelExceptionItems, i);
-            }
-
-        }
-        else
-        {
-            auto itemId = atoi(valueOne.c_str());
-            AddToListedItemLevelExceptionItems(ListedItemLevelExceptionItems, itemId);
-        }
-    }
-}
-
 void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverridesString)
 {
     std::string delimitedValue;
@@ -1330,6 +1226,58 @@ void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverrides
             if (itemId > 0 && copperPrice > 0)
                 PriceMinimumCenterBaseOverridesByItemID.insert({itemId, copperPrice});
         }
+    }
+}
+
+void AuctionHouseBot::AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName)
+{
+    std::string delimitedValue;
+    std::stringstream itemIdStream;
+
+    itemIdStream.str(itemString);
+    while (std::getline(itemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    {
+        std::string valueOne;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> valueOne;
+
+        // If it has a hypen, then it's a range of numbers
+        if (valueOne.find("-") != std::string::npos)
+        {
+            std::string leftIDString = valueOne.substr(0, valueOne.find("-"));
+            std::string rightIDString = valueOne.substr(valueOne.find("-") + 1);
+
+            auto leftId = atoi(leftIDString.c_str());
+            auto rightId = atoi(rightIDString.c_str());
+
+            if (leftId > rightId)
+            {
+                LOG_ERROR("module", "AuctionHouseBot: Duplicate item ID range of {} to {} needs to be smallest to largest for {}, skipping", leftId, rightId, parentOperationName);
+            }
+            else
+            {
+                for (int32 i = leftId; i <= rightId; ++i)
+                    AddToItemIDSet(workingItemIDSet, i, parentOperationName);
+            }
+        }
+        else
+        {
+            auto itemId = atoi(valueOne.c_str());
+            AddToItemIDSet(workingItemIDSet, itemId, parentOperationName);
+        }
+    }
+}
+
+void AuctionHouseBot::AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName)
+{
+    if (workingItemIDSet.find(itemID) != workingItemIDSet.end())
+    {
+        if (debug_Out)
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate item id {} attempted to be put into a working item set from operation {}, skipping", itemID, parentOperationName);
+    }
+    else
+    {
+        workingItemIDSet.insert(itemID);
     }
 }
 

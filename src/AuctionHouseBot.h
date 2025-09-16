@@ -89,8 +89,6 @@ public:
     void SetMaxItems(uint32 value)
     {
         maxItems = value;
-    // CalculatePercents() needs to be called, but only if
-    // SetPercentages() has been called at least once already.
     }
     uint32 GetMaxItems()
     {
@@ -257,11 +255,9 @@ public:
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
 
     void AddCharacters(std::string characterGUIDString);
-    void AddToDisabledItems(std::set<uint32>& workingDisabledItemIDs, uint32 disabledItemID);
-    void AddDisabledItems(std::string disabledItemIdString);
-    void AddToListedItemLevelExceptionItems(std::set<uint32>& workingExceptionItemIDs, uint32 itemLevelExceptionItemID);
-    void AddItemLevelExceptionItems(std::string itemLevelExceptionIdString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
+    void AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName);
+    void AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName);
     const char* GetQualityName(ItemQualities quality);
     const char* GetCategoryName(ItemClass category);
 };
