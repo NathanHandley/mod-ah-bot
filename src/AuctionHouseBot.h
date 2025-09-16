@@ -149,8 +149,8 @@ private:
     uint32 RandomStackRatioKey;
     uint32 RandomStackRatioMisc;
     uint32 RandomStackRatioGlyph;
-    std::vector<uint32> itemCandidateClassWeightedProportionList;
-    std::map<uint32, std::vector<uint32>> itemCandidatesByItemClass;
+    std::vector<uint32> ItemCandidateClassWeightedProportionList;
+    std::map<uint32, std::vector<uint32>> ItemCandidatesByItemClass;
     uint32 ListProportionConsumable;
     uint32 ListProportionContainer;
     uint32 ListProportionWeapon;
@@ -234,12 +234,12 @@ private:
 
     int LastCycleCount;
 
-    inline uint32 minValue(uint32 a, uint32 b) { return a <= b ? a : b; };
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
     void populateItemClassProportionList();
     void populateItemCandidateList();
+    int getRandomValidItemClassForNewListing();
     void addNewAuctions(Player* AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config);
 

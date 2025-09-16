@@ -401,7 +401,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
 {
     for (uint32 i = 0; i < itemClassSeedWeight; ++i)
-        itemCandidateClassWeightedProportionList.push_back(itemClass);
+        ItemCandidateClassWeightedProportionList.push_back(itemClass);
 }
 
 void AuctionHouseBot::populateItemClassProportionList()
@@ -409,7 +409,7 @@ void AuctionHouseBot::populateItemClassProportionList()
     // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
 
     // Clear old list
-    itemCandidateClassWeightedProportionList.clear();
+    ItemCandidateClassWeightedProportionList.clear();
 
     // Fill the list
     populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, ListProportionConsumable);
@@ -432,22 +432,22 @@ void AuctionHouseBot::populateItemClassProportionList()
 void AuctionHouseBot::populateItemCandidateList()
 {
     // Clear old list and rebuild it
-    itemCandidatesByItemClass.clear();
-    itemCandidatesByItemClass[ITEM_CLASS_CONSUMABLE] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_CONTAINER] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_WEAPON] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_GEM] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_ARMOR] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_REAGENT] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_PROJECTILE] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_TRADE_GOODS] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_GENERIC] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_RECIPE] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_QUIVER] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_QUEST] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_KEY] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
-    itemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
+    ItemCandidatesByItemClass.clear();
+    ItemCandidatesByItemClass[ITEM_CLASS_CONSUMABLE] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_CONTAINER] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_WEAPON] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_GEM] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_ARMOR] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_REAGENT] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_PROJECTILE] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_TRADE_GOODS] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_GENERIC] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_RECIPE] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_QUIVER] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_QUEST] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_KEY] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
+    ItemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
 
     // Item include exceptions
     set<uint32> includeItemIDExecptions;
@@ -523,12 +523,12 @@ void AuctionHouseBot::populateItemCandidateList()
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
             // Store the item ID
-            itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+            ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
             continue;
         }
 
         // Skip any items not in the seed list
-        if (std::find(itemCandidateClassWeightedProportionList.begin(), itemCandidateClassWeightedProportionList.end(), itr->second.Class) == itemCandidateClassWeightedProportionList.end())
+        if (std::find(ItemCandidateClassWeightedProportionList.begin(), ItemCandidateClassWeightedProportionList.end(), itr->second.Class) == ItemCandidateClassWeightedProportionList.end())
             continue;
 
         // Skip any BOP items
@@ -644,7 +644,7 @@ void AuctionHouseBot::populateItemCandidateList()
         }
 
         // Store the item ID
-        itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+        ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
 
         // Store a second copy if it's a trade good of certain types to double the chances
         if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
@@ -653,18 +653,40 @@ void AuctionHouseBot::populateItemCandidateList()
                 itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING || itr->second.SubClass == ITEM_SUBCLASS_HERB ||
                 itr->second.SubClass == ITEM_SUBCLASS_METAL_STONE)
             {
-                itemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+                ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
             }
         }
     }
 
     if (debug_Out)
     {
-        for (auto& itemCandidatesInClass : itemCandidatesByItemClass)
+        for (auto& itemCandidatesInClass : ItemCandidatesByItemClass)
         {
             LOG_INFO("module", "Item count in class {} is {}", itemCandidatesInClass.first, itemCandidatesInClass.second.size());
         }
     }
+}
+
+int AuctionHouseBot::getRandomValidItemClassForNewListing()
+{
+    if (ItemCandidateClassWeightedProportionList.size() == 0)
+    {
+        LOG_ERROR("module", "No valid item class for new listing could be found (ItemCandidateClassWeightedPropertionList was empty)");
+        return -1;
+    }
+
+    // Loop through all of the item classes to make sure a valid one is good, looping candidate back to zero
+    uint32 itemClassCandidate = ItemCandidateClassWeightedProportionList[urand(0, ItemCandidateClassWeightedProportionList.size() - 1)];
+    for (int i = 0; i < ItemCandidateClassWeightedProportionList.size(); i++)
+    {
+        if (ItemCandidatesByItemClass[itemClassCandidate].size() > 0)
+            return itemClassCandidate;
+        itemClassCandidate++;
+        if (itemClassCandidate >= ItemCandidateClassWeightedProportionList.size())
+            itemClassCandidate = 0;
+    }
+    LOG_ERROR("module", "No valid item class for new listing could be found (no record in ItemCandidateClassWeightedProportionList had a value)");
+    return -1;
 }
 
 void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
@@ -722,9 +744,6 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
     if (debug_Out)
         LOG_ERROR("module", "AHSeller: Current house id is {}", config->GetAHID());
 
-    if (debug_Out)
-        LOG_ERROR("module", "AHSeller: {} items", items);
-
     // only insert a few at a time, so as not to peg the processor
     for (uint32 cnt = 1; cnt <= items; cnt++)
     {
@@ -732,16 +751,22 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
         // Pull a random item out of the candidate list
-        uint32 chosenItemClass = itemCandidateClassWeightedProportionList[urand(0, itemCandidateClassWeightedProportionList.size() - 1)];
+        int chosenItemClass = getRandomValidItemClassForNewListing();
+        if (chosenItemClass == -1)
+        {
+            LOG_ERROR("module", "AHSeller did not list any new items. There are no ListProportion variables > 0 that have valid items in it due to filters");
+            SellingBotEnabled = false;
+            return;
+        }
         uint32 itemID = 0;
-        if (itemCandidatesByItemClass[chosenItemClass].size() != 0)
-            itemID = itemCandidatesByItemClass[chosenItemClass][urand(0, itemCandidatesByItemClass[chosenItemClass].size() - 1)];
+        if (ItemCandidatesByItemClass[(uint32)chosenItemClass].size() != 0)
+            itemID = ItemCandidatesByItemClass[(uint32)chosenItemClass][urand(0, ItemCandidatesByItemClass[(uint32)chosenItemClass].size() - 1)];
 
         // Prevent invalid IDs
         if (itemID == 0)
         {
             if (debug_Out)
-                LOG_ERROR("module", "AHSeller: Item::CreateItem() - ItemID is 0", chosenItemClass);
+                LOG_ERROR("module", "AHSeller: Item::CreateItem() failed as the ItemID is 0");
             continue;
         }
 
