@@ -131,6 +131,7 @@ private:
     bool DisabledItemTextFilter;
     std::set<uint32> DisabledItems;
     bool ListedItemLevelRestrictedEnabled;
+    bool ListedItemLevelRestrictedUseCraftedItemForCalculation;
     uint32 ListedItemLevelMax;
     uint32 ListedItemLevelMin;
     std::set<uint32> ListedItemLevelExceptionItems;
@@ -238,6 +239,7 @@ private:
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
     void populateItemClassProportionList();
+    ItemTemplate const* getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
     void populateItemCandidateList();
     int getRandomValidItemClassForNewListing();
     void addNewAuctions(Player* AHBplayer, AHBConfig *config);

@@ -29,6 +29,7 @@
 #include "DatabaseEnv.h"
 #include "ItemTemplate.h"
 #include "SharedDefines.h"
+#include "SpellMgr.h"
 #include <cmath>
 
 #include <set>
@@ -47,6 +48,7 @@ AuctionHouseBot::AuctionHouseBot() :
     ItemsPerCycle(75),
     DisabledItemTextFilter(true),
     ListedItemLevelRestrictedEnabled(false),
+    ListedItemLevelRestrictedUseCraftedItemForCalculation(true),
     ListedItemLevelMax(999),
     ListedItemLevelMin(0),
     RandomStackRatioConsumable(1),
@@ -429,6 +431,37 @@ void AuctionHouseBot::populateItemClassProportionList()
     populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, ListProportionGlyph);
 }
 
+ItemTemplate const* AuctionHouseBot::getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate)
+{
+    if (!recipeItemTemplate)
+        return nullptr;
+    for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+    {
+        if (recipeItemTemplate->Spells[i].SpellId)
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(recipeItemTemplate->Spells[i].SpellId);
+            if (!spellInfo)
+                continue;
+
+            for (auto const& effect : spellInfo->Effects)
+            {
+                if (effect.Effect == SPELL_EFFECT_CREATE_ITEM)
+                {
+                    uint32 createdItemId = effect.ItemType;
+                    if (createdItemId)
+                    {
+                        ItemTemplate const* producedItem = sObjectMgr->GetItemTemplate(createdItemId);
+                        if (producedItem)
+                            return producedItem;
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 void AuctionHouseBot::populateItemCandidateList()
 {
     // Clear old list and rebuild it
@@ -475,13 +508,27 @@ void AuctionHouseBot::populateItemCandidateList()
             // Only test if it's not an exception
             if (ListedItemLevelExceptionItems.find(itr->second.ItemId) == ListedItemLevelExceptionItems.end())
             {
-                if (itr->second.ItemLevel < ListedItemLevelMin)
+                uint32 itemLevelToCompare = itr->second.ItemLevel;
+
+                // Recipes might need to consider produced items
+                if (ListedItemLevelRestrictedUseCraftedItemForCalculation == true && itr->second.Class == ITEM_CLASS_RECIPE)
+                {
+                    ItemTemplate const* producedItemTemplate = getProducedItemFromRecipe(&itr->second);
+                    if (producedItemTemplate != nullptr)
+                    {
+                        if (debug_Out_Filters)
+                            LOG_ERROR("module", "AuctionHouseBot: Using item {} for recipe {} for item level comparison since ListedItemLevelRestrictedUseCraftedItemForCalculation is true", producedItemTemplate->ItemId, itr->second.ItemId);
+                        itemLevelToCompare = producedItemTemplate->ItemLevel;
+                    }
+                }
+
+                if (itemLevelToCompare < ListedItemLevelMin)
                 {
                     if (debug_Out_Filters)
                         LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item level is lower than ListedItemLevelRestrict.MinItemLevel", itr->second.ItemId);
                     continue;
                 }
-                if (itr->second.ItemLevel > ListedItemLevelMax)
+                if (itemLevelToCompare > ListedItemLevelMax)
                 {
                     if (debug_Out_Filters)
                         LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item level is higher than ListedItemLevelRestrict.MaxItemLevel", itr->second.ItemId);
@@ -1169,6 +1216,7 @@ void AuctionHouseBot::InitializeConfiguration()
 
     // Item level Restrictions
     ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
+    ListedItemLevelRestrictedUseCraftedItemForCalculation = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.UseCraftedItemForCalculation", true);
     ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
     ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
     ListedItemLevelExceptionItems.clear();

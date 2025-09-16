@@ -494,6 +494,11 @@ AuctionHouseBot.RandomStackRatio.Glyph = 0
 #        The lowest item level that will show up in listings
 #    Default: 0
 #
+#    AuctionHouseBot.ListedItemLevelRestrict.UseCraftedItemForCalculation
+#        If the item is a recipe, then this will use the item produced by it
+#         for the determination if it will be excluded
+#    Default: true
+#
 #    AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel
 #        The highest item level that will show up in listings
 #    Default: 999
@@ -503,10 +508,11 @@ AuctionHouseBot.RandomStackRatio.Glyph = 0
 #        Ranges using a dash (-) can also be used
 #        NOTE: Other filtering will still be honored even if it's listed here
 #		 Example: "100,150-200" would cause item level 100, and all item levels
-#         between 150 and 200 (inclusively) to not be subjected to this restriction
+#         between 150 and 200 (inclusively) to not be subjected to this restriction.
 ###############################################################################
 
 AuctionHouseBot.ListedItemLevelRestrict.Enabled = false
+AuctionHouseBot.ListedItemLevelRestrict.UseCraftedItemForCalculation = true
 AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel = 0
 AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel = 999
 AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs = 
