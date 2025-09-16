@@ -66,6 +66,21 @@ AuctionHouseBot::AuctionHouseBot() :
     RandomStackRatioKey(1),
     RandomStackRatioMisc(1),
     RandomStackRatioGlyph(1),
+    RandomStackIncrementConsumable(1),
+    RandomStackIncrementContainer(1),
+    RandomStackIncrementWeapon(1),
+    RandomStackIncrementGem(1),
+    RandomStackIncrementArmor(1),
+    RandomStackIncrementReagent(1),
+    RandomStackIncrementProjectile(1),
+    RandomStackIncrementTradeGood(1),
+    RandomStackIncrementGeneric(1),
+    RandomStackIncrementRecipe(1),
+    RandomStackIncrementQuiver(1),
+    RandomStackIncrementQuest(1),
+    RandomStackIncrementKey(1),
+    RandomStackIncrementMisc(1),
+    RandomStackIncrementGlyph(1),
     ListProportionConsumable(1),
     ListProportionContainer(1),
     ListProportionWeapon(1),
@@ -140,30 +155,58 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
     if (itemProto == NULL)
         return 1;
 
-    // TODO: Move this to a config
     uint32 stackRatio = 0;
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = RandomStackRatioConsumable; break;
-    case ITEM_CLASS_CONTAINER:      stackRatio = RandomStackRatioContainer; break;
-    case ITEM_CLASS_WEAPON:         stackRatio = RandomStackRatioWeapon; break;
-    case ITEM_CLASS_GEM:            stackRatio = RandomStackRatioGem; break;
-    case ITEM_CLASS_REAGENT:        stackRatio = RandomStackRatioReagent; break;
-    case ITEM_CLASS_ARMOR:          stackRatio = RandomStackRatioArmor; break;
-    case ITEM_CLASS_PROJECTILE:     stackRatio = RandomStackRatioProjectile; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = RandomStackRatioTradeGood; break;
-    case ITEM_CLASS_GENERIC:        stackRatio = RandomStackRatioGeneric; break;
-    case ITEM_CLASS_RECIPE:         stackRatio = RandomStackRatioRecipe; break;
-    case ITEM_CLASS_QUIVER:         stackRatio = RandomStackRatioQuiver; break;
-    case ITEM_CLASS_QUEST:          stackRatio = RandomStackRatioQuest; break;
-    case ITEM_CLASS_KEY:            stackRatio = RandomStackRatioKey; break;
-    case ITEM_CLASS_MISC:           stackRatio = RandomStackRatioMisc; break;
-    case ITEM_CLASS_GLYPH:          stackRatio = RandomStackRatioGlyph; break;
-    default:                        stackRatio = 0; break;
+        case ITEM_CLASS_CONSUMABLE:     stackRatio = RandomStackRatioConsumable; break;
+        case ITEM_CLASS_CONTAINER:      stackRatio = RandomStackRatioContainer; break;
+        case ITEM_CLASS_WEAPON:         stackRatio = RandomStackRatioWeapon; break;
+        case ITEM_CLASS_GEM:            stackRatio = RandomStackRatioGem; break;
+        case ITEM_CLASS_REAGENT:        stackRatio = RandomStackRatioReagent; break;
+        case ITEM_CLASS_ARMOR:          stackRatio = RandomStackRatioArmor; break;
+        case ITEM_CLASS_PROJECTILE:     stackRatio = RandomStackRatioProjectile; break;
+        case ITEM_CLASS_TRADE_GOODS:    stackRatio = RandomStackRatioTradeGood; break;
+        case ITEM_CLASS_GENERIC:        stackRatio = RandomStackRatioGeneric; break;
+        case ITEM_CLASS_RECIPE:         stackRatio = RandomStackRatioRecipe; break;
+        case ITEM_CLASS_QUIVER:         stackRatio = RandomStackRatioQuiver; break;
+        case ITEM_CLASS_QUEST:          stackRatio = RandomStackRatioQuest; break;
+        case ITEM_CLASS_KEY:            stackRatio = RandomStackRatioKey; break;
+        case ITEM_CLASS_MISC:           stackRatio = RandomStackRatioMisc; break;
+        case ITEM_CLASS_GLYPH:          stackRatio = RandomStackRatioGlyph; break;
+        default:                        stackRatio = 0; break;
+    }
+
+    uint32 stackIncrement = 1;
+    switch (itemProto->Class)
+    {
+        case ITEM_CLASS_CONSUMABLE:     stackIncrement = RandomStackIncrementConsumable; break;
+        case ITEM_CLASS_CONTAINER:      stackIncrement = RandomStackIncrementContainer; break;
+        case ITEM_CLASS_WEAPON:         stackIncrement = RandomStackIncrementWeapon; break;
+        case ITEM_CLASS_GEM:            stackIncrement = RandomStackIncrementGem; break;
+        case ITEM_CLASS_REAGENT:        stackIncrement = RandomStackIncrementReagent; break;
+        case ITEM_CLASS_ARMOR:          stackIncrement = RandomStackIncrementArmor; break;
+        case ITEM_CLASS_PROJECTILE:     stackIncrement = RandomStackIncrementProjectile; break;
+        case ITEM_CLASS_TRADE_GOODS:    stackIncrement = RandomStackIncrementTradeGood; break;
+        case ITEM_CLASS_GENERIC:        stackIncrement = RandomStackIncrementGeneric; break;
+        case ITEM_CLASS_RECIPE:         stackIncrement = RandomStackIncrementRecipe; break;
+        case ITEM_CLASS_QUIVER:         stackIncrement = RandomStackIncrementQuiver; break;
+        case ITEM_CLASS_QUEST:          stackIncrement = RandomStackIncrementQuest; break;
+        case ITEM_CLASS_KEY:            stackIncrement = RandomStackIncrementKey; break;
+        case ITEM_CLASS_MISC:           stackIncrement = RandomStackIncrementMisc; break;
+        case ITEM_CLASS_GLYPH:          stackIncrement = RandomStackIncrementGlyph; break;
+        default:                        stackIncrement = 1; break;
     }
 
     if (stackRatio > urand(0, 99))
-        return urand(1, itemProto->GetMaxStackSize());
+    {
+        uint32 numOfPossibleStackIncrements = (uint32)std::ceil((float)itemProto->GetMaxStackSize() / (float)stackIncrement);
+        uint32 numOfStacks = urand(1, numOfPossibleStackIncrements);
+        uint32 randomStackSize = numOfStacks * stackIncrement;
+        if (randomStackSize > itemProto->GetMaxStackSize())
+            return itemProto->GetMaxStackSize();
+        else
+            return randomStackSize;
+    }
     else
         return 1;
 }
@@ -1108,21 +1151,38 @@ void AuctionHouseBot::InitializeConfiguration()
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
 
     // Stack Ratios
-    RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Consumable", 20);
-    RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Container", 0);
-    RandomStackRatioWeapon = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Weapon", 0);
-    RandomStackRatioGem = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Gem", 5);
-    RandomStackRatioArmor = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Armor", 0);
-    RandomStackRatioReagent = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Reagent", 50);
-    RandomStackRatioProjectile = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Projectile", 100);
-    RandomStackRatioTradeGood = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.TradeGood", 50);
-    RandomStackRatioGeneric = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Generic", 100);
-    RandomStackRatioRecipe = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Recipe", 0);
-    RandomStackRatioQuiver = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quiver", 0);
-    RandomStackRatioQuest = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Quest", 10);
-    RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Key", 10);
-    RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Misc", 100);
-    RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
+    RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Consumable", 50);
+    RandomStackRatioContainer = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Container", 0);
+    RandomStackRatioWeapon = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Weapon", 0);
+    RandomStackRatioGem = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Gem", 5);
+    RandomStackRatioArmor = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Armor", 0);
+    RandomStackRatioReagent = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Reagent", 50);
+    RandomStackRatioProjectile = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Projectile", 100);
+    RandomStackRatioTradeGood = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.TradeGood", 50);
+    RandomStackRatioGeneric = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Generic", 100);
+    RandomStackRatioRecipe = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Recipe", 0);
+    RandomStackRatioQuiver = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Quiver", 0);
+    RandomStackRatioQuest = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Quest", 10);
+    RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Key", 10);
+    RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Misc", 100);
+    RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Glyph", 0);
+
+    // Stack Ratios
+    RandomStackIncrementConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Consumable", 5);
+    RandomStackIncrementContainer = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Container", 1);
+    RandomStackIncrementWeapon = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Weapon", 1);
+    RandomStackIncrementGem = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Gem", 1);
+    RandomStackIncrementArmor = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Armor", 1);
+    RandomStackIncrementReagent = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Reagent", 1);
+    RandomStackIncrementProjectile = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Projectile", 1000);
+    RandomStackIncrementTradeGood = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.TradeGood", 5);
+    RandomStackIncrementGeneric = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Generic", 1);
+    RandomStackIncrementRecipe = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Recipe", 1);
+    RandomStackIncrementQuiver = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quiver", 1);
+    RandomStackIncrementQuest = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quest", 1);
+    RandomStackIncrementKey = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Key", 1);
+    RandomStackIncrementMisc = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Misc", 1);
+    RandomStackIncrementGlyph = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph", 1);
 
     // List Proportions
     ListProportionConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Consumable", 2);

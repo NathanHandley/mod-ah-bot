@@ -446,13 +446,13 @@ AuctionHouseBot.PriceMultiplier.CategoryPermanent.QualityArtifact   = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryPermanent.QualityHeirloom   = 1.0
 
 ###############################################################################
-#    AuctionHouseBot.RandomStackRatio.*
+#    AuctionHouseBot.ListingStack.RandomRatio.*
 #        Used to determine how often a stack of the class will be single or randomly-size stacked when posted
 #        Value needs to be between 0 and 100, no decimal.  Anything higher than 100 will be treated as 100
 #       Examples:    100 = stacks will always be random in size
 #                    50 = half the time the stacks are random, the other half being single stack
 #                    0 = stacks will always single size
-#       Defaults:    Consumable: 20 (20% random stack size, 80% single stack size)
+#       Defaults:    Consumable: 50 (50% random stack size, 50% single stack size)
 #                    Container: 0 (100% single stack size)
 #                    Weapon: 0 (100% single stack size)
 #                    Gem: 5 (5% random stack size, 95% single stack size)
@@ -467,23 +467,54 @@ AuctionHouseBot.PriceMultiplier.CategoryPermanent.QualityHeirloom   = 1.0
 #                    Key: 10 (10% random stack size, 90% single stack size)
 #                    Misc: 100 (100% random stack size)
 #                    Glyph: 0 (100% single stack size)
+#
+#    AuctionHouseBot.ListingStack.RandomStackIncrement.*
+#        When randomizing a stack, this is the multiple used in the stack size
+#       Examples:    1 = stacks will be in sizes of 1, 2, 3, ... (item's max stack size)
+#                    5 = stacks will be in sizes of 5, 10, 15, ... (item's max stack size)
+#       Setting the value too high will clamp to the max stack size, so use that
+#        if you want all random stack sizes to be full stacks (like ammo).  Also,
+#        it will only use the increment if the it's a random stack 'roll'.  A
+#        value of 0 will be treated as a 1
+#
+#       NOTES: Stack sizes of 1 can show up if the RandomRatio is not set to 100. 
+#        If you want something to always post maxed out, set RandomRatio to
+#        100 and RandomStackIncrement to a value that is at or greater than the
+#        largest possible stack size for that category.  Default configurations
+#        here will do that for Projectiles.
 ###############################################################################
 
-AuctionHouseBot.RandomStackRatio.Consumable = 20
-AuctionHouseBot.RandomStackRatio.Container = 0
-AuctionHouseBot.RandomStackRatio.Weapon = 0
-AuctionHouseBot.RandomStackRatio.Gem = 30
-AuctionHouseBot.RandomStackRatio.Armor = 0
-AuctionHouseBot.RandomStackRatio.Reagent = 50
-AuctionHouseBot.RandomStackRatio.Projectile = 100
-AuctionHouseBot.RandomStackRatio.TradeGood = 75
-AuctionHouseBot.RandomStackRatio.Generic = 100
-AuctionHouseBot.RandomStackRatio.Recipe = 0
-AuctionHouseBot.RandomStackRatio.Quiver = 0
-AuctionHouseBot.RandomStackRatio.Quest = 10
-AuctionHouseBot.RandomStackRatio.Key = 10
-AuctionHouseBot.RandomStackRatio.Misc = 100
-AuctionHouseBot.RandomStackRatio.Glyph = 0
+AuctionHouseBot.ListingStack.RandomRatio.Consumable = 50
+AuctionHouseBot.ListingStack.RandomRatio.Container = 0
+AuctionHouseBot.ListingStack.RandomRatio.Weapon = 0
+AuctionHouseBot.ListingStack.RandomRatio.Gem = 30
+AuctionHouseBot.ListingStack.RandomRatio.Armor = 0
+AuctionHouseBot.ListingStack.RandomRatio.Reagent = 50
+AuctionHouseBot.ListingStack.RandomRatio.Projectile = 100
+AuctionHouseBot.ListingStack.RandomRatio.TradeGood = 75
+AuctionHouseBot.ListingStack.RandomRatio.Generic = 100
+AuctionHouseBot.ListingStack.RandomRatio.Recipe = 0
+AuctionHouseBot.ListingStack.RandomRatio.Quiver = 0
+AuctionHouseBot.ListingStack.RandomRatio.Quest = 10
+AuctionHouseBot.ListingStack.RandomRatio.Key = 10
+AuctionHouseBot.ListingStack.RandomRatio.Misc = 100
+AuctionHouseBot.ListingStack.RandomRatio.Glyph = 0
+
+AuctionHouseBot.ListingStack.RandomStackIncrement.Consumable = 5
+AuctionHouseBot.ListingStack.RandomStackIncrement.Container = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Weapon = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Gem = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Armor = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Reagent = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Projectile = 1000
+AuctionHouseBot.ListingStack.RandomStackIncrement.TradeGood = 5
+AuctionHouseBot.ListingStack.RandomStackIncrement.Generic = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Recipe = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Quiver = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Quest = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Key = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Misc = 1
+AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph = 1
 
 ###############################################################################
 #    AuctionHouseBot.ListedItemLevelRestrict.Enabled
