@@ -224,6 +224,8 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #        Multiplier applied to item level when determining auction price
 #        Final multiplier = itemLevel * this value.  Set to 0 (or less) to disable.
 #        Default: 0 (Disabled)
+#       Note: This will be ignored if AdvancedPricing is enabled (above), but this
+#        will apply in combination with other price multipliers
 #
 #    AuctionHouseBot.PriceMultiplier.Category*.Quality*
 #        Category-and-Quality- modifier values for the prices of items.
@@ -238,6 +240,7 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #     (above) would then multiply that value further.
 ###############################################################################
 
+# Broad category multipliers
 AuctionHouseBot.PriceMultiplier.Category.Consumable = 1
 AuctionHouseBot.PriceMultiplier.Category.Container = 1
 AuctionHouseBot.PriceMultiplier.Category.Weapon = 1
@@ -254,6 +257,7 @@ AuctionHouseBot.PriceMultiplier.Category.Key = 1
 AuctionHouseBot.PriceMultiplier.Category.Misc = 1
 AuctionHouseBot.PriceMultiplier.Category.Glyph = 1
 
+# Broad quality multipliers
 AuctionHouseBot.PriceMultiplier.Quality.Poor = 1
 AuctionHouseBot.PriceMultiplier.Quality.Normal = 1
 AuctionHouseBot.PriceMultiplier.Quality.Uncommon = 1.8
@@ -263,7 +267,22 @@ AuctionHouseBot.PriceMultiplier.Quality.Legendary = 3
 AuctionHouseBot.PriceMultiplier.Quality.Artifact = 3
 AuctionHouseBot.PriceMultiplier.Quality.Heirloom = 3
 
-AuctionHouseBot.PriceMultiplier.ItemLevel = 0
+# Category item level multiplier (item itemlevel x this value, 0 = disabled)
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Consumable = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Container = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Weapon = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Gem = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Armor = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Reagent = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Projectile = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.TradeGood = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Generic = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Recipe = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Quiver = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Quest = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Key = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Misc = 0
+AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Glyph = 0
 
 # Consumable
 AuctionHouseBot.PriceMultiplier.CategoryConsumable.QualityPoor       = 1.0
