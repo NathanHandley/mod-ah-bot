@@ -211,7 +211,7 @@ AuctionHouseBot.ListProportion.Glyph = 2
 #    AuctionHouseBot.PriceMinimumCenterBase.*
 #        Category-level price minimums, in copper, before any multipliers come
 #        into play.  Value shouldn't be zero, and the base minimum price will
-#        actually be a +/- 25% range of this value.  Used to catch 0 cost or
+#        the BidVariation* variables above.  This is used to catch 0 cost or
 #        extremely low cost items
 #
 #    AuctionHouseBot.PriceMinimumCenterBase.OverrideItems
@@ -282,9 +282,9 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #        Multiplier applied to item level when determining auction price, by category
 #        Final multiplier = itemLevel * this value.  Set to 0 (or less) to disable.
 #        Default: 0 (Disabled)
-#       Note: This will be ignored for any matching specific category above if 
+#       Note: This will be ignored for any matching specific category if 
 #        AdvancedPricing is enabled (above). This applies in combination with 
-#        all other price multipliers
+#        all other price multipliers.
 #
 #    AuctionHouseBot.PriceMultiplier.Category*.Quality*
 #        Category-and-Quality- modifier values for the prices of items.
