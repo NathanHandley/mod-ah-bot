@@ -132,6 +132,7 @@ private:
     uint32 ListingExpireTimeInSecondsMin;
     uint32 ListingExpireTimeInSecondsMax;
     float BuyingBotAcceptablePriceModifier;
+    std::vector<uint32> vendorItemsPrices;
     std::string AHCharactersGUIDsForQuery;
     uint32 ItemsPerCycle;
     bool DisabledItemTextFilter;
@@ -263,6 +264,7 @@ private:
     uint32 ListedItemIDMin;
     uint32 ListedItemIDMax;
     std::set<uint32> ListedItemIDExceptionItems;
+    bool PreventOverpayingForVendorItems;
 
     AHBConfig AllianceConfig;
     AHBConfig HordeConfig;
@@ -272,6 +274,7 @@ private:
 
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    float getAdvancedPricingMultiplier(ItemTemplate const* itemProto);
     void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
     void populateItemClassProportionList();
     ItemTemplate const* getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
@@ -279,6 +282,7 @@ private:
     int getRandomValidItemClassForNewListing();
     void addNewAuctions(Player* AHBplayer, AHBConfig *config);
     void addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config);
+    void populateVendorItemsPrices();
 
     AuctionHouseBot();
 

@@ -31,7 +31,7 @@ Notes:
 
 ## Buying Bot Behavior
 
-1. **Determining Items to Buy:** Every minute the buyer bot will select (BuyCanditatesPerBuyCycle) items currently up for auction which are listed by players as potential purchase items.
+1. **Determining Items to Buy:** Every minute the buyer bot will select (BuyCandidatesPerBuyCycle) items currently up for auction which are listed by players as potential purchase items.
 2. **Price Willing to Pay:** The buyer bot will use the same item price calculation the seller bot uses, including the random +/- 25%, and that calculated price is then multiplied by (AcceptablePriceModifier) which then becomes the price the buyer will be willing to spend.
 3. **Buying it:** If the price calculated is higher than the buy out price, then the bot will buy it out.  If not, it will test to see if it has been bidded on by a bot and if not, if the bid price is below the price it is willing to pay.  If so, it will bid (outbid, so just over current bid).
 
