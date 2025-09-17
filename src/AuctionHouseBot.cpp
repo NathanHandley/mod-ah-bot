@@ -462,6 +462,10 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     if (itemProto->SellPrice > outBuyoutPrice)
         outBuyoutPrice = itemProto->SellPrice;
 
+    // Avoid price overflows
+    if (outBuyoutPrice > 1000000000)
+        outBuyoutPrice = 1000000000;
+
     // Calculate a bid price based on a variance against buyout price
     float sellVarianceBidPriceTopPercent = 1;
     float sellVarianceBidPriceBottomPercent = .75;
