@@ -42,6 +42,12 @@ AuctionHouseBot::AuctionHouseBot() :
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
     CyclesBetweenBuyOrSell(1),
+    MaxBuyoutPriceInCopper(1000000000),
+    BuyoutVariationReducePercent(0.15f),
+    BuyoutVariationAddPercent(0.25f),
+    BidVariationHighReducePercent(0),
+    BidVariationLowReducePercent(0.25f),
+    BuyoutBelowVendorVariationAddPercent(0.25f),
     BuyingBotBuyCandidatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
     AHCharactersGUIDsForQuery(""),
@@ -291,7 +297,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     */
 
     // Try to approximate real world prices for Trade Goods based on subclass and item level
-    double advancedPriceingMultiplier = 1.0f;
+    double advancedPricingMultiplier = 1.0f;
     if (itemProto->Class == ITEM_CLASS_TRADE_GOODS) 
     {
         switch (itemProto->SubClass)
@@ -301,7 +307,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingTradeGoodClothEnabled) 
                     break;
                 double clothMultiplierHelper = std::log(1.0 + (itemProto->ItemLevel));
-                advancedPriceingMultiplier = ((std::pow(clothMultiplierHelper,2.0)) / (1 + (0.8 * clothMultiplierHelper))) + (0.001 * std::pow(clothMultiplierHelper,3.5)) - 0.3;
+                advancedPricingMultiplier = ((std::pow(clothMultiplierHelper,2.0)) / (1 + (0.8 * clothMultiplierHelper))) + (0.001 * std::pow(clothMultiplierHelper,3.5)) - 0.3;
                 break;
             }
             case ITEM_SUBCLASS_HERB:
@@ -309,7 +315,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingTradeGoodHerbEnabled) 
                     break;
                 double herbMultiplierHelper = std::log(1.0 + (5.0 * itemProto->ItemLevel));
-                advancedPriceingMultiplier = (std::pow(herbMultiplierHelper,3.0) / (1 + (1.8 * herbMultiplierHelper))) - 4.2; 
+                advancedPricingMultiplier = (std::pow(herbMultiplierHelper,3.0) / (1 + (1.8 * herbMultiplierHelper))) - 4.2; 
                 break;
             }
             case ITEM_SUBCLASS_METAL_STONE:
@@ -317,7 +323,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingTradeGoodMetalStoneEnabled) 
                     break;
                 double metalMultiplierHelper = std::log(1.0 + (75.0 * itemProto->ItemLevel));
-                advancedPriceingMultiplier =  ((std::pow(metalMultiplierHelper,3.0)) / (1 + (7.0 * metalMultiplierHelper))) + (0.001 * std::pow(metalMultiplierHelper,3.5)) - 5.2;
+                advancedPricingMultiplier =  ((std::pow(metalMultiplierHelper,3.0)) / (1 + (7.0 * metalMultiplierHelper))) + (0.001 * std::pow(metalMultiplierHelper,3.5)) - 5.2;
                 break;
             }
             case ITEM_SUBCLASS_LEATHER:
@@ -325,7 +331,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingTradeGoodLeatherEnabled) 
                     break;
                 double leatherMultiplierHelper = std::log(1.0 + (0.25 * itemProto->ItemLevel));
-                advancedPriceingMultiplier = ((std::pow(leatherMultiplierHelper,0.15)) / (1 + (2.0 * leatherMultiplierHelper))) + (0.4 * std::pow(leatherMultiplierHelper,3.0)) - 0.2;
+                advancedPricingMultiplier = ((std::pow(leatherMultiplierHelper,0.15)) / (1 + (2.0 * leatherMultiplierHelper))) + (0.4 * std::pow(leatherMultiplierHelper,3.0)) - 0.2;
                 break;
             }
             case ITEM_SUBCLASS_ENCHANTING:
@@ -333,14 +339,14 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingTradeGoodEnchantingEnabled) 
                     break;
                 double enchantingMultiplierHelper = std::log(1.0 + (0.25 * itemProto->ItemLevel));
-                advancedPriceingMultiplier = ((std::pow(enchantingMultiplierHelper,0.15)) / (1 + (2.0 * enchantingMultiplierHelper))) + (0.4 * std::pow(enchantingMultiplierHelper,3.0)) - 0.2; 
+                advancedPricingMultiplier = ((std::pow(enchantingMultiplierHelper,0.15)) / (1 + (2.0 * enchantingMultiplierHelper))) + (0.4 * std::pow(enchantingMultiplierHelper,3.0)) - 0.2; 
                 break;
             }
             case ITEM_SUBCLASS_ELEMENTAL:
             {
                 if (!AdvancedPricingTradeGoodElementalEnabled) 
                     break;
-                advancedPriceingMultiplier = 85 - (itemProto->ItemLevel / 0.97);
+                advancedPricingMultiplier = 85 - (itemProto->ItemLevel / 0.97);
                 break;
             }
             default:
@@ -357,7 +363,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                 if (!AdvancedPricingMiscJunkEnabled) 
                     break;
                 double miscMultiplierHelper = std::log(1.0 + (0.12 * itemProto->ItemLevel));
-                advancedPriceingMultiplier = (std::pow(miscMultiplierHelper,3.2) / (1 + miscMultiplierHelper)); 
+                advancedPricingMultiplier = (std::pow(miscMultiplierHelper,3.2) / (1 + miscMultiplierHelper)); 
                 break;
             }
             case ITEM_SUBCLASS_JUNK_MOUNT:
@@ -366,14 +372,14 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
                     break;
                 switch (itemProto->Quality)
                 {
-                    case ITEM_QUALITY_POOR:         advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityPoor;      break;
-                    case ITEM_QUALITY_NORMAL:       advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityNormal;    break;
-                    case ITEM_QUALITY_UNCOMMON:     advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityUncommon;  break;
-                    case ITEM_QUALITY_RARE:         advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityRare;      break;
-                    case ITEM_QUALITY_EPIC:         advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityEpic;      break;
-                    case ITEM_QUALITY_LEGENDARY:    advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityLegendary; break;
-                    case ITEM_QUALITY_ARTIFACT:     advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityArtifact;  break;
-                    case ITEM_QUALITY_HEIRLOOM:     advancedPriceingMultiplier = PriceMultiplierCategoryMountQualityHeirloom;  break;
+                    case ITEM_QUALITY_POOR:         advancedPricingMultiplier = PriceMultiplierCategoryMountQualityPoor;      break;
+                    case ITEM_QUALITY_NORMAL:       advancedPricingMultiplier = PriceMultiplierCategoryMountQualityNormal;    break;
+                    case ITEM_QUALITY_UNCOMMON:     advancedPricingMultiplier = PriceMultiplierCategoryMountQualityUncommon;  break;
+                    case ITEM_QUALITY_RARE:         advancedPricingMultiplier = PriceMultiplierCategoryMountQualityRare;      break;
+                    case ITEM_QUALITY_EPIC:         advancedPricingMultiplier = PriceMultiplierCategoryMountQualityEpic;      break;
+                    case ITEM_QUALITY_LEGENDARY:    advancedPricingMultiplier = PriceMultiplierCategoryMountQualityLegendary; break;
+                    case ITEM_QUALITY_ARTIFACT:     advancedPricingMultiplier = PriceMultiplierCategoryMountQualityArtifact;  break;
+                    case ITEM_QUALITY_HEIRLOOM:     advancedPricingMultiplier = PriceMultiplierCategoryMountQualityHeirloom;  break;
                     default: break;
                 }
                 break;
@@ -412,9 +418,9 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     // Set the minimum price
     if (outBuyoutPrice < PriceMinimumCenterBase)
-        outBuyoutPrice = urand(PriceMinimumCenterBase * 0.85, PriceMinimumCenterBase * 1.25);
+        outBuyoutPrice = urand(PriceMinimumCenterBase * (1.0f - BuyoutVariationReducePercent), PriceMinimumCenterBase * (1.0f + BuyoutVariationAddPercent));
     else
-        outBuyoutPrice = urand(outBuyoutPrice * 0.85, outBuyoutPrice * 1.25);
+        outBuyoutPrice = urand(outBuyoutPrice * (1.0f - BuyoutVariationReducePercent), outBuyoutPrice * (1.0f + BuyoutVariationAddPercent));
 
     // Ensure no multipliers are zero or negative
     if (classPriceMultiplier <= 0.0f)
@@ -423,8 +429,8 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         qualityPriceMultplier = 1.0f;
     if (classQualityPriceMultiplier <= 0.0f)
         classQualityPriceMultiplier = 1.0f;
-    if (advancedPriceingMultiplier <= 0.0f)
-        advancedPriceingMultiplier = 1.0f;
+    if (advancedPricingMultiplier <= 0.0f)
+        advancedPricingMultiplier = 1.0f;
 
     // Grab any item level price multipliers
     float itemLevelPriceMultplier = 0.0f;
@@ -447,15 +453,15 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         case ITEM_CLASS_GLYPH:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGlyph; break;
         default:                        break;
     }
-   
+
     // Multiply the price based on multipliers
     outBuyoutPrice *= qualityPriceMultplier;
     outBuyoutPrice *= classPriceMultiplier;
     outBuyoutPrice *= classQualityPriceMultiplier;
-    outBuyoutPrice *= static_cast<float>(advancedPriceingMultiplier);
+    outBuyoutPrice *= static_cast<float>(advancedPricingMultiplier);
 
     // Only apply item level multiplier if set, and no advanced pricing has been enabled
-    if (itemLevelPriceMultplier > 0.0f && itemProto->ItemLevel > 0 && advancedPriceingMultiplier == 1.0f)
+    if (itemLevelPriceMultplier > 0.0f && itemProto->ItemLevel > 0 && advancedPricingMultiplier == 1.0f)
         outBuyoutPrice *= itemProto->ItemLevel * itemLevelPriceMultplier;
 
     // If a vendor sells this item, make the price at least that high
@@ -463,18 +469,18 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBuyoutPrice = itemProto->SellPrice;
 
     // Avoid price overflows
-    if (outBuyoutPrice > 1000000000)
-        outBuyoutPrice = 1000000000;
+    if (outBuyoutPrice > MaxBuyoutPriceInCopper)
+        outBuyoutPrice = MaxBuyoutPriceInCopper;
 
     // Calculate a bid price based on a variance against buyout price
-    float sellVarianceBidPriceTopPercent = 1;
-    float sellVarianceBidPriceBottomPercent = .75;
+    float sellVarianceBidPriceTopPercent = 1.0f - BidVariationHighReducePercent;
+    float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
 
     // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
     if (outBuyoutPrice < itemProto->SellPrice)
     {
-        float minLowPriceAddVariancePercent = 1.25;
+        float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
         outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
     }
 
@@ -1168,14 +1174,10 @@ void AuctionHouseBot::InitializeConfiguration()
 {
     debug_Out = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG", false);
     debug_Out_Filters = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG_FILTERS", false);
-    SellingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
 
-    // Buyer Bot
+    // Bot enablement
+    SellingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     BuyingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
-    CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
-    BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
-    BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
-        
     if (SellingBotEnabled == false && BuyingBotEnabled == false)
         return;
     string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
@@ -1188,7 +1190,19 @@ void AuctionHouseBot::InitializeConfiguration()
     }
     AddCharacters(charString);
 
+    // Buyer & Seller core properties
+    CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
+    MaxBuyoutPriceInCopper = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1000000000);
+    BuyoutVariationReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationReducePercent", 0.15f);
+    BuyoutVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationAddPercent", 0.25f);
+    BidVariationHighReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationHighReducePercent", 0);
+    BidVariationLowReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationLowReducePercent", 0.25f);
+    BuyoutBelowVendorVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutBelowVendorVariationAddPercent", 0.25f);
+
+    // Buyer Bot
+    BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
+    BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Consumable", 50);
@@ -1208,21 +1222,21 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Glyph", 0);
 
     // Stack Ratios
-    RandomStackIncrementConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Consumable", 5);
-    RandomStackIncrementContainer = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Container", 1);
-    RandomStackIncrementWeapon = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Weapon", 1);
-    RandomStackIncrementGem = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Gem", 1);
-    RandomStackIncrementArmor = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Armor", 1);
-    RandomStackIncrementReagent = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Reagent", 1);
-    RandomStackIncrementProjectile = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Projectile", 1000);
-    RandomStackIncrementTradeGood = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.TradeGood", 5);
-    RandomStackIncrementGeneric = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Generic", 1);
-    RandomStackIncrementRecipe = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Recipe", 1);
-    RandomStackIncrementQuiver = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quiver", 1);
-    RandomStackIncrementQuest = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quest", 1);
-    RandomStackIncrementKey = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Key", 1);
-    RandomStackIncrementMisc = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Misc", 1);
-    RandomStackIncrementGlyph = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph", 1);
+    RandomStackIncrementConsumable = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Consumable", 5);
+    RandomStackIncrementContainer = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Container", 1);
+    RandomStackIncrementWeapon = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Weapon", 1);
+    RandomStackIncrementGem = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Gem", 1);
+    RandomStackIncrementArmor = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Armor", 1);
+    RandomStackIncrementReagent = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Reagent", 1);
+    RandomStackIncrementProjectile = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Projectile", 1000);
+    RandomStackIncrementTradeGood = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.TradeGood", 5);
+    RandomStackIncrementGeneric = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Generic", 1);
+    RandomStackIncrementRecipe = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Recipe", 1);
+    RandomStackIncrementQuiver = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quiver", 1);
+    RandomStackIncrementQuest = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Quest", 1);
+    RandomStackIncrementKey = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Key", 1);
+    RandomStackIncrementMisc = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Misc", 1);
+    RandomStackIncrementGlyph = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph", 1);
 
     // List Proportions
     ListProportionConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Consumable", 2);
@@ -1370,6 +1384,17 @@ uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 
         stackValue = defaultValue;
     }
     return stackValue;
+}
+
+uint32 AuctionHouseBot::GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue)
+{
+    uint32 stackIncrementValue = sConfigMgr->GetOption<uint32>(configKeyString, defaultValue);
+    if (stackIncrementValue <= 0)
+    {
+        LOG_ERROR("module", "{} value is invalid.  Setting to default ({}).", configKeyString, defaultValue);
+        stackIncrementValue = defaultValue;
+    }
+    return stackIncrementValue;
 }
 
 void AuctionHouseBot::AddCharacters(std::string characterGUIDString)

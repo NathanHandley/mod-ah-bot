@@ -10,6 +10,12 @@
 #        Enable/Disable Debugging output from Filters
 #    Default 0 (disabled)
 #
+#    AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell
+#        How many cycles to wait between executing any buying or selling logic
+#        - At this time, the AzerothCore has it set as 1 minute inside the
+#          AuctionHouseMgr.cpp file
+#    Default 1 (once per AuctionHouseMgr.cpp update cycle)
+#
 #    AuctionHouseBot.EnableSeller
 #        Enable/Disable the part of AHBot that puts items up for auction
 #    Default 0 (disabled)
@@ -33,20 +39,67 @@
 #        from startup complete to first character being able to log in) so a 
 #        value greater than a few hundred is not recommended.
 #    Default 75
-#
-#    AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell
-#        How many cycles to wait between executing any buying or selling logic
-#        - At this time, the AzerothCore has it set as 1 minute inside the
-#          AuctionHouseMgr.cpp file
-#    Default 1 (once per AuctionHouseMgr.cpp update cycle)
 ###############################################################################
 
 AuctionHouseBot.DEBUG = 0
 AuctionHouseBot.DEBUG_FILTERS = 0
+AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
 AuctionHouseBot.EnableSeller = 0
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 75
-AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
+
+###############################################################################
+#    AuctionHouseBot.MaxBuyoutPriceInCopper
+#        Maximum amount that a buyout on a listing can be in copper.  Prevents
+#        overflow.  Don't increase this, but you can decrease it.
+#    Default 1000000000 (100k gold)
+#
+#    AuctionHouseBot.BuyoutVariationReducePercent
+#    AuctionHouseBot.BuyoutVariationAddPercent
+#        After a price is calculated using the various multipliers for either 
+#        a buy or a sell, it is randomized within a band up to +AddPercent
+#        and down to -ReducePercent
+#    Default 0.15 (down) and 0.25 (up) - Which means the price range -15% or up +25%
+#        Note: Do not go negative on either number.  Setting both to 0 will cause
+#        no price variation at all
+#
+#    AuctionHouseBot.BidVariationHighReducePercent
+#    AuctionHouseBot.BidVariationLowReducePercent
+#        After the buyout amount is calculated, this is how much deeper down
+#        the bid price can be.  It will range from buyout-HighReduce to buyout-LowReduce
+#        percent
+#    Default 0 (high) and .25 (low) - Starting bid will be Buyout (high) and Buyout-25% (low)
+#        Note: Do not go negative on either number.  Set both to 0 if you want bids
+#        to always be exactly buyout for both buyer and seller.
+#
+#    AuctionHouseBot.BuyoutBelowVendorVariationAddPercent
+#        If a buyout calculates to a price below vendor price, this is how much to
+#        add to it in order to bring it up above vendor price.
+#    Default 0.25 (+25% increase in price)
+#	     Note: Do not put a negative or it will sell less than a vendor.  Set to
+#        zero if you want exactly vendor price
+###############################################################################
+
+AuctionHouseBot.MaxBuyoutPriceInCopper = 1000000000
+AuctionHouseBot.BuyoutVariationReducePercent = 0.15
+AuctionHouseBot.BuyoutVariationAddPercent = 0.25
+AuctionHouseBot.BidVariationHighReducePercent = 0
+AuctionHouseBot.BidVariationLowReducePercent = 0.25
+AuctionHouseBot.BuyoutBelowVendorVariationAddPercent = 0.25
+
+###############################################################################
+#    AuctionHouseBot.<faction>.MinItems
+#    AuctionHouseBot.<faction>.MaxItems
+#        The minimum and maximum number of items to post on that auction house
+#    Default: 15000 for both
+###############################################################################
+
+AuctionHouseBot.Alliance.MinItems = 15000
+AuctionHouseBot.Alliance.MaxItems = 15000
+AuctionHouseBot.Horde.MinItems = 15000
+AuctionHouseBot.Horde.MaxItems = 15000
+AuctionHouseBot.Neutral.MinItems = 15000
+AuctionHouseBot.Neutral.MaxItems = 15000
 
 ###############################################################################
 # BUYER PROPERTIES
@@ -89,27 +142,15 @@ AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
 #        how much it is willing to spend.
 #        A value of 1 means the buyer bot will generally pay the same as the
 #        seller bot lists. Similarly, a value of 1.5 means it will pay roughly
-#        50% more than the seller bot's listed price.
+#        50% more than the seller bot's listed price.  Can be less than 1 if you
+#        want the buyer to be more stingy (0.5 means buyer will pay up to 50%
+#        of what the seller sells for), but do not go lower than 0
 #    Default: 1
 ###############################################################################
 
 AuctionHouseBot.Buyer.Enabled = 0
 AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
-
-###############################################################################
-#    AuctionHouseBot.<faction>.MinItems
-#    AuctionHouseBot.<faction>.MaxItems
-#        The minimum and maximum number of items to post on that auction house
-#    Default: 15000 for both
-###############################################################################
-
-AuctionHouseBot.Alliance.MinItems = 15000
-AuctionHouseBot.Alliance.MaxItems = 15000
-AuctionHouseBot.Horde.MinItems = 15000
-AuctionHouseBot.Horde.MaxItems = 15000
-AuctionHouseBot.Neutral.MinItems = 15000
-AuctionHouseBot.Neutral.MaxItems = 15000
 
 ###############################################################################
 #    AuctionHouseBot.ListProportion.*
@@ -154,6 +195,13 @@ AuctionHouseBot.ListProportion.Glyph = 2
 #        into play.  Value shouldn't be zero, and the base minimum price will
 #        actually be a +/- 25% range of this value.  Used to catch 0 cost or
 #        extremely low cost items
+#
+#    AuctionHouseBot.PriceMinimumCenterBase.OverrideItems
+#        Comma separated list of items in the format of "itemID:PriceMinCopper"
+#        which is an override of the PriceMinimumCenterBase", a value that is
+#        used before variation and multipliers
+#	 Example: "2589:1000000,4306:100000" would set the minimum price center
+#      of linen cloth to 100 gold and silk cloth to 10 gold each
 ###############################################################################
 
 AuctionHouseBot.PriceMinimumCenterBase.Consumable = 1000
@@ -171,15 +219,6 @@ AuctionHouseBot.PriceMinimumCenterBase.Quest = 1000
 AuctionHouseBot.PriceMinimumCenterBase.Key = 1000
 AuctionHouseBot.PriceMinimumCenterBase.Misc = 1000
 AuctionHouseBot.PriceMinimumCenterBase.Glyph = 1000
-
-###############################################################################
-#    AuctionHouseBot.PriceMinimumCenterBase.OverrideItems
-#        Comma separated list of items in the format of "itemID:PriceMinCopper"
-#        which is an override of the PriceMinimumCenterBase", a value that is
-#        used before variation and multipliers
-#	 Example: "2589:1000000,4306:100000" would set the minimum price center
-#      of linen cloth to 100 gold and silk cloth to 10 gold each
-###############################################################################
 
 AuctionHouseBot.PriceMinimumCenterBase.OverrideItems = 
 
@@ -200,7 +239,8 @@ AuctionHouseBot.PriceMinimumCenterBase.OverrideItems =
 #    Note that all price multpliers (along with the advanced pricing) are applied
 #     multiplicative.  Example: A Category of 1.5x, Quality of 2x, and CategoryQuality
 #     of 1.4x would make the multiplier 4.2 (1.5 x 2 x 1.4).  The advanced pricing
-#     (below) would then multiply that value further.
+#     (below) would then multiply that value further.  Enabling advanced pricing
+#     will disable PriceMultiplier.ItemLevel pricing for that category
 ###############################################################################
 
 AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled         = 1
@@ -224,8 +264,9 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #        Multiplier applied to item level when determining auction price, by category
 #        Final multiplier = itemLevel * this value.  Set to 0 (or less) to disable.
 #        Default: 0 (Disabled)
-#       Note: This will be ignored if AdvancedPricing is enabled (above), but this
-#        will apply in combination with other price multipliers
+#       Note: This will be ignored for any matching specific category above if 
+#        AdvancedPricing is enabled (above). This applies in combination with 
+#        all other price multipliers
 #
 #    AuctionHouseBot.PriceMultiplier.Category*.Quality*
 #        Category-and-Quality- modifier values for the prices of items.
