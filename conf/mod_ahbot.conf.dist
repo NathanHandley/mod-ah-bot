@@ -220,8 +220,8 @@ AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 #		 the pricing algorithm has many steps to it and this is just a tuning
 #        modifier.
 #
-#    AuctionHouseBot.PriceMultiplier.ItemLevel.*
-#        Multiplier applied to item level when determining auction price
+#    AuctionHouseBot.PriceMultiplier.ItemLevel.Category.*
+#        Multiplier applied to item level when determining auction price, by category
 #        Final multiplier = itemLevel * this value.  Set to 0 (or less) to disable.
 #        Default: 0 (Disabled)
 #       Note: This will be ignored if AdvancedPricing is enabled (above), but this
@@ -284,6 +284,7 @@ AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Key = 0
 AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Misc = 0
 AuctionHouseBot.PriceMultiplier.ItemLevel.Category.Glyph = 0
 
+## The following are applied in addition to any above, for fine tuning
 # Consumable
 AuctionHouseBot.PriceMultiplier.CategoryConsumable.QualityPoor       = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryConsumable.QualityNormal     = 1.0
@@ -489,14 +490,14 @@ AuctionHouseBot.PriceMultiplier.CategoryPermanent.QualityHeirloom   = 1.0
 #
 #    AuctionHouseBot.ListingStack.RandomStackIncrement.*
 #        When randomizing a stack, this is the multiple used in the stack size
-#       Examples:    1 = stacks will be in sizes of 1, 2, 3, ... (item's max stack size)
-#                    5 = stacks will be in sizes of 5, 10, 15, ... (item's max stack size)
+#       Examples:    1 = stacks will be in sizes of 1, 2, 3, ...
+#                    5 = stacks will be in sizes of 5, 10, 15, ...
 #       Setting the value too high will clamp to the max stack size, so use that
 #        if you want all random stack sizes to be full stacks (like ammo).  Also,
 #        it will only use the increment if the it's a random stack 'roll'.  A
 #        value of 0 will be treated as a 1
 #
-#       NOTES: Stack sizes of 1 can show up if the RandomRatio is not set to 100. 
+#       NOTES: Stack sizes of 1 will show up if the RandomRatio is not set to 100. 
 #        If you want something to always post maxed out, set RandomRatio to
 #        100 and RandomStackIncrement to a value that is at or greater than the
 #        largest possible stack size for that category.  Default configurations
