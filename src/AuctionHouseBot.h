@@ -129,6 +129,8 @@ private:
     float BidVariationLowReducePercent;
     float BuyoutBelowVendorVariationAddPercent;
     uint32 BuyingBotBuyCandidatesPerBuyCycle;
+    uint32 ListingExpireTimeInSecondsMin;
+    uint32 ListingExpireTimeInSecondsMax;
     float BuyingBotAcceptablePriceModifier;
     std::string AHCharactersGUIDsForQuery;
     uint32 ItemsPerCycle;

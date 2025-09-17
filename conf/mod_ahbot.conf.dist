@@ -39,6 +39,13 @@
 #        from startup complete to first character being able to log in) so a 
 #        value greater than a few hundred is not recommended.
 #    Default 75
+#
+#    AuctionHouseBot.ListingExpireTimeInSecondsMin
+#    AuctionHouseBot.ListingExpireTimeInSecondsMax
+#        Bot-posted auctions will have a listing time between these two values,
+#        and is important to make the auction house feel dynamic in timing
+#    Default 900 (15 minutes) to 86400 (24 hours)
+#		 Note: Do not set lower than 15 minutes (900) or higher than 48 hours (172800)
 ###############################################################################
 
 AuctionHouseBot.DEBUG = 0
@@ -47,6 +54,8 @@ AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
 AuctionHouseBot.EnableSeller = 0
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 75
+AuctionHouseBot.ListingExpireTimeInSecondsMin = 900
+AuctionHouseBot.ListingExpireTimeInSecondsMax = 86400
 
 ###############################################################################
 #    AuctionHouseBot.MaxBuyoutPriceInCopper

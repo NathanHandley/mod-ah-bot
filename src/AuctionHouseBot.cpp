@@ -48,6 +48,8 @@ AuctionHouseBot::AuctionHouseBot() :
     BidVariationHighReducePercent(0),
     BidVariationLowReducePercent(0.25f),
     BuyoutBelowVendorVariationAddPercent(0.25f),
+    ListingExpireTimeInSecondsMin(900),
+    ListingExpireTimeInSecondsMax(86400),
     BuyingBotBuyCandidatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
     AHCharactersGUIDsForQuery(""),
@@ -933,7 +935,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
         calculateItemValue(prototype, bidPrice, buyoutPrice);
 
         // Define a duration
-        uint32 etime = urand(900, 43200);
+        uint32 etime = urand(ListingExpireTimeInSecondsMin, ListingExpireTimeInSecondsMax);
 
         // Set stack size
         uint32 stackCount = getStackSizeForItem(prototype);
@@ -1199,6 +1201,24 @@ void AuctionHouseBot::InitializeConfiguration()
     BidVariationHighReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationHighReducePercent", 0);
     BidVariationLowReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationLowReducePercent", 0.25f);
     BuyoutBelowVendorVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutBelowVendorVariationAddPercent", 0.25f);
+    ListingExpireTimeInSecondsMin = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListingExpireTimeInSecondsMin", 900);
+    if (ListingExpireTimeInSecondsMin < 900)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: ListingExpireTimeInSecondsMin was set below 900 (15 min), so setting to 900");
+        ListingExpireTimeInSecondsMin = 900;
+    }
+    ListingExpireTimeInSecondsMax = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListingExpireTimeInSecondsMax", 86400);
+    if (ListingExpireTimeInSecondsMax > 172800)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: ListingExpireTimeInSecondsMax was set above 172800 (48 hours), so setting to 172800");
+        ListingExpireTimeInSecondsMax = 172800;
+    }
+    if (ListingExpireTimeInSecondsMax < ListingExpireTimeInSecondsMin)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: ListingExpireTimeInSecondsMax was smaller than ListingExpireTimeInSecondsMin, setting to 172800 (48 hours) and 900 (15 min)");
+        ListingExpireTimeInSecondsMin = 900;
+        ListingExpireTimeInSecondsMax = 172800;
+    }
 
     // Buyer Bot
     BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
