@@ -1041,26 +1041,44 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         uint64 discardBidPrice = 0;
         calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
         willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
-
         uint64 willingToPayForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
 
         // Determine if it's a bid, buyout, or skip
         bool doBuyout = false;
         bool doBid = false;
+        uint64 curAuctionBidAmount = 0;
+        uint64 calcBidAmount = 0;
 
         if (auction->buyout != 0 && auction->buyout < willingToPayForStackPrice)
             doBuyout = true;
-        else if (auction->startbid < willingToPayForStackPrice && (auction->startbid + auction->GetAuctionOutBid()) < willingToPayForStackPrice)
-            doBid = true;
+        else
+        {
+            if (auction->bid == 0 && auction->startbid <= willingToPayForStackPrice)
+            {
+                doBid = true;
+                calcBidAmount = auction->startbid;
+            }
+            else if (auction->bid != 0 && (auction->bid + auction->GetAuctionOutBid()) < willingToPayForStackPrice)
+            {
+                doBid = true;
+                calcBidAmount = auction->bid + auction->GetAuctionOutBid();
+            }
+        }
 
         // Check that the item isn't listed above Vendor sell price
-        if (PreventOverpayingForVendorItems) 
+        bool preventedOverpayingForVendorItem = false;
+        if (PreventOverpayingForVendorItems && vendorItemsPrices[prototype->ItemId] > 0)
         {
-            if (doBuyout && auction->buyout >= vendorItemsPrices[prototype->ItemId]){
+            if (doBuyout && auction->buyout > vendorItemsPrices[prototype->ItemId])
+            {
                 doBuyout = false;
+                preventedOverpayingForVendorItem = true;
             }
-            if (doBid && (auction->startbid + auction->GetAuctionOutBid()) >= vendorItemsPrices[prototype->ItemId])
+            if (doBid && calcBidAmount > vendorItemsPrices[prototype->ItemId])
+            {
                 doBid = false;
+                preventedOverpayingForVendorItem = true;
+            }
         }
 
         if (debug_Out)
@@ -1076,7 +1094,8 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Item Info:");
             LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
             LOG_INFO("module", "AHBuyer: Vendor Buy Price: {}", prototype->BuyPrice);
-            LOG_INFO("module", "AHBuyer: Vendor Sell Price: {}", prototype->SellPrice);
+            LOG_INFO("module", "AHBuyer: Vendor Sell Price (Base): {}", prototype->SellPrice);
+            LOG_INFO("module", "AHBuyer: Vender Sell Price (Vendor): {}", vendorItemsPrices[prototype->ItemId]);
             LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
             LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
             LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
@@ -1086,28 +1105,23 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
             LOG_INFO("module", "AHBuyer: Current Bid: {}", auction->bid);
             LOG_INFO("module", "AHBuyer: Buyout Price: {}", auction->buyout);
-            LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price: {}", willingToSpendPerItemPrice);
-            LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price: {}", willingToPayForStackPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price (Buyout): {}", willingToSpendPerItemPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price (Buyout): {}", willingToPayForStackPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay For a Bid: {}", calcBidAmount);
             LOG_INFO("module", "AHBuyer: Decided to Buyout?: {}", doBuyout);
             LOG_INFO("module", "AHBuyer: Decided to Bid?: {}", doBid);
+            LOG_INFO("module", "AHBuyer: Stopped from buying due to 'PreventOverpayingForVendorItems'?: {}", preventedOverpayingForVendorItem);
             LOG_INFO("module", "-------------------------------------------------");
         }
         if (doBid)
         {
             auto trans = CharacterDatabase.BeginTransaction();
 
-            // Perform outbid
-            uint32 bidAmount = 0;
-            if (auction->bid == 0)
-                bidAmount = auction->startbid;
-            else
-                bidAmount = auction->GetAuctionOutBid();
-
             if (auction->bidder)
-                sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
+                sAuctionMgr->SendAuctionOutbiddedMail(auction, calcBidAmount, AHBplayer, trans);
 
             auction->bidder = AHBplayer->GetGUID();
-            auction->bid = bidAmount;
+            auction->bid = calcBidAmount;
 
             sAuctionMgr->GetAuctionHouseSearcher()->UpdateBid(auction);
 
