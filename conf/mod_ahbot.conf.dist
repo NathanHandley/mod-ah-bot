@@ -168,14 +168,14 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 #        When enabled, the buyer bot will post bids against auctions that players
 #        bid against, within the acceptable price range the buyer bot was willing
 #        to pay
-#    Default: true
+#    Default: false
 ###############################################################################
 
 AuctionHouseBot.Buyer.Enabled = false
 AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
 AuctionHouseBot.Buyer.PreventOverpayingForVendorItems = true
-AuctionHouseBot.Buyer.BidAgainstPlayers = true
+AuctionHouseBot.Buyer.BidAgainstPlayers = false
 
 ###############################################################################
 #    AuctionHouseBot.ListProportion.*
