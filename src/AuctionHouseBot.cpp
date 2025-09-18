@@ -52,6 +52,7 @@ AuctionHouseBot::AuctionHouseBot() :
     ListingExpireTimeInSecondsMax(86400),
     BuyingBotBuyCandidatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
+    BuyingBotWillBidAgainstPlayers(true),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
     DisabledItemTextFilter(true),
@@ -982,7 +983,11 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         return;
     }
 
-    QueryResult result = CharacterDatabase.Query("SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({})", AHCharactersGUIDsForQuery, AHCharactersGUIDsForQuery);
+    // Pull auctions.
+    string queryString = "SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({})";
+    if (BuyingBotWillBidAgainstPlayers == false)
+        queryString = "SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({}) AND lastbid = 0";
+    QueryResult result = CharacterDatabase.Query(queryString, AHCharactersGUIDsForQuery, AHCharactersGUIDsForQuery);
 
     if (!result)
         return;
@@ -1257,6 +1262,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
     if (PreventOverpayingForVendorItems)
         populateVendorItemsPrices();
+    BuyingBotWillBidAgainstPlayers = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.BidAgainstPlayers", true);
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Consumable", 50);

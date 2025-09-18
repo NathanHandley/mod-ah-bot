@@ -163,12 +163,19 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 #        If disabled, the bot may still purchase vendor items above vendor value
 #        if they fall within the acceptable price modifier rules.
 #    Default: 1
+#
+#    AuctionHouseBot.Buyer.BidAgainstPlayers
+#        When enabled, the buyer bot will post bids against auctions that players
+#        bid against, within the acceptable price range the buyer bot was willing
+#        to pay
+#    Default: true
 ###############################################################################
 
 AuctionHouseBot.Buyer.Enabled = 0
 AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
 AuctionHouseBot.Buyer.PreventOverpayingForVendorItems = 1
+AuctionHouseBot.Buyer.BidAgainstPlayers = true
 
 ###############################################################################
 #    AuctionHouseBot.ListProportion.*
