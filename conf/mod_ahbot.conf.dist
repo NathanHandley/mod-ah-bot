@@ -155,11 +155,20 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 #        want the buyer to be more stingy (0.5 means buyer will pay up to 50%
 #        of what the seller sells for), but do not go lower than 0
 #    Default: 1
+#
+#    AuctionHouseBot.Buyer.PreventOverpayingForVendorItems
+#        When enabled, the buyer bot will avoid purchasing auction house items
+#        that are being sold for more than the vendor sell price. This prevents
+#        players from "gaming" the economy by flipping vendor items.
+#        If disabled, the bot may still purchase vendor items above vendor value
+#        if they fall within the acceptable price modifier rules.
+#    Default: 1
 ###############################################################################
 
 AuctionHouseBot.Buyer.Enabled = 0
 AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
+AuctionHouseBot.Buyer.PreventOverpayingForVendorItems = 1
 
 ###############################################################################
 #    AuctionHouseBot.ListProportion.*

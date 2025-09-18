@@ -276,6 +276,111 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     float classQualityPriceMultiplier = PriceMultiplierCategoryQuality[itemProto->Class][itemProto->Quality];
 
+    float advancedPricingMultiplier = getAdvancedPricingMultiplier(itemProto);
+
+    // Grab the minimum prices
+    uint64 PriceMinimumCenterBase = 1000;
+    auto it = PriceMinimumCenterBaseOverridesByItemID.find(itemProto->ItemId);
+    if (it != PriceMinimumCenterBaseOverridesByItemID.end())
+        PriceMinimumCenterBase = it->second;
+    else
+    {
+        switch (itemProto->Class)
+        {
+        case ITEM_CLASS_CONSUMABLE:     PriceMinimumCenterBase = PriceMinimumCenterBaseConsumable; break;
+        case ITEM_CLASS_CONTAINER:      PriceMinimumCenterBase = PriceMinimumCenterBaseContainer; break;
+        case ITEM_CLASS_WEAPON:         PriceMinimumCenterBase = PriceMinimumCenterBaseWeapon; break;
+        case ITEM_CLASS_GEM:            PriceMinimumCenterBase = PriceMinimumCenterBaseGem; break;
+        case ITEM_CLASS_REAGENT:        PriceMinimumCenterBase = PriceMinimumCenterBaseReagent; break;
+        case ITEM_CLASS_ARMOR:          PriceMinimumCenterBase = PriceMinimumCenterBaseArmor; break;
+        case ITEM_CLASS_PROJECTILE:     PriceMinimumCenterBase = PriceMinimumCenterBaseProjectile; break;
+        case ITEM_CLASS_TRADE_GOODS:    PriceMinimumCenterBase = PriceMinimumCenterBaseTradeGood; break;
+        case ITEM_CLASS_GENERIC:        PriceMinimumCenterBase = PriceMinimumCenterBaseGeneric; break;
+        case ITEM_CLASS_RECIPE:         PriceMinimumCenterBase = PriceMinimumCenterBaseRecipe; break;
+        case ITEM_CLASS_QUIVER:         PriceMinimumCenterBase = PriceMinimumCenterBaseQuiver; break;
+        case ITEM_CLASS_QUEST:          PriceMinimumCenterBase = PriceMinimumCenterBaseQuest; break;
+        case ITEM_CLASS_KEY:            PriceMinimumCenterBase = PriceMinimumCenterBaseKey; break;
+        case ITEM_CLASS_MISC:           PriceMinimumCenterBase = PriceMinimumCenterBaseMisc; break;
+        case ITEM_CLASS_GLYPH:          PriceMinimumCenterBase = PriceMinimumCenterBaseGlyph; break;
+        default:                        break;
+        }
+    }
+
+    // Set the minimum price
+    if (outBuyoutPrice < PriceMinimumCenterBase)
+        outBuyoutPrice = urand(PriceMinimumCenterBase * (1.0f - BuyoutVariationReducePercent), PriceMinimumCenterBase * (1.0f + BuyoutVariationAddPercent));
+    else
+        outBuyoutPrice = urand(outBuyoutPrice * (1.0f - BuyoutVariationReducePercent), outBuyoutPrice * (1.0f + BuyoutVariationAddPercent));
+
+    // Ensure no multipliers are zero or negative
+    if (classPriceMultiplier <= 0.0f)
+        classPriceMultiplier = 1.0f;
+    if (qualityPriceMultplier <= 0.0f)
+        qualityPriceMultplier = 1.0f;
+    if (classQualityPriceMultiplier <= 0.0f)
+        classQualityPriceMultiplier = 1.0f;
+    if (advancedPricingMultiplier <= 0.0f)
+        advancedPricingMultiplier = 1.0f;
+
+    // Grab any item level price multipliers
+    float itemLevelPriceMultplier = 0.0f;
+    switch (itemProto->Class)
+    {
+        case ITEM_CLASS_CONSUMABLE:     itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryConsumable; break;
+        case ITEM_CLASS_CONTAINER:      itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryContainer; break;
+        case ITEM_CLASS_WEAPON:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryWeapon; break;
+        case ITEM_CLASS_GEM:            itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGem; break;
+        case ITEM_CLASS_REAGENT:        itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryReagent; break;
+        case ITEM_CLASS_ARMOR:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryArmor; break;
+        case ITEM_CLASS_PROJECTILE:     itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryProjectile; break;
+        case ITEM_CLASS_TRADE_GOODS:    itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryTradeGood; break;
+        case ITEM_CLASS_GENERIC:        itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGeneric; break;
+        case ITEM_CLASS_RECIPE:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryRecipe; break;
+        case ITEM_CLASS_QUIVER:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryQuiver; break;
+        case ITEM_CLASS_QUEST:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryQuest; break;
+        case ITEM_CLASS_KEY:            itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryKey; break;
+        case ITEM_CLASS_MISC:           itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryMisc; break;
+        case ITEM_CLASS_GLYPH:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGlyph; break;
+        default:                        break;
+    }
+
+    // Multiply the price based on multipliers
+    outBuyoutPrice *= qualityPriceMultplier;
+    outBuyoutPrice *= classPriceMultiplier;
+    outBuyoutPrice *= classQualityPriceMultiplier;
+    outBuyoutPrice *= static_cast<float>(advancedPricingMultiplier);
+
+    // Only apply item level multiplier if set, and no advanced pricing has been enabled
+    if (itemLevelPriceMultplier > 0.0f && itemProto->ItemLevel > 0 && advancedPricingMultiplier == 1.0f)
+        outBuyoutPrice *= itemProto->ItemLevel * itemLevelPriceMultplier;
+
+    // If a vendor sells this item, make the price at least that high
+    if (itemProto->SellPrice > outBuyoutPrice)
+        outBuyoutPrice = itemProto->SellPrice;
+
+    // Avoid price overflows
+    if (outBuyoutPrice > MaxBuyoutPriceInCopper)
+        outBuyoutPrice = MaxBuyoutPriceInCopper;
+
+    // Calculate a bid price based on a variance against buyout price
+    float sellVarianceBidPriceTopPercent = 1.0f - BidVariationHighReducePercent;
+    float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
+    outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
+
+    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
+    if (outBuyoutPrice < itemProto->SellPrice)
+    {
+        float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
+        outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
+    }
+
+    // Bid price can never be below sell price
+    if (outBidPrice < itemProto->SellPrice)
+        outBidPrice = itemProto->SellPrice;
+}
+
+float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProto)
+{
     /* "ADVANCED" SUBCLASS PRICE MULTIPLIER FORMULA NOTES
 
       1. multiplierHelper = log(1 + b * ItemLevel)
@@ -390,105 +495,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         }
     }
 
-    // Grab the minimum prices
-    uint64 PriceMinimumCenterBase = 1000;
-    auto it = PriceMinimumCenterBaseOverridesByItemID.find(itemProto->ItemId);
-    if (it != PriceMinimumCenterBaseOverridesByItemID.end())
-        PriceMinimumCenterBase = it->second;
-    else
-    {
-        switch (itemProto->Class)
-        {
-        case ITEM_CLASS_CONSUMABLE:     PriceMinimumCenterBase = PriceMinimumCenterBaseConsumable; break;
-        case ITEM_CLASS_CONTAINER:      PriceMinimumCenterBase = PriceMinimumCenterBaseContainer; break;
-        case ITEM_CLASS_WEAPON:         PriceMinimumCenterBase = PriceMinimumCenterBaseWeapon; break;
-        case ITEM_CLASS_GEM:            PriceMinimumCenterBase = PriceMinimumCenterBaseGem; break;
-        case ITEM_CLASS_REAGENT:        PriceMinimumCenterBase = PriceMinimumCenterBaseReagent; break;
-        case ITEM_CLASS_ARMOR:          PriceMinimumCenterBase = PriceMinimumCenterBaseArmor; break;
-        case ITEM_CLASS_PROJECTILE:     PriceMinimumCenterBase = PriceMinimumCenterBaseProjectile; break;
-        case ITEM_CLASS_TRADE_GOODS:    PriceMinimumCenterBase = PriceMinimumCenterBaseTradeGood; break;
-        case ITEM_CLASS_GENERIC:        PriceMinimumCenterBase = PriceMinimumCenterBaseGeneric; break;
-        case ITEM_CLASS_RECIPE:         PriceMinimumCenterBase = PriceMinimumCenterBaseRecipe; break;
-        case ITEM_CLASS_QUIVER:         PriceMinimumCenterBase = PriceMinimumCenterBaseQuiver; break;
-        case ITEM_CLASS_QUEST:          PriceMinimumCenterBase = PriceMinimumCenterBaseQuest; break;
-        case ITEM_CLASS_KEY:            PriceMinimumCenterBase = PriceMinimumCenterBaseKey; break;
-        case ITEM_CLASS_MISC:           PriceMinimumCenterBase = PriceMinimumCenterBaseMisc; break;
-        case ITEM_CLASS_GLYPH:          PriceMinimumCenterBase = PriceMinimumCenterBaseGlyph; break;
-        default:                        break;
-        }
-    }
-
-    // Set the minimum price
-    if (outBuyoutPrice < PriceMinimumCenterBase)
-        outBuyoutPrice = urand(PriceMinimumCenterBase * (1.0f - BuyoutVariationReducePercent), PriceMinimumCenterBase * (1.0f + BuyoutVariationAddPercent));
-    else
-        outBuyoutPrice = urand(outBuyoutPrice * (1.0f - BuyoutVariationReducePercent), outBuyoutPrice * (1.0f + BuyoutVariationAddPercent));
-
-    // Ensure no multipliers are zero or negative
-    if (classPriceMultiplier <= 0.0f)
-        classPriceMultiplier = 1.0f;
-    if (qualityPriceMultplier <= 0.0f)
-        qualityPriceMultplier = 1.0f;
-    if (classQualityPriceMultiplier <= 0.0f)
-        classQualityPriceMultiplier = 1.0f;
-    if (advancedPricingMultiplier <= 0.0f)
-        advancedPricingMultiplier = 1.0f;
-
-    // Grab any item level price multipliers
-    float itemLevelPriceMultplier = 0.0f;
-    switch (itemProto->Class)
-    {
-        case ITEM_CLASS_CONSUMABLE:     itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryConsumable; break;
-        case ITEM_CLASS_CONTAINER:      itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryContainer; break;
-        case ITEM_CLASS_WEAPON:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryWeapon; break;
-        case ITEM_CLASS_GEM:            itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGem; break;
-        case ITEM_CLASS_REAGENT:        itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryReagent; break;
-        case ITEM_CLASS_ARMOR:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryArmor; break;
-        case ITEM_CLASS_PROJECTILE:     itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryProjectile; break;
-        case ITEM_CLASS_TRADE_GOODS:    itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryTradeGood; break;
-        case ITEM_CLASS_GENERIC:        itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGeneric; break;
-        case ITEM_CLASS_RECIPE:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryRecipe; break;
-        case ITEM_CLASS_QUIVER:         itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryQuiver; break;
-        case ITEM_CLASS_QUEST:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryQuest; break;
-        case ITEM_CLASS_KEY:            itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryKey; break;
-        case ITEM_CLASS_MISC:           itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryMisc; break;
-        case ITEM_CLASS_GLYPH:          itemLevelPriceMultplier = PriceMultiplierItemLevelCategoryGlyph; break;
-        default:                        break;
-    }
-
-    // Multiply the price based on multipliers
-    outBuyoutPrice *= qualityPriceMultplier;
-    outBuyoutPrice *= classPriceMultiplier;
-    outBuyoutPrice *= classQualityPriceMultiplier;
-    outBuyoutPrice *= static_cast<float>(advancedPricingMultiplier);
-
-    // Only apply item level multiplier if set, and no advanced pricing has been enabled
-    if (itemLevelPriceMultplier > 0.0f && itemProto->ItemLevel > 0 && advancedPricingMultiplier == 1.0f)
-        outBuyoutPrice *= itemProto->ItemLevel * itemLevelPriceMultplier;
-
-    // If a vendor sells this item, make the price at least that high
-    if (itemProto->SellPrice > outBuyoutPrice)
-        outBuyoutPrice = itemProto->SellPrice;
-
-    // Avoid price overflows
-    if (outBuyoutPrice > MaxBuyoutPriceInCopper)
-        outBuyoutPrice = MaxBuyoutPriceInCopper;
-
-    // Calculate a bid price based on a variance against buyout price
-    float sellVarianceBidPriceTopPercent = 1.0f - BidVariationHighReducePercent;
-    float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
-    outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
-
-    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
-    if (outBuyoutPrice < itemProto->SellPrice)
-    {
-        float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
-        outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
-    }
-
-    // Bid price can never be below sell price
-    if (outBidPrice < itemProto->SellPrice)
-        outBidPrice = itemProto->SellPrice;
+    return static_cast<float>(advancedPricingMultiplier);
 }
 
 void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
@@ -1034,17 +1041,45 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         uint64 discardBidPrice = 0;
         calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
         willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
-
         uint64 willingToPayForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
 
         // Determine if it's a bid, buyout, or skip
         bool doBuyout = false;
         bool doBid = false;
+        uint64 curAuctionBidAmount = 0;
+        uint64 calcBidAmount = 0;
 
         if (auction->buyout != 0 && auction->buyout < willingToPayForStackPrice)
             doBuyout = true;
-        else if (auction->startbid < willingToPayForStackPrice && auction->GetAuctionOutBid() < willingToPayForStackPrice)
-            doBid = true;
+        else
+        {
+            if (auction->bid == 0 && auction->startbid <= willingToPayForStackPrice)
+            {
+                doBid = true;
+                calcBidAmount = auction->startbid;
+            }
+            else if (auction->bid != 0 && (auction->bid + auction->GetAuctionOutBid()) < willingToPayForStackPrice)
+            {
+                doBid = true;
+                calcBidAmount = auction->bid + auction->GetAuctionOutBid();
+            }
+        }
+
+        // Check that the item isn't listed above Vendor sell price
+        bool preventedOverpayingForVendorItem = false;
+        if (PreventOverpayingForVendorItems && vendorItemsPrices[prototype->ItemId] > 0)
+        {
+            if (doBuyout && auction->buyout > vendorItemsPrices[prototype->ItemId])
+            {
+                doBuyout = false;
+                preventedOverpayingForVendorItem = true;
+            }
+            if (doBid && calcBidAmount > vendorItemsPrices[prototype->ItemId])
+            {
+                doBid = false;
+                preventedOverpayingForVendorItem = true;
+            }
+        }
 
         if (debug_Out)
         {
@@ -1059,7 +1094,8 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Item Info:");
             LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
             LOG_INFO("module", "AHBuyer: Vendor Buy Price: {}", prototype->BuyPrice);
-            LOG_INFO("module", "AHBuyer: Vendor Sell Price: {}", prototype->SellPrice);
+            LOG_INFO("module", "AHBuyer: Vendor Sell Price (Base): {}", prototype->SellPrice);
+            LOG_INFO("module", "AHBuyer: Vender Sell Price (Vendor): {}", vendorItemsPrices[prototype->ItemId]);
             LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
             LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
             LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
@@ -1069,28 +1105,23 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Starting Bid: {}", auction->startbid);
             LOG_INFO("module", "AHBuyer: Current Bid: {}", auction->bid);
             LOG_INFO("module", "AHBuyer: Buyout Price: {}", auction->buyout);
-            LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price: {}", willingToSpendPerItemPrice);
-            LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price: {}", willingToPayForStackPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price (Buyout): {}", willingToSpendPerItemPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price (Buyout): {}", willingToPayForStackPrice);
+            LOG_INFO("module", "AHBuyer: Willing To Pay For a Bid: {}", calcBidAmount);
             LOG_INFO("module", "AHBuyer: Decided to Buyout?: {}", doBuyout);
             LOG_INFO("module", "AHBuyer: Decided to Bid?: {}", doBid);
+            LOG_INFO("module", "AHBuyer: Stopped from buying due to 'PreventOverpayingForVendorItems'?: {}", preventedOverpayingForVendorItem);
             LOG_INFO("module", "-------------------------------------------------");
         }
         if (doBid)
         {
             auto trans = CharacterDatabase.BeginTransaction();
 
-            // Perform outbid
-            uint32 bidAmount = 0;
-            if (auction->bid == 0)
-                bidAmount = auction->startbid;
-            else
-                bidAmount = auction->GetAuctionOutBid();
-
             if (auction->bidder)
-                sAuctionMgr->SendAuctionOutbiddedMail(auction, bidAmount, AHBplayer, trans);
+                sAuctionMgr->SendAuctionOutbiddedMail(auction, calcBidAmount, AHBplayer, trans);
 
             auction->bidder = AHBplayer->GetGUID();
-            auction->bid = bidAmount;
+            auction->bid = calcBidAmount;
 
             sAuctionMgr->GetAuctionHouseSearcher()->UpdateBid(auction);
 
@@ -1223,6 +1254,9 @@ void AuctionHouseBot::InitializeConfiguration()
     // Buyer Bot
     BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
     BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
+    PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
+    if (PreventOverpayingForVendorItems)
+        populateVendorItemsPrices();
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Consumable", 50);
@@ -1590,5 +1624,26 @@ const char* AuctionHouseBot::GetCategoryName(ItemClass category)
         case ITEM_CLASS_MISC:         return "Misc";
         case ITEM_CLASS_GLYPH:        return "Glyph";
         default:                      return "Unknown";
+    }
+}
+
+void AuctionHouseBot::populateVendorItemsPrices()
+{
+    // Load vendor items' prices into a vector for fast lookup
+    QueryResult r = WorldDatabase.Query("SELECT MAX(entry) FROM item_template");
+    Field* f = r->Fetch();
+    uint32_t numItems = f[0].Get<uint32>();
+    vendorItemsPrices = std::vector<uint32>(numItems, UINT32_MAX);
+    
+    QueryResult result = WorldDatabase.Query("SELECT v.entry, MIN(v.SellPrice) AS SellPrice FROM item_template v JOIN npc_vendor p ON v.entry = p.item GROUP BY v.entry");
+    if (result)
+    {
+        do
+        {
+            Field* pFields = result->Fetch();
+            uint32_t itemID = pFields[0].Get<uint32>();
+            uint32_t itemPrice = pFields[1].Get<uint32>();
+            vendorItemsPrices[itemID] = itemPrice;
+        } while (result->NextRow()); 
     }
 }
