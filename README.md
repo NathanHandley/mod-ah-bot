@@ -40,5 +40,6 @@ The above behavior is replicated on each enabled auction house.  If left to defa
 ## Credits
 
 - NathanHandley: Created this rewrite of the one that was ported to AzerothCore
+- Zeb139: All of the enhanced pricing formulas
 - Ayase: ported the bot to AzerothCore
 - Other contributors (check the contributors list)
