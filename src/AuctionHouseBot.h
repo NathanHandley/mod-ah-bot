@@ -132,6 +132,7 @@ private:
     uint32 ListingExpireTimeInSecondsMin;
     uint32 ListingExpireTimeInSecondsMax;
     float BuyingBotAcceptablePriceModifier;
+    bool BuyingBotAlwaysBidMaxCalculatedPrice;
     bool BuyingBotWillBidAgainstPlayers;
     std::vector<uint32> vendorItemsPrices;
     std::string AHCharactersGUIDsForQuery;

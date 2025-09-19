@@ -52,6 +52,7 @@ AuctionHouseBot::AuctionHouseBot() :
     ListingExpireTimeInSecondsMin(900),
     ListingExpireTimeInSecondsMax(86400),
     BuyingBotAcceptablePriceModifier(1),
+    BuyingBotAlwaysBidMaxCalculatedPrice(false),
     BuyingBotWillBidAgainstPlayers(false),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
@@ -1106,12 +1107,18 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             if (auction->bid == 0 && auction->startbid <= willingToPayForStackPrice)
             {
                 doBid = true;
-                calcBidAmount = auction->startbid;
+                if (BuyingBotAlwaysBidMaxCalculatedPrice == true)
+                    calcBidAmount = willingToPayForStackPrice;
+                else
+                    calcBidAmount = auction->startbid;
             }
             else if (auction->bid != 0 && (auction->bid + auction->GetAuctionOutBid()) < willingToPayForStackPrice)
             {
                 doBid = true;
-                calcBidAmount = auction->bid + auction->GetAuctionOutBid();
+                if (BuyingBotAlwaysBidMaxCalculatedPrice == true)
+                    calcBidAmount = willingToPayForStackPrice;
+                else
+                    calcBidAmount = auction->bid + auction->GetAuctionOutBid();
             }
         }
 
@@ -1304,6 +1311,7 @@ void AuctionHouseBot::InitializeConfiguration()
     // Buyer Bot
     BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
     BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
+    BuyingBotAlwaysBidMaxCalculatedPrice = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.AlwaysBidMaxCalculatedPrice", false);
     PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
     if (PreventOverpayingForVendorItems)
         populateVendorItemsPrices();

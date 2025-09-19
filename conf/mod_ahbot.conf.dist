@@ -156,6 +156,12 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 #        of what the seller sells for), but do not go lower than 0
 #    Default: 1
 #
+#    AuctionHouseBot.Buyer.AlwaysBidMaxCalculatedPrice
+#        When enabled, the buyer bot will use the calculated max price they
+#        were willing to pay as the amount they bid with, instead of minimum
+#        bid amount.
+#    Default: false
+#
 #    AuctionHouseBot.Buyer.PreventOverpayingForVendorItems
 #        When enabled, the buyer bot will avoid purchasing auction house items
 #        that are being sold for more than the vendor sell price. This prevents
@@ -174,6 +180,7 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 AuctionHouseBot.Buyer.Enabled = false
 AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle = 1
 AuctionHouseBot.Buyer.AcceptablePriceModifier = 1
+AuctionHouseBot.Buyer.AlwaysBidMaxCalculatedPrice = false
 AuctionHouseBot.Buyer.PreventOverpayingForVendorItems = true
 AuctionHouseBot.Buyer.BidAgainstPlayers = false
 
