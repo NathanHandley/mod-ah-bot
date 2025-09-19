@@ -52,7 +52,7 @@ AuctionHouseBot::AuctionHouseBot() :
     ListingExpireTimeInSecondsMin(900),
     ListingExpireTimeInSecondsMax(86400),
     BuyingBotAcceptablePriceModifier(1),
-    BuyingBotWillBidAgainstPlayers(true),
+    BuyingBotWillBidAgainstPlayers(false),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
     DisabledItemTextFilter(true),
@@ -1307,7 +1307,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
     if (PreventOverpayingForVendorItems)
         populateVendorItemsPrices();
-    BuyingBotWillBidAgainstPlayers = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.BidAgainstPlayers", true);
+    BuyingBotWillBidAgainstPlayers = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.BidAgainstPlayers", false);
 
     // Stack Ratios
     RandomStackRatioConsumable = GetRandomStackValue("AuctionHouseBot.ListingStack.RandomRatio.Consumable", 50);
