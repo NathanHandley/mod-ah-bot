@@ -268,12 +268,17 @@ AuctionHouseBot.PriceMinimumCenterBase.OverrideItems =
 #     will disable PriceMultiplier.ItemLevel pricing for that category
 ###############################################################################
 
+AuctionHouseBot.AdvancedPricing.Consumable.Potion.Enabled       = true
+AuctionHouseBot.AdvancedPricing.Consumable.Elixir.Enabled       = true
+AuctionHouseBot.AdvancedPricing.Consumable.Flask.Enabled        = true
+AuctionHouseBot.AdvancedPricing.Gem.Enabled                     = true
 AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled         = true
 AuctionHouseBot.AdvancedPricing.TradeGood.Herb.Enabled          = true
 AuctionHouseBot.AdvancedPricing.TradeGood.MetalStone.Enabled    = true
 AuctionHouseBot.AdvancedPricing.TradeGood.Leather.Enabled       = true
 AuctionHouseBot.AdvancedPricing.TradeGood.Enchanting.Enabled    = true
 AuctionHouseBot.AdvancedPricing.TradeGood.Elemental.Enabled     = true
+AuctionHouseBot.AdvancedPricing.TradeGood.Meat.Enabled          = true
 AuctionHouseBot.AdvancedPricing.Misc.Junk.Enabled               = true
 AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = true
 
@@ -384,9 +389,9 @@ AuctionHouseBot.PriceMultiplier.CategoryWeapon.QualityHeirloom   = 1.0
 # Gem
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityPoor         = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityNormal       = 1.0
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityUncommon     = 1.0
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityRare         = 1.4
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityEpic         = 2.0
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityUncommon     = 1.2
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityRare         = 1.2
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityEpic         = 0.9
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityLegendary    = 1.0  
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityArtifact     = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityHeirloom     = 1.0  

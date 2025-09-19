@@ -237,12 +237,17 @@ private:
     float PriceMultiplierCategoryMountQualityLegendary;
     float PriceMultiplierCategoryMountQualityArtifact;
     float PriceMultiplierCategoryMountQualityHeirloom;
+    bool AdvancedPricingConsumablePotionEnabled;
+    bool AdvancedPricingConsumableElixirEnabled;
+    bool AdvancedPricingConsumableFlaskEnabled;
+    bool AdvancedPricingGemEnabled;
     bool AdvancedPricingTradeGoodClothEnabled;
     bool AdvancedPricingTradeGoodHerbEnabled;
     bool AdvancedPricingTradeGoodMetalStoneEnabled;
     bool AdvancedPricingTradeGoodLeatherEnabled;
     bool AdvancedPricingTradeGoodEnchantingEnabled;
     bool AdvancedPricingTradeGoodElementalEnabled;
+    bool AdvancedPricingTradeGoodMeatEnabled;
     bool AdvancedPricingMiscJunkEnabled;
     bool AdvancedPricingMiscMountEnabled;
     uint32 PriceMinimumCenterBaseConsumable;
