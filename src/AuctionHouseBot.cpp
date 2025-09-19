@@ -1152,7 +1152,8 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Item ID: {}", prototype->ItemId);
             LOG_INFO("module", "AHBuyer: Vendor Buy Price: {}", prototype->BuyPrice);
             LOG_INFO("module", "AHBuyer: Vendor Sell Price (Base): {}", prototype->SellPrice);
-            LOG_INFO("module", "AHBuyer: Vender Sell Price (Vendor): {}", vendorItemsPrices[prototype->ItemId]);
+            if (PreventOverpayingForVendorItems == true)
+                LOG_INFO("module", "AHBuyer: Vender Sell Price (Vendor): {}", vendorItemsPrices[prototype->ItemId]);
             LOG_INFO("module", "AHBuyer: Deposit: {}", auction->deposit);
             LOG_INFO("module", "AHBuyer: Bonding: {}", prototype->Bonding);
             LOG_INFO("module", "AHBuyer: Quality: {}", prototype->Quality);
@@ -1164,7 +1165,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
             LOG_INFO("module", "AHBuyer: Buyout Price: {}", auction->buyout);
             LOG_INFO("module", "AHBuyer: Willing To Pay Per Item Price (Buyout): {}", willingToSpendPerItemPrice);
             LOG_INFO("module", "AHBuyer: Willing To Pay For Stack Price (Buyout): {}", willingToPayForStackPrice);
-            LOG_INFO("module", "AHBuyer: Willing To Pay For a Bid: {}", calcBidAmount);
+            LOG_INFO("module", "AHBuyer: Calculated Bid Amount (0 means too expensive to bid): {}", calcBidAmount);
             LOG_INFO("module", "AHBuyer: Decided to Buyout?: {}", doBuyout);
             LOG_INFO("module", "AHBuyer: Decided to Bid?: {}", doBid);
             LOG_INFO("module", "AHBuyer: Stopped from buying due to 'PreventOverpayingForVendorItems'?: {}", preventedOverpayingForVendorItem);
