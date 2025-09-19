@@ -48,9 +48,9 @@ AuctionHouseBot::AuctionHouseBot() :
     BidVariationHighReducePercent(0),
     BidVariationLowReducePercent(0.25f),
     BuyoutBelowVendorVariationAddPercent(0.25f),
+    BuyingBotBuyCandidatesPerBuyCycle(1),
     ListingExpireTimeInSecondsMin(900),
     ListingExpireTimeInSecondsMax(86400),
-    BuyingBotBuyCandidatesPerBuyCycle(1),
     BuyingBotAcceptablePriceModifier(1),
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
@@ -405,7 +405,45 @@ float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProt
 
     // Try to approximate real world prices for Trade Goods based on subclass and item level
     double advancedPricingMultiplier = 1.0f;
-    if (itemProto->Class == ITEM_CLASS_TRADE_GOODS) 
+    if (itemProto->Class == ITEM_CLASS_CONSUMABLE)
+    {
+        switch (itemProto->SubClass)
+        {
+            case ITEM_SUBCLASS_POTION:
+            {
+                if (!AdvancedPricingConsumablePotionEnabled) 
+                    break;
+                double potionMultiplierHelper = std::log(1.0 + (0.08 * itemProto->ItemLevel));
+                advancedPricingMultiplier = ((std::pow(potionMultiplierHelper,3.0)) / (1 + (4.0 * potionMultiplierHelper))) + (std::pow(potionMultiplierHelper,2.5));
+                break;
+            }
+            case ITEM_SUBCLASS_ELIXIR:
+            {
+                if (!AdvancedPricingConsumableElixirEnabled) 
+                    break;
+                double elixirMultiplierHelper = std::log(1.0 + (1.6 * itemProto->ItemLevel));
+                advancedPricingMultiplier = ((std::pow(elixirMultiplierHelper,3.1)) / (1 + (5.0 * elixirMultiplierHelper))) + (0.05 * std::pow(elixirMultiplierHelper,3.2)) - 1.0;
+                break;
+            }
+            case ITEM_SUBCLASS_FLASK:
+            {
+                if (!AdvancedPricingConsumableFlaskEnabled)
+                    break;
+                // Use logarithmic scaling to compress large differences in vendorSellPrice to a range of ~22g-25g
+                // advPricingMultiplier = LowTargetRange + (UpperTargetRange - LowTargetRange) * ( ln(vendorSellPrice) - ln(minVendorPrice) ) / ( ln(maxVendorPrice) - ln(minVendorPrice) ) / vendorSellPrice
+                advancedPricingMultiplier = (220000 + (250000-220000) * (std::log(itemProto->SellPrice) - std::log(1250)) / (std::log(10000) - std::log(1250))) / itemProto->SellPrice;
+            }
+            default:
+                break;
+        }
+    }
+    else if (itemProto->Class == ITEM_CLASS_GEM && AdvancedPricingGemEnabled)
+    {
+        // No switch for subclass needed since Gem subclass represents gem color
+        double gemMultiplierHelper = std::log(1.0 + (0.05 * itemProto->ItemLevel));
+        advancedPricingMultiplier = ((std::pow(gemMultiplierHelper,1.0)) / (1 + (10.0 * gemMultiplierHelper))) + (std::pow(gemMultiplierHelper,3.0));
+    }
+    else if (itemProto->Class == ITEM_CLASS_TRADE_GOODS) 
     {
         switch (itemProto->SubClass)
         {
@@ -454,6 +492,14 @@ float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProt
                 if (!AdvancedPricingTradeGoodElementalEnabled) 
                     break;
                 advancedPricingMultiplier = 85 - (itemProto->ItemLevel / 0.97);
+                break;
+            }
+            case ITEM_SUBCLASS_MEAT:
+            {
+                if (!AdvancedPricingTradeGoodMeatEnabled)
+                    break;
+                double meatMultiplierHelper = std::log(1.0 + (0.5 * itemProto->ItemLevel));
+                advancedPricingMultiplier = ((std::pow(meatMultiplierHelper,3.2)) / (1 + (2.0 * meatMultiplierHelper))) + (0.05 * std::pow(meatMultiplierHelper,3.2)) - 0.1; 
                 break;
             }
             default:
@@ -822,7 +868,7 @@ int AuctionHouseBot::getRandomValidItemClassForNewListing()
 
     // Loop through all of the item classes to make sure a valid one is good, looping candidate back to zero
     uint32 itemClassCandidate = ItemCandidateClassWeightedProportionList[urand(0, ItemCandidateClassWeightedProportionList.size() - 1)];
-    for (int i = 0; i < ItemCandidateClassWeightedProportionList.size(); i++)
+    for (size_t i = 0; i < ItemCandidateClassWeightedProportionList.size(); i++)
     {
         if (ItemCandidatesByItemClass[itemClassCandidate].size() > 0)
             return itemClassCandidate;
@@ -1046,7 +1092,6 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *con
         // Determine if it's a bid, buyout, or skip
         bool doBuyout = false;
         bool doBid = false;
-        uint64 curAuctionBidAmount = 0;
         uint64 calcBidAmount = 0;
 
         if (auction->buyout != 0 && auction->buyout < willingToPayForStackPrice)
@@ -1369,12 +1414,17 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierCategoryMountQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityHeirloom", 1.0);
 
     // Advanced Pricing
+    AdvancedPricingConsumablePotionEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Consumable.Potion.Enabled", true);
+    AdvancedPricingConsumableElixirEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Consumable.Elixir.Enabled", true);
+    AdvancedPricingConsumableFlaskEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Consumable.Flask.Enabled", true);
+    AdvancedPricingGemEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Gem.Enabled", true);
     AdvancedPricingTradeGoodClothEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled", true);
     AdvancedPricingTradeGoodHerbEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Herb.Enabled", true);
     AdvancedPricingTradeGoodMetalStoneEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.MetalStone.Enabled", true);
     AdvancedPricingTradeGoodLeatherEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Leather.Enabled", true);
     AdvancedPricingTradeGoodEnchantingEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Enchanting.Enabled", true);
     AdvancedPricingTradeGoodElementalEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Elemental.Enabled", true);
+    AdvancedPricingTradeGoodMeatEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.TradeGood.Meat.Enabled", true);
     AdvancedPricingMiscJunkEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Misc.Junk.Enabled", true);
     AdvancedPricingMiscMountEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled", true);
 

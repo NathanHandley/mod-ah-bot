@@ -261,12 +261,17 @@ AuctionHouseBot.PriceMinimumCenterBase.OverrideItems =
 #     will disable PriceMultiplier.ItemLevel pricing for that category
 ###############################################################################
 
+AuctionHouseBot.AdvancedPricing.Consumable.Potion.Enabled       = 1
+AuctionHouseBot.AdvancedPricing.Consumable.Elixir.Enabled       = 1
+AuctionHouseBot.AdvancedPricing.Consumable.Flask.Enabled        = 1
+AuctionHouseBot.AdvancedPricing.Gem.Enabled                     = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.Cloth.Enabled         = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.Herb.Enabled          = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.MetalStone.Enabled    = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.Leather.Enabled       = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.Enchanting.Enabled    = 1
 AuctionHouseBot.AdvancedPricing.TradeGood.Elemental.Enabled     = 1
+AuctionHouseBot.AdvancedPricing.TradeGood.Meat.Enabled          = 1
 AuctionHouseBot.AdvancedPricing.Misc.Junk.Enabled               = 1
 AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled              = 1
 
@@ -377,9 +382,9 @@ AuctionHouseBot.PriceMultiplier.CategoryWeapon.QualityHeirloom   = 1.0
 # Gem
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityPoor         = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityNormal       = 1.0
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityUncommon     = 1.0
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityRare         = 1.4
-AuctionHouseBot.PriceMultiplier.CategoryGem.QualityEpic         = 2.0
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityUncommon     = 1.2
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityRare         = 1.2
+AuctionHouseBot.PriceMultiplier.CategoryGem.QualityEpic         = 0.9
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityLegendary    = 1.0  
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityArtifact     = 1.0
 AuctionHouseBot.PriceMultiplier.CategoryGem.QualityHeirloom     = 1.0  
