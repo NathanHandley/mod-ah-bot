@@ -181,9 +181,9 @@ private:
     uint32 RandomStackIncrementKey;
     uint32 RandomStackIncrementMisc;
     uint32 RandomStackIncrementGlyph;
-    std::vector<uint32> ItemCandidateClassWeightedProportionList;
-    std::vector<ListProportionNode> ItemListProportionNodes;
-    std::map<uint32, std::vector<uint32>> ItemCandidatesByItemClassAndQuality;
+    std::vector<ListProportionNode> ItemListProportionNodesSeed;
+    std::vector<ListProportionNode> ItemListProportionNodesLookup;
+    std::map<uint32, std::map<uint32, std::vector<uint32>>> ItemCandidatesByItemClassAndQuality;
     float PriceMultiplierCategoryConsumable;
     float PriceMultiplierCategoryContainer;
     float PriceMultiplierCategoryWeapon;
@@ -275,11 +275,9 @@ private:
     uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
     void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     float getAdvancedPricingMultiplier(ItemTemplate const* itemProto);
-    void populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight);
-    void populateItemClassProportionList();
     ItemTemplate const* getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
-    void populateItemCandidateList();
-    int getRandomValidItemClassForNewListing();
+    void PopulateItemCandidatesAndProportions();
+    uint32 GetRandomItemIDForListing();
     void addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
     void addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
     void populateVendorItemsPrices();

@@ -531,37 +531,6 @@ float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProt
     return static_cast<float>(advancedPricingMultiplier);
 }
 
-void AuctionHouseBot::populatetemClassSeedListForItemClass(uint32 itemClass, uint32 itemClassSeedWeight)
-{
-    for (uint32 i = 0; i < itemClassSeedWeight; ++i)
-        ItemCandidateClassWeightedProportionList.push_back(itemClass);
-}
-
-void AuctionHouseBot::populateItemClassProportionList()
-{
-    // Determine how many of what kinds of items to use based on a seeded weight list, 0 = none
-
-    // Clear old list
-    ItemCandidateClassWeightedProportionList.clear();
-
-    // Fill the list
-    populatetemClassSeedListForItemClass(ITEM_CLASS_CONSUMABLE, ListProportionConsumable);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_CONTAINER, ListProportionContainer);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_WEAPON, ListProportionWeapon);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GEM, ListProportionGem);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_ARMOR, ListProportionArmor);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_REAGENT, ListProportionReagent);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_PROJECTILE, ListProportionProjectile);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_TRADE_GOODS, ListProportionTradeGood);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GENERIC, ListProportionGeneric);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_RECIPE, ListProportionRecipe);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_QUIVER, ListProportionQuiver);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_QUEST, ListProportionQuest);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_KEY, ListProportionKey);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_MISC, ListProportionMisc);
-    populatetemClassSeedListForItemClass(ITEM_CLASS_GLYPH, ListProportionGlyph);
-}
-
 ItemTemplate const* AuctionHouseBot::getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate)
 {
     if (!recipeItemTemplate)
@@ -593,25 +562,10 @@ ItemTemplate const* AuctionHouseBot::getProducedItemFromRecipe(ItemTemplate cons
     return nullptr;
 }
 
-void AuctionHouseBot::populateItemCandidateList()
+void AuctionHouseBot::PopulateItemCandidatesAndProportions()
 {
     // Clear old list and rebuild it
-    ItemCandidatesByItemClass.clear();
-    ItemCandidatesByItemClass[ITEM_CLASS_CONSUMABLE] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_CONTAINER] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_WEAPON] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_GEM] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_ARMOR] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_REAGENT] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_PROJECTILE] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_TRADE_GOODS] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_GENERIC] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_RECIPE] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_QUIVER] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_QUEST] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_KEY] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_MISC] = vector<uint32>();
-    ItemCandidatesByItemClass[ITEM_CLASS_GLYPH] = vector<uint32>();
+    ItemCandidatesByItemClassAndQuality.clear();
 
     // Item include exceptions
     set<uint32> includeItemIDExecptions;
@@ -625,7 +579,7 @@ void AuctionHouseBot::populateItemCandidateList()
     includeItemIDExecptions.insert(18334);
     includeItemIDExecptions.insert(18335);
 
-    // Fill list
+    // Fill candidate item templates
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
     for (ItemTemplateContainer::const_iterator itr = its->begin(); itr != its->end(); ++itr)
     {
@@ -700,14 +654,9 @@ void AuctionHouseBot::populateItemCandidateList()
         // These items should be included and would otherwise be skipped due to conditions below
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
-            // Store the item ID
-            ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+            ItemCandidatesByItemClassAndQuality[itr->second.Class][itr->second.Quality].push_back(itr->second.ItemId);
             continue;
         }
-
-        // Skip any items not in the seed list
-        if (std::find(ItemCandidateClassWeightedProportionList.begin(), ItemCandidateClassWeightedProportionList.end(), itr->second.Class) == ItemCandidateClassWeightedProportionList.end())
-            continue;
 
         // Skip any BOP items
         if (itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM)
@@ -822,38 +771,55 @@ void AuctionHouseBot::populateItemCandidateList()
         }
 
         // Store the item ID
-        ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
+        ItemCandidatesByItemClassAndQuality[itr->second.Class][itr->second.Quality].push_back(itr->second.ItemId);
     }
 
+    // Show any debugging information
     if (debug_Out)
     {
-        for (auto& itemCandidatesInClass : ItemCandidatesByItemClass)
+        LOG_INFO("module", "AHBot Candidate item counts by item category (class) and quality after appyling filters:");
+        for (auto& itemCandidateQualityGroupInClass : ItemCandidatesByItemClassAndQuality)
+            for (auto& itemCandidateInQualityGroup : itemCandidateQualityGroupInClass.second)
+            {
+                uint32 classID = itemCandidateQualityGroupInClass.first;
+                uint32 qualityID = itemCandidateInQualityGroup.first;
+                size_t elementCount = itemCandidateInQualityGroup.second.size();
+                LOG_INFO("module", "Item count in class {} quality {} is {}", classID, qualityID, elementCount);
+            }
+    }
+
+    // Fill list proportions
+    ItemListProportionNodesLookup.clear();
+    for (uint32 i = 0; i < ItemListProportionNodesSeed.size(); ++i)
+    {
+        ListProportionNode curNode = ItemListProportionNodesSeed[i];
+        if (ItemCandidatesByItemClassAndQuality[curNode.ItemClassID][curNode.ItemQualityID].size() > 0)
         {
-            LOG_INFO("module", "Item count in class {} is {}", itemCandidatesInClass.first, itemCandidatesInClass.second.size());
+            for (int j = 0; j < curNode.Proportion; j++)
+                ItemListProportionNodesLookup.push_back(curNode);
         }
     }
 }
 
-int AuctionHouseBot::getRandomValidItemClassForNewListing()
+uint32 AuctionHouseBot::GetRandomItemIDForListing()
 {
-    if (ItemCandidateClassWeightedProportionList.size() == 0)
+    // Start with a listing proportion
+    if (ItemListProportionNodesLookup.size() == 0)
     {
-        LOG_ERROR("module", "No valid item class for new listing could be found (ItemCandidateClassWeightedPropertionList was empty)");
-        return -1;
+        LOG_ERROR("module", "No valid list proportion for new listing could be found (ItemListProportionNodesLookup was empty)");
+        SellingBotEnabled = false;
+        return 0;
     }
+    ListProportionNode listProportionNode = ItemListProportionNodesLookup[urand(0, ItemListProportionNodesLookup.size() - 1)];
 
-    // Loop through all of the item classes to make sure a valid one is good, looping candidate back to zero
-    uint32 itemClassCandidate = ItemCandidateClassWeightedProportionList[urand(0, ItemCandidateClassWeightedProportionList.size() - 1)];
-    for (size_t i = 0; i < ItemCandidateClassWeightedProportionList.size(); i++)
+    // Grab an item
+    size_t numOfValidItemsInGroup = ItemCandidatesByItemClassAndQuality[listProportionNode.ItemClassID][listProportionNode.ItemQualityID].size();
+    if (numOfValidItemsInGroup == 0)
     {
-        if (ItemCandidatesByItemClass[itemClassCandidate].size() > 0)
-            return itemClassCandidate;
-        itemClassCandidate++;
-        if (itemClassCandidate >= ItemCandidateClassWeightedProportionList.size())
-            itemClassCandidate = 0;
+        LOG_ERROR("module", "Unable to find a candidate item with Category (class) {} and Quality {}", listProportionNode.ItemClassID, listProportionNode.ItemQualityID);
+        return 0;
     }
-    LOG_ERROR("module", "No valid item class for new listing could be found (no record in ItemCandidateClassWeightedProportionList had a value)");
-    return -1;
+    return ItemCandidatesByItemClassAndQuality[listProportionNode.ItemClassID][listProportionNode.ItemQualityID][urand(0, numOfValidItemsInGroup-1)];
 }
 
 void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
@@ -917,17 +883,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         if (debug_Out)
             LOG_ERROR("module", "AHSeller: {} count", cnt);
 
-        // Pull a random item out of the candidate list
-        int chosenItemClass = getRandomValidItemClassForNewListing();
-        if (chosenItemClass == -1)
-        {
-            LOG_ERROR("module", "AHSeller did not list any new items. There are no ListProportion variables > 0 that have valid items in it due to filters");
-            SellingBotEnabled = false;
-            return;
-        }
-        uint32 itemID = 0;
-        if (ItemCandidatesByItemClass[(uint32)chosenItemClass].size() != 0)
-            itemID = ItemCandidatesByItemClass[(uint32)chosenItemClass][urand(0, ItemCandidatesByItemClass[(uint32)chosenItemClass].size() - 1)];
+        uint32 itemID = GetRandomItemIDForListing();
 
         // Prevent invalid IDs
         if (itemID == 0)
@@ -1231,8 +1187,7 @@ void AuctionHouseBot::Update()
 void AuctionHouseBot::Initialize()
 {
     // Build a list of items that can be pulled from for auction
-    populateItemClassProportionList();
-    populateItemCandidateList();
+    PopulateItemCandidatesAndProportions();
 }
 
 void AuctionHouseBot::InitializeConfiguration()
@@ -1365,7 +1320,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
-    ItemListProportionNodes.clear();
+    ItemListProportionNodesSeed.clear();
     for (int category = 0; category < MAX_ITEM_CLASS; category++)
     {
         for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
@@ -1385,7 +1340,7 @@ void AuctionHouseBot::InitializeConfiguration()
                 node.ItemClassID = category;
                 node.ItemQualityID = quality;
                 node.Proportion = sConfigMgr->GetOption<uint32>(key.c_str(), 0);
-                ItemListProportionNodes.push_back(node);
+                ItemListProportionNodesSeed.push_back(node);
             }
         }
     }
