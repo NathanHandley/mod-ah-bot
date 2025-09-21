@@ -284,7 +284,6 @@ public:
     ~AuctionHouseBot();
 
     void Update();
-    void Initialize();
     void InitializeConfiguration();
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);

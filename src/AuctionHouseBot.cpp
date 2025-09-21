@@ -1183,12 +1183,6 @@ void AuctionHouseBot::Update()
     ObjectAccessor::RemoveObject(&_AHBplayer);
 }
 
-void AuctionHouseBot::Initialize()
-{
-    // Build a list of newItemsToListCount that can be pulled from for auction
-    PopulateItemCandidatesAndProportions();
-}
-
 void AuctionHouseBot::InitializeConfiguration()
 {
     debug_Out = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG", false);
@@ -1442,6 +1436,7 @@ uint32 AuctionHouseBot::GetRandomStackIncrementValue(std::string configKeyString
 
 void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
 {
+    AHCharacters.clear();
     std::string delimitedValue;
     std::stringstream characterGUIDStream;
     std::set<uint32> characterGUIDs;

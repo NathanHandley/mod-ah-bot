@@ -11,18 +11,27 @@
 
 class AHBot_WorldScript : public WorldScript
 {
+private:
+    bool HasPerformedStartup;
+
 public:
-    AHBot_WorldScript() : WorldScript("AHBot_WorldScript") { }
+    AHBot_WorldScript() : WorldScript("AHBot_WorldScript"), HasPerformedStartup(false) { }
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
         auctionbot->InitializeConfiguration();
+        if (HasPerformedStartup == true)
+        {
+            LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
+            auctionbot->PopulateItemCandidatesAndProportions();
+        }
     }
 
     void OnStartup() override
     {
-        LOG_INFO("server.loading", "Initialize AuctionHouseBot...");
-        auctionbot->Initialize();
+        LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
+        auctionbot->PopulateItemCandidatesAndProportions();
+        HasPerformedStartup = true;
     }
 };
 
