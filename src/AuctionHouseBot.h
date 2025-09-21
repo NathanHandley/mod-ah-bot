@@ -34,7 +34,7 @@ class WorldSession;
 #include "ItemTemplate.h"
 #include "SharedDefines.h"
 
-class AHBConfig
+class FactionSpecificAuctionHouseConfig
 {
 private:
     uint32 AHID;
@@ -43,7 +43,7 @@ private:
     uint32 maxItems;
 
 public:
-    AHBConfig(uint32 ahid)
+    FactionSpecificAuctionHouseConfig(uint32 ahid)
     {
         AHID = ahid;
         switch(ahid)
@@ -62,7 +62,7 @@ public:
             break;
         }
     }
-    AHBConfig()
+    FactionSpecificAuctionHouseConfig()
     {
     }
     uint32 GetAHID()
@@ -94,7 +94,7 @@ public:
     {
         return maxItems;
     }
-    ~AHBConfig()
+    ~FactionSpecificAuctionHouseConfig()
     {
     }
 };
@@ -273,9 +273,9 @@ private:
     std::set<uint32> ListedItemIDExceptionItems;
     bool PreventOverpayingForVendorItems;
 
-    AHBConfig AllianceConfig;
-    AHBConfig HordeConfig;
-    AHBConfig NeutralConfig;
+    FactionSpecificAuctionHouseConfig AllianceConfig;
+    FactionSpecificAuctionHouseConfig HordeConfig;
+    FactionSpecificAuctionHouseConfig NeutralConfig;
 
     int LastCycleCount;
 
@@ -287,8 +287,8 @@ private:
     ItemTemplate const* getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
     void populateItemCandidateList();
     int getRandomValidItemClassForNewListing();
-    void addNewAuctions(Player* AHBplayer, AHBConfig *config);
-    void addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config);
+    void addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
+    void addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
     void populateVendorItemsPrices();
 
     AuctionHouseBot();

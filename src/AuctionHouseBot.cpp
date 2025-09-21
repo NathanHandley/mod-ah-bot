@@ -164,9 +164,9 @@ AuctionHouseBot::AuctionHouseBot() :
     ListedItemIDMax(200000),
     LastCycleCount(0)
 {
-    AllianceConfig = AHBConfig(2);
-    HordeConfig = AHBConfig(6);
-    NeutralConfig = AHBConfig(7);
+    AllianceConfig = FactionSpecificAuctionHouseConfig(2);
+    HordeConfig = FactionSpecificAuctionHouseConfig(6);
+    NeutralConfig = FactionSpecificAuctionHouseConfig(7);
 }
 
 AuctionHouseBot::~AuctionHouseBot()
@@ -882,7 +882,7 @@ int AuctionHouseBot::getRandomValidItemClassForNewListing()
     return -1;
 }
 
-void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
+void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
 {
     if (!SellingBotEnabled)
     {
@@ -1021,7 +1021,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, AHBConfig *config)
     }
 }
 
-void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, AHBConfig *config)
+void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
 {
     if (!BuyingBotEnabled)
     {
