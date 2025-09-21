@@ -852,14 +852,14 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
     if (currentAuctionItemListCount >= minItems)
     {
         if (debug_Out)
-            LOG_INFO("module", "AHSeller: Auctions above minimum, so no currentAuctionItemListCount will be listed this cycle");
+            LOG_INFO("module", "AHSeller: Auctions above minimum, so no auctions will be listed this cycle");
         return;
     }
 
     if (currentAuctionItemListCount >= maxItems)
     {
         if (debug_Out)
-            LOG_INFO("module", "AHSeller: Auctions at or above maximum, so no currentAuctionItemListCount will be listed this cycle");
+            LOG_INFO("module", "AHSeller: Auctions at or above maximum, so no auctions will be listed this cycle");
         return;
     }
 
