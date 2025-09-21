@@ -947,7 +947,7 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         itemsGenerated++;
     }
     if (debug_Out)
-        LOG_INFO("module", "AHSeller: Added {} newItemsToListCount", itemsGenerated);
+        LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
 }
 
 void AuctionHouseBot::AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
