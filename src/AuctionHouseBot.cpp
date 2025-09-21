@@ -354,7 +354,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
     float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
 
-    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
+    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH newItemsToListCount
     if (outBuyoutPrice < itemProto->SellPrice)
     {
         float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
@@ -387,7 +387,7 @@ float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProt
       Notes:
       - This formula produces a multiplier that grows logarithmically with ItemLevel (uses natural log, not base10)
       - The first term (before '+') heavily influences low item levels, the second term adds some fine-tuning for higher levels.
-      - The subtraction of 'r' can help ensure low-level items don't get inflated excessively. Sometimes it isn't necessary
+      - The subtraction of 'r' can help ensure low-level newItemsToListCount don't get inflated excessively. Sometimes it isn't necessary
     */
 
     // Try to approximate real world prices for Trade Goods based on subclass and item level
@@ -595,7 +595,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             {
                 uint32 itemLevelToCompare = itr->second.ItemLevel;
 
-                // Recipes might need to consider produced items
+                // Recipes might need to consider produced newItemsToListCount
                 if (ListedItemLevelRestrictedUseCraftedItemForCalculation == true && itr->second.Class == ITEM_CLASS_RECIPE)
                 {
                     ItemTemplate const* producedItemTemplate = getProducedItemFromRecipe(&itr->second);
@@ -643,7 +643,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             }
         }
 
-        // Disabled items by Id
+        // Disabled newItemsToListCount by Id
         if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
             if (debug_Out_Filters)
@@ -651,14 +651,14 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // These items should be included and would otherwise be skipped due to conditions below
+        // These newItemsToListCount should be included and would otherwise be skipped due to conditions below
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
             ItemCandidatesByItemClassAndQuality[itr->second.Class][itr->second.Quality].push_back(itr->second.ItemId);
             continue;
         }
 
-        // Skip any BOP items
+        // Skip any BOP newItemsToListCount
         if (itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM)
         {
             if (debug_Out_Filters)
@@ -670,7 +670,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
         if (itr->second.Quality == 0 || itr->second.Quality > 6)
             continue;
 
-        // Disable conjured items
+        // Disable conjured newItemsToListCount
         if (itr->second.IsConjuredConsumable())
         {
             if (debug_Out_Filters)
@@ -694,7 +694,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable items with duration
+        // Disable newItemsToListCount with duration
         if (itr->second.Duration > 0)
         {
             if (debug_Out_Filters)
@@ -743,7 +743,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable all items that have neither a sell or a buy price, with exception of item enhancements and trade goods
+        // Disable all newItemsToListCount that have neither a sell or a buy price, with exception of item enhancements and trade goods
         bool isEnchantingTradeGood = (itr->second.Class == ITEM_CLASS_TRADE_GOODS && itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING);
         bool isItemEnhancement = (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_ITEM_ENHANCEMENT);
         bool hasNoPrice = (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0);
@@ -848,38 +848,36 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         return;
     }
 
-    uint32 auctions = auctionHouse->Getcount();
-
-    uint32 items = 0;
-
-    if (auctions >= minItems)
+    uint32 currentAuctionItemListCount = auctionHouse->Getcount();
+    if (currentAuctionItemListCount >= minItems)
     {
         if (debug_Out)
-            LOG_ERROR("module", "AHSeller: Auctions above minimum");
+            LOG_INFO("module", "AHSeller: Auctions above minimum, so no currentAuctionItemListCount will be listed this cycle");
         return;
     }
 
-    if (auctions >= maxItems)
+    if (currentAuctionItemListCount >= maxItems)
     {
         if (debug_Out)
-            LOG_ERROR("module", "AHSeller: Auctions at or above maximum");
+            LOG_INFO("module", "AHSeller: Auctions at or above maximum, so no currentAuctionItemListCount will be listed this cycle");
         return;
     }
 
-    if ((maxItems - auctions) >= ItemsPerCycle)
-        items = ItemsPerCycle;
+    uint32 newItemsToListCount = 0;
+    if ((maxItems - currentAuctionItemListCount) >= ItemsPerCycle)
+        newItemsToListCount = ItemsPerCycle;
     else
-        items = (maxItems - auctions);
+        newItemsToListCount = (maxItems - currentAuctionItemListCount);
 
     if (debug_Out)
-        LOG_INFO("module", "AHSeller: Adding {} Auctions", items);
+        LOG_INFO("module", "AHSeller: Adding {} Auctions", newItemsToListCount);
 
     if (debug_Out)
         LOG_INFO("module", "AHSeller: Current house id is {}", config->GetAHID());
 
     // only insert a few at a time, so as not to peg the processor
     uint32 itemsGenerated = 0;
-    for (uint32 cnt = 1; cnt <= items; cnt++)
+    for (uint32 cnt = 1; cnt <= newItemsToListCount; cnt++)
     {
         uint32 itemID = GetRandomItemIDForListing();
 
@@ -949,7 +947,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         itemsGenerated++;
     }
     if (debug_Out)
-        LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
+        LOG_INFO("module", "AHSeller: Added {} newItemsToListCount", itemsGenerated);
 }
 
 void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
@@ -961,7 +959,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
         return;
     }
 
-    // Pull auctions.
+    // Pull currentAuctionItemListCount.
     string queryString = "SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({})";
     if (BuyingBotWillBidAgainstPlayers == false)
         queryString = "SELECT id FROM auctionhouse WHERE itemowner NOT IN ({}) AND buyguid NOT IN ({}) AND lastbid = 0";
@@ -988,12 +986,12 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
-            //if (debug_Out) sLog->outError( "AHBuyer: I have no items to bid on.");
+            //if (debug_Out) sLog->outError( "AHBuyer: I have no newItemsToListCount to bid on.");
             count = BuyingBotBuyCandidatesPerBuyCycle;
             continue;
         }
 
-        // Choose random auction from possible auctions
+        // Choose random auction from possible currentAuctionItemListCount
         uint32 vectorPos = urand(0, possibleBids.size() - 1);
         vector<uint32>::iterator iter = possibleBids.begin();
         advance(iter, vectorPos);
@@ -1187,7 +1185,7 @@ void AuctionHouseBot::Update()
 
 void AuctionHouseBot::Initialize()
 {
-    // Build a list of items that can be pulled from for auction
+    // Build a list of newItemsToListCount that can be pulled from for auction
     PopulateItemCandidatesAndProportions();
 }
 
@@ -1620,7 +1618,7 @@ const char* AuctionHouseBot::GetCategoryName(ItemClass category)
 
 void AuctionHouseBot::populateVendorItemsPrices()
 {
-    // Load vendor items' prices into a vector for fast lookup
+    // Load vendor newItemsToListCount' prices into a vector for fast lookup
     QueryResult r = WorldDatabase.Query("SELECT MAX(entry) FROM item_template");
     Field* f = r->Fetch();
     uint32_t numItems = f[0].Get<uint32>();
