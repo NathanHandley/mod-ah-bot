@@ -158,7 +158,7 @@ AuctionHouseBot::~AuctionHouseBot()
 {
 }
 
-uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
+uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
 {
     // Determine the stack ratio based on class type
     if (itemProto == NULL)
@@ -220,7 +220,7 @@ uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
         return 1;
 }
 
-void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
+void AuctionHouseBot::CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
 {
     // Start with a buyout price related to the sell price
     outBuyoutPrice = itemProto->SellPrice;
@@ -263,7 +263,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
 
     float classQualityPriceMultiplier = PriceMultiplierCategoryQuality[itemProto->Class][itemProto->Quality];
 
-    float advancedPricingMultiplier = getAdvancedPricingMultiplier(itemProto);
+    float advancedPricingMultiplier = GetAdvancedPricingMultiplier(itemProto);
 
     // Grab the minimum prices
     uint64 PriceMinimumCenterBase = 1000;
@@ -366,7 +366,7 @@ void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& 
         outBidPrice = itemProto->SellPrice;
 }
 
-float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProto)
+float AuctionHouseBot::GetAdvancedPricingMultiplier(ItemTemplate const* itemProto)
 {
     /* "ADVANCED" SUBCLASS PRICE MULTIPLIER FORMULA NOTES
 
@@ -531,7 +531,7 @@ float AuctionHouseBot::getAdvancedPricingMultiplier(ItemTemplate const* itemProt
     return static_cast<float>(advancedPricingMultiplier);
 }
 
-ItemTemplate const* AuctionHouseBot::getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate)
+ItemTemplate const* AuctionHouseBot::GetProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate)
 {
     if (!recipeItemTemplate)
         return nullptr;
@@ -598,7 +598,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
                 // Recipes might need to consider produced newItemsToListCount
                 if (ListedItemLevelRestrictedUseCraftedItemForCalculation == true && itr->second.Class == ITEM_CLASS_RECIPE)
                 {
-                    ItemTemplate const* producedItemTemplate = getProducedItemFromRecipe(&itr->second);
+                    ItemTemplate const* producedItemTemplate = GetProducedItemFromRecipe(&itr->second);
                     if (producedItemTemplate != nullptr)
                     {
                         if (debug_Out_Filters)
@@ -822,7 +822,7 @@ uint32 AuctionHouseBot::GetRandomItemIDForListing()
     return ItemCandidatesByItemClassAndQuality[listProportionNode.ItemClassID][listProportionNode.ItemQualityID][urand(0, numOfValidItemsInGroup-1)];
 }
 
-void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
+void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
 {
     if (!SellingBotEnabled)
     {
@@ -913,13 +913,13 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         // Determine price
         uint64 buyoutPrice = 0;
         uint64 bidPrice = 0;
-        calculateItemValue(prototype, bidPrice, buyoutPrice);
+        CalculateItemValue(prototype, bidPrice, buyoutPrice);
 
         // Define a duration
         uint32 etime = urand(ListingExpireTimeInSecondsMin, ListingExpireTimeInSecondsMax);
 
         // Set stack size
-        uint32 stackCount = getStackSizeForItem(prototype);
+        uint32 stackCount = GetStackSizeForItem(prototype);
         item->SetCount(stackCount);
 
         uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
@@ -950,7 +950,7 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         LOG_INFO("module", "AHSeller: Added {} newItemsToListCount", itemsGenerated);
 }
 
-void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
+void AuctionHouseBot::AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
 {
     if (!BuyingBotEnabled)
     {
@@ -1020,7 +1020,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
         // Calculate a potential price for the item
         uint64 willingToSpendPerItemPrice = 0;
         uint64 discardBidPrice = 0;
-        calculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
+        CalculateItemValue(prototype, discardBidPrice, willingToSpendPerItemPrice);
         willingToSpendPerItemPrice = (uint64)((float)willingToSpendPerItemPrice * BuyingBotAcceptablePriceModifier);
         uint64 willingToPayForStackPrice = willingToSpendPerItemPrice * pItem->GetCount();
 
@@ -1167,18 +1167,18 @@ void AuctionHouseBot::Update()
     // Add New Bids
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
-        addNewAuctions(&_AHBplayer, &AllianceConfig);
+        AddNewAuctions(&_AHBplayer, &AllianceConfig);
         if (BuyingBotBuyCandidatesPerBuyCycle > 0)
-            addNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
+            AddNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
 
-        addNewAuctions(&_AHBplayer, &HordeConfig);
+        AddNewAuctions(&_AHBplayer, &HordeConfig);
         if (BuyingBotBuyCandidatesPerBuyCycle > 0)
-            addNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
+            AddNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
     }
 
-    addNewAuctions(&_AHBplayer, &NeutralConfig);
+    AddNewAuctions(&_AHBplayer, &NeutralConfig);
     if (BuyingBotBuyCandidatesPerBuyCycle > 0)
-        addNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
+        AddNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
 
     ObjectAccessor::RemoveObject(&_AHBplayer);
 }
@@ -1243,7 +1243,7 @@ void AuctionHouseBot::InitializeConfiguration()
     BuyingBotAlwaysBidMaxCalculatedPrice = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.AlwaysBidMaxCalculatedPrice", false);
     PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
     if (PreventOverpayingForVendorItems)
-        populateVendorItemsPrices();
+        PopulateVendorItemsPrices();
     BuyingBotWillBidAgainstPlayers = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.BidAgainstPlayers", false);
 
     // Stack Ratios
@@ -1616,7 +1616,7 @@ const char* AuctionHouseBot::GetCategoryName(ItemClass category)
     }
 }
 
-void AuctionHouseBot::populateVendorItemsPrices()
+void AuctionHouseBot::PopulateVendorItemsPrices()
 {
     // Load vendor newItemsToListCount' prices into a vector for fast lookup
     QueryResult r = WorldDatabase.Query("SELECT MAX(entry) FROM item_template");

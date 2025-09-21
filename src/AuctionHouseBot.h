@@ -270,17 +270,7 @@ private:
     FactionSpecificAuctionHouseConfig HordeConfig;
     FactionSpecificAuctionHouseConfig NeutralConfig;
 
-    int LastCycleCount;
-
-    uint32 getStackSizeForItem(ItemTemplate const* itemProto) const;
-    void calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
-    float getAdvancedPricingMultiplier(ItemTemplate const* itemProto);
-    ItemTemplate const* getProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
-    void PopulateItemCandidatesAndProportions();
-    uint32 GetRandomItemIDForListing();
-    void addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
-    void addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config);
-    void populateVendorItemsPrices();
+    int LastCycleCount;   
 
     AuctionHouseBot();
 
@@ -292,18 +282,27 @@ public:
     }
 
     ~AuctionHouseBot();
+
     void Update();
     void Initialize();
     void InitializeConfiguration();
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);
-
     void AddCharacters(std::string characterGUIDString);
     void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
     void AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName);
     void AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName);
     const char* GetQualityName(ItemQualities quality);
     const char* GetCategoryName(ItemClass category);
+    uint32 GetStackSizeForItem(ItemTemplate const* itemProto) const;
+    void CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    float GetAdvancedPricingMultiplier(ItemTemplate const* itemProto);
+    ItemTemplate const* GetProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
+    void PopulateItemCandidatesAndProportions();
+    uint32 GetRandomItemIDForListing();
+    void AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
+    void AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
+    void PopulateVendorItemsPrices();
 };
 
 #define auctionbot AuctionHouseBot::instance()
