@@ -875,14 +875,12 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         LOG_INFO("module", "AHSeller: Adding {} Auctions", items);
 
     if (debug_Out)
-        LOG_ERROR("module", "AHSeller: Current house id is {}", config->GetAHID());
+        LOG_INFO("module", "AHSeller: Current house id is {}", config->GetAHID());
 
     // only insert a few at a time, so as not to peg the processor
+    uint32 itemsGenerated = 0;
     for (uint32 cnt = 1; cnt <= items; cnt++)
     {
-        if (debug_Out)
-            LOG_ERROR("module", "AHSeller: {} count", cnt);
-
         uint32 itemID = GetRandomItemIDForListing();
 
         // Prevent invalid IDs
@@ -948,7 +946,10 @@ void AuctionHouseBot::addNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         auctionHouse->AddAuction(auctionEntry);
         auctionEntry->SaveToDB(trans);
         CharacterDatabase.CommitTransaction(trans);
+        itemsGenerated++;
     }
+    if (debug_Out)
+        LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
 }
 
 void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
@@ -956,7 +957,7 @@ void AuctionHouseBot::addNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
     if (!BuyingBotEnabled)
     {
         if (debug_Out)
-            LOG_ERROR("module", "AHBuyer: Disabled");
+            LOG_INFO("module", "AHBuyer: Disabled");
         return;
     }
 
