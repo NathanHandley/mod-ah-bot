@@ -34,6 +34,13 @@ class WorldSession;
 #include "ItemTemplate.h"
 #include "SharedDefines.h"
 
+struct ListProportionNode
+{
+    uint32 ItemClassID = 0;
+    uint32 ItemQualityID = 0;
+    uint32 Proportion = 0;
+};
+
 class FactionSpecificAuctionHouseConfig
 {
 private:
@@ -175,22 +182,8 @@ private:
     uint32 RandomStackIncrementMisc;
     uint32 RandomStackIncrementGlyph;
     std::vector<uint32> ItemCandidateClassWeightedProportionList;
-    std::map<uint32, std::vector<uint32>> ItemCandidatesByItemClass;
-    uint32 ListProportionConsumable;
-    uint32 ListProportionContainer;
-    uint32 ListProportionWeapon;
-    uint32 ListProportionGem;
-    uint32 ListProportionArmor;
-    uint32 ListProportionReagent;
-    uint32 ListProportionProjectile;
-    uint32 ListProportionTradeGood;
-    uint32 ListProportionGeneric;
-    uint32 ListProportionRecipe;
-    uint32 ListProportionQuiver;
-    uint32 ListProportionQuest;
-    uint32 ListProportionKey;
-    uint32 ListProportionMisc;
-    uint32 ListProportionGlyph;
+    std::vector<ListProportionNode> ItemListProportionNodes;
+    std::map<uint32, std::vector<uint32>> ItemCandidatesByItemClassAndQuality;
     float PriceMultiplierCategoryConsumable;
     float PriceMultiplierCategoryContainer;
     float PriceMultiplierCategoryWeapon;

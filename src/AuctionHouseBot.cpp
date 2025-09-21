@@ -91,21 +91,6 @@ AuctionHouseBot::AuctionHouseBot() :
     RandomStackIncrementKey(1),
     RandomStackIncrementMisc(1),
     RandomStackIncrementGlyph(1),
-    ListProportionConsumable(1),
-    ListProportionContainer(1),
-    ListProportionWeapon(1),
-    ListProportionGem(1),
-    ListProportionArmor(1),
-    ListProportionReagent(1),
-    ListProportionProjectile(1),
-    ListProportionTradeGood(1),
-    ListProportionGeneric(1),
-    ListProportionRecipe(1),
-    ListProportionQuiver(1),
-    ListProportionQuest(1),
-    ListProportionKey(1),
-    ListProportionMisc(1),
-    ListProportionGlyph(1),
     PriceMultiplierCategoryConsumable(1),
     PriceMultiplierCategoryContainer(1),
     PriceMultiplierCategoryWeapon(1),
@@ -838,17 +823,6 @@ void AuctionHouseBot::populateItemCandidateList()
 
         // Store the item ID
         ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
-
-        // Store a second copy if it's a trade good of certain types to double the chances
-        if (itr->second.Class == ITEM_CLASS_TRADE_GOODS)
-        {
-            if (itr->second.SubClass == ITEM_SUBCLASS_CLOTH || itr->second.SubClass == ITEM_SUBCLASS_LEATHER ||
-                itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING || itr->second.SubClass == ITEM_SUBCLASS_HERB ||
-                itr->second.SubClass == ITEM_SUBCLASS_METAL_STONE)
-            {
-                ItemCandidatesByItemClass[itr->second.Class].push_back(itr->second.ItemId);
-            }
-        }
     }
 
     if (debug_Out)
@@ -1352,23 +1326,6 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackIncrementMisc = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Misc", 1);
     RandomStackIncrementGlyph = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph", 1);
 
-    // List Proportions
-    ListProportionConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Consumable", 2);
-    ListProportionContainer = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Container", 2);
-    ListProportionWeapon = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Weapon", 6);
-    ListProportionGem = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Gem", 2);
-    ListProportionArmor = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Armor", 6);
-    ListProportionReagent = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Reagent", 1);
-    ListProportionProjectile = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Projectile", 2);
-    ListProportionTradeGood = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.TradeGood", 22);
-    ListProportionGeneric = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Generic", 1);
-    ListProportionRecipe = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Recipe", 3);
-    ListProportionQuiver = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Quiver", 1);
-    ListProportionQuest = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Quest", 2);
-    ListProportionKey = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Key", 1);
-    ListProportionMisc = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Misc", 0);
-    ListProportionGlyph = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Glyph", 2);
-
     // Price Multipliers
     PriceMultiplierCategoryConsumable = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Consumable", 1);
     PriceMultiplierCategoryContainer = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Container", 1);
@@ -1408,15 +1365,28 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
+    ItemListProportionNodes.clear();
     for (int category = 0; category < MAX_ITEM_CLASS; category++)
     {
         for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
         {
+            // Price Multipliers
             std::string key = std::string("AuctionHouseBot.PriceMultiplier.Category") + GetCategoryName((ItemClass)category) +
                             ".Quality" + GetQualityName((ItemQualities)quality);
 
             float multiplier = sConfigMgr->GetOption<float>(key.c_str(), 1.0f);
             PriceMultiplierCategoryQuality[category][quality] = multiplier;
+
+            // List Proportions
+            if (category != ITEM_CLASS_MONEY && category != ITEM_CLASS_PERMANENT)
+            {
+                key = std::string("AuctionHouseBot.ListProportion.Category") + GetCategoryName((ItemClass)category) + ".Quality" + GetQualityName((ItemQualities)quality);
+                ListProportionNode node;
+                node.ItemClassID = category;
+                node.ItemQualityID = quality;
+                node.Proportion = sConfigMgr->GetOption<uint32>(key.c_str(), 0);
+                ItemListProportionNodes.push_back(node);
+            }
         }
     }
     PriceMultiplierCategoryMountQualityPoor = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityPoor", 1.0);

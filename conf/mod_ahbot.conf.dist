@@ -185,41 +185,149 @@ AuctionHouseBot.Buyer.PreventOverpayingForVendorItems = true
 AuctionHouseBot.Buyer.BidAgainstPlayers = false
 
 ###############################################################################
-#    AuctionHouseBot.ListProportion.*
+#    AuctionHouseBot.ListProportion.Category*.Quality*
 #        Determines how many of the listings, proportionally, show up as new auctions
-#		 "0" will mean the item never shows up.  Values must be whole numbers.
-#       Defaults:    Consumable: 2
-#                    Container: 2
-#                    Weapon: 6
-#                    Gem: 2
-#                    Armor: 6
-#                    Reagent: 1
-#                    Projectile: 2
-#                    TradeGood: 22
-#                    Generic: 1
-#                    Recipe: 3
-#                    Quiver: 1
-#                    Quest: 2
-#                    Key: 1
-#                    Misc: 0
-#                    Glyph: 2
+#		 "0" will mean the item classification never shows up.  Values must be whole numbers.
+#        For example, if consumable uncommon has a portion of 4 and container normal has
+#         a proportion of 1 with all others being zero, then when an auction is listed
+#         by a seller bot then 80% will be uncommon consumables and 20% will be normal 
+#         containers.  This won't increase the total number of auctions.
 ###############################################################################
 
-AuctionHouseBot.ListProportion.Consumable = 2
-AuctionHouseBot.ListProportion.Container = 2
-AuctionHouseBot.ListProportion.Weapon = 6
-AuctionHouseBot.ListProportion.Gem = 2
-AuctionHouseBot.ListProportion.Armor = 6
-AuctionHouseBot.ListProportion.Reagent = 1 
-AuctionHouseBot.ListProportion.Projectile = 2
-AuctionHouseBot.ListProportion.TradeGood = 22
-AuctionHouseBot.ListProportion.Generic = 1
-AuctionHouseBot.ListProportion.Recipe = 3
-AuctionHouseBot.ListProportion.Quiver = 1
-AuctionHouseBot.ListProportion.Quest = 2
-AuctionHouseBot.ListProportion.Key = 1
-AuctionHouseBot.ListProportion.Misc = 0
-AuctionHouseBot.ListProportion.Glyph = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryConsumable.QualityHeirloom = 2
+
+AuctionHouseBot.ListProportion.CategoryContainer.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryContainer.QualityHeirloom = 2
+
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityPoor = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityNormal = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityUncommon = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityRare = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityEpic = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityLegendary = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityArtifact = 6
+AuctionHouseBot.ListProportion.CategoryWeapon.QualityHeirloom = 6
+
+AuctionHouseBot.ListProportion.CategoryGem.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryGem.QualityHeirloom = 2
+
+AuctionHouseBot.ListProportion.CategoryArmor.QualityPoor = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityNormal = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityUncommon = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityRare = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityEpic = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityLegendary = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityArtifact = 6
+AuctionHouseBot.ListProportion.CategoryArmor.QualityHeirloom = 6
+
+AuctionHouseBot.ListProportion.CategoryReagent.QualityPoor = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityNormal = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityUncommon = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityRare = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityEpic = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityLegendary = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityArtifact = 1 
+AuctionHouseBot.ListProportion.CategoryReagent.QualityHeirloom = 1 
+
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryProjectile.QualityHeirloom = 2
+
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityPoor = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityNormal = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityUncommon = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityRare = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityEpic = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityLegendary = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityArtifact = 22
+AuctionHouseBot.ListProportion.CategoryTradeGood.QualityHeirloom = 22
+
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityPoor = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityNormal = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityUncommon = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityRare = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityEpic = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityLegendary = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityArtifact = 1
+AuctionHouseBot.ListProportion.CategoryGeneric.QualityHeirloom = 1
+
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityPoor = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityNormal = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityUncommon = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityRare = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityEpic = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityLegendary = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityArtifact = 3
+AuctionHouseBot.ListProportion.CategoryRecipe.QualityHeirloom = 3
+
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityPoor = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityNormal = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityUncommon = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityRare = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityEpic = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityLegendary = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityArtifact = 1
+AuctionHouseBot.ListProportion.CategoryQuiver.QualityHeirloom = 1
+
+AuctionHouseBot.ListProportion.CategoryQuest.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryQuest.QualityHeirloom = 2
+
+AuctionHouseBot.ListProportion.CategoryKey.QualityPoor = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityNormal = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityUncommon = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityRare = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityEpic = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityLegendary = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityArtifact = 1
+AuctionHouseBot.ListProportion.CategoryKey.QualityHeirloom = 1
+
+AuctionHouseBot.ListProportion.CategoryMisc.QualityPoor = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityNormal = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityUncommon = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityRare = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityEpic = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityLegendary = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityArtifact = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityHeirloom = 0
+
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityPoor = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityRare = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityEpic = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityLegendary = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityArtifact = 2
+AuctionHouseBot.ListProportion.CategoryGlyph.QualityHeirloom = 2
 
 ###############################################################################
 #    AuctionHouseBot.PriceMinimumCenterBase.*
