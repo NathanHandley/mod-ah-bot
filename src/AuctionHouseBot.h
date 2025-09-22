@@ -183,6 +183,7 @@ private:
     uint32 RandomStackIncrementGlyph;
     std::vector<ListProportionNode> ItemListProportionNodesSeed;
     std::vector<ListProportionNode> ItemListProportionNodesLookup;
+    std::unordered_map<uint32, uint64> ItemListProportionMultipliedItemIDs;
     std::map<uint32, std::map<uint32, std::vector<uint32>>> ItemCandidatesByItemClassAndQuality;
     float PriceMultiplierCategoryConsumable;
     float PriceMultiplierCategoryContainer;
@@ -270,7 +271,9 @@ private:
     FactionSpecificAuctionHouseConfig HordeConfig;
     FactionSpecificAuctionHouseConfig NeutralConfig;
 
-    int LastCycleCount;   
+    int LastCycleCount;
+    int ActiveListMultipleItemID;
+    int RemainingListMultipleCount;
 
     AuctionHouseBot();
 
@@ -288,7 +291,6 @@ public:
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);
     void AddCharacters(std::string characterGUIDString);
-    void AddPriceMinimumOverrides(std::string priceMinimimOverridesString);
     void AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName);
     void AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName);
     const char* GetQualityName(ItemQualities quality);
@@ -302,6 +304,9 @@ public:
     void AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
     void AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
     void PopulateVendorItemsPrices();
+
+    template <typename ValueType>
+    void AddItemValuePairsToItemIDMap(std::unordered_map<uint32, ValueType>& workingValueToItemIDMap, std::string valueToItemIDMap);
 };
 
 #define auctionbot AuctionHouseBot::instance()

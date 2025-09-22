@@ -147,7 +147,9 @@ AuctionHouseBot::AuctionHouseBot() :
     ListedItemIDRestrictedEnabled(false),
     ListedItemIDMin(0),
     ListedItemIDMax(200000),
-    LastCycleCount(0)
+    LastCycleCount(0),
+    ActiveListMultipleItemID(0),
+    RemainingListMultipleCount(0)
 {
     AllianceConfig = FactionSpecificAuctionHouseConfig(2);
     HordeConfig = FactionSpecificAuctionHouseConfig(6);
@@ -879,7 +881,27 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
     uint32 itemsGenerated = 0;
     for (uint32 cnt = 1; cnt <= newItemsToListCount; cnt++)
     {
-        uint32 itemID = GetRandomItemIDForListing();
+        // Either generate a new item ID to list, or grab from the remaining list
+        uint32 itemID;
+        if (ActiveListMultipleItemID != 0)
+        {
+            itemID = ActiveListMultipleItemID;
+            RemainingListMultipleCount--;
+            if (RemainingListMultipleCount <= 0)
+                ActiveListMultipleItemID = 0;
+        }
+        else
+        {
+            itemID = GetRandomItemIDForListing();
+            if (itemID != 0 && ItemListProportionMultipliedItemIDs.find(itemID) != ItemListProportionMultipliedItemIDs.end() &&
+                ItemListProportionMultipliedItemIDs[itemID] > 1)
+            {
+                ActiveListMultipleItemID = itemID;
+                RemainingListMultipleCount = ItemListProportionMultipliedItemIDs[itemID] - 1;
+                if (debug_Out)
+                    LOG_INFO("module", "AHSeller: Is listing item ID {} which is configured for {} multiples from ListMultipliedItemIDs", itemID, ItemListProportionMultipliedItemIDs[itemID]);
+            }
+        }
 
         // Prevent invalid IDs
         if (itemID == 0)
@@ -1274,6 +1296,26 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackIncrementMisc = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Misc", 1);
     RandomStackIncrementGlyph = GetRandomStackIncrementValue("AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph", 1);
 
+    // List proportions
+    ItemListProportionNodesSeed.clear();
+    for (int category = 0; category < MAX_ITEM_CLASS; category++)
+    {
+        for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
+        {
+            if (category != ITEM_CLASS_MONEY && category != ITEM_CLASS_PERMANENT)
+            {
+                std::string key = std::string("AuctionHouseBot.ListProportion.Category") + GetCategoryName((ItemClass)category) + ".Quality" + GetQualityName((ItemQualities)quality);
+                ListProportionNode node;
+                node.ItemClassID = category;
+                node.ItemQualityID = quality;
+                node.Proportion = sConfigMgr->GetOption<uint32>(key.c_str(), 0);
+                ItemListProportionNodesSeed.push_back(node);
+            }
+        }
+    }
+    ItemListProportionMultipliedItemIDs.clear();
+    AddItemValuePairsToItemIDMap(ItemListProportionMultipliedItemIDs, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListProportion.ListMultipliedItemIDs", ""));
+
     // Price Multipliers
     PriceMultiplierCategoryConsumable = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Consumable", 1);
     PriceMultiplierCategoryContainer = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Category.Container", 1);
@@ -1313,28 +1355,15 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMultiplierQualityLegendary = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Legendary", 3);
     PriceMultiplierQualityArtifact = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Artifact", 3);
     PriceMultiplierQualityHeirloom = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.Quality.Heirloom", 3);
-    ItemListProportionNodesSeed.clear();
     for (int category = 0; category < MAX_ITEM_CLASS; category++)
     {
         for (int quality = 0; quality < MAX_ITEM_QUALITY; quality++)
         {
-            // Price Multipliers
             std::string key = std::string("AuctionHouseBot.PriceMultiplier.Category") + GetCategoryName((ItemClass)category) +
                             ".Quality" + GetQualityName((ItemQualities)quality);
 
             float multiplier = sConfigMgr->GetOption<float>(key.c_str(), 1.0f);
             PriceMultiplierCategoryQuality[category][quality] = multiplier;
-
-            // List Proportions
-            if (category != ITEM_CLASS_MONEY && category != ITEM_CLASS_PERMANENT)
-            {
-                key = std::string("AuctionHouseBot.ListProportion.Category") + GetCategoryName((ItemClass)category) + ".Quality" + GetQualityName((ItemQualities)quality);
-                ListProportionNode node;
-                node.ItemClassID = category;
-                node.ItemQualityID = quality;
-                node.Proportion = sConfigMgr->GetOption<uint32>(key.c_str(), 0);
-                ItemListProportionNodesSeed.push_back(node);
-            }
         }
     }
     PriceMultiplierCategoryMountQualityPoor = sConfigMgr->GetOption<float>("AuctionHouseBot.PriceMultiplier.CategoryMount.QualityPoor", 1.0);
@@ -1377,7 +1406,7 @@ void AuctionHouseBot::InitializeConfiguration()
     PriceMinimumCenterBaseKey = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Key", 1000);
     PriceMinimumCenterBaseMisc = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Misc", 1000);
     PriceMinimumCenterBaseGlyph = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Glyph", 1000);
-    AddPriceMinimumOverrides(sConfigMgr->GetOption<std::string>("AuctionHouseBot.PriceMinimumCenterBase.OverrideItems", ""));
+    AddItemValuePairsToItemIDMap(PriceMinimumCenterBaseOverridesByItemID, sConfigMgr->GetOption<std::string>("AuctionHouseBot.PriceMinimumCenterBase.OverrideItems", ""));
 
     // Item level Restrictions
     ListedItemLevelRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemLevelRestrict.Enabled", false);
@@ -1494,12 +1523,13 @@ void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
     } while (queryResult->NextRow());
 }
 
-void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverridesString)
+template <typename ValueType>
+void AuctionHouseBot::AddItemValuePairsToItemIDMap(std::unordered_map<uint32, ValueType>& workingValueToItemIDMap, std::string valueToItemIDMapString)
 {
     std::string delimitedValue;
-    std::stringstream priceMinimumStream;
-    priceMinimumStream.str(priceMinimimOverridesString);
-    while (std::getline(priceMinimumStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
+    std::stringstream valueToItemIDStream;
+    valueToItemIDStream.str(valueToItemIDMapString);
+    while (std::getline(valueToItemIDStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
     {
         std::string curBlock;
         std::stringstream itemPairStream(delimitedValue);
@@ -1510,10 +1540,10 @@ void AuctionHouseBot::AddPriceMinimumOverrides(std::string priceMinimimOverrides
         {
             std::string itemIDString = curBlock.substr(0, curBlock.find(":"));
             auto itemId = atoi(itemIDString.c_str());
-            std::string priceInCopper = curBlock.substr(curBlock.find(":") + 1);
-            auto copperPrice = atoi(priceInCopper.c_str());
-            if (itemId > 0 && copperPrice > 0)
-                PriceMinimumCenterBaseOverridesByItemID.insert({itemId, copperPrice});
+            std::string valueString = curBlock.substr(curBlock.find(":") + 1);
+            auto convertedValue = atoi(valueString.c_str());
+            if (itemId > 0 && convertedValue > 0)
+                workingValueToItemIDMap.insert({ itemId, convertedValue });
         }
     }
 }
