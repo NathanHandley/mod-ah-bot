@@ -207,7 +207,7 @@ AuctionHouseBot.Buyer.BidAgainstPlayers = false
 #        in other faction auction houses if ItemsPerCycle is met before the
 #        multiplier is expended.
 #	 Example: "2589:4,4306:10" would cause linen cloth to be listed 4 times and 
-#      silk cloth to be listed 5 times when randomly selected for being listed
+#      silk cloth to be listed 10 times when randomly selected for being listed
 #    Default: Many Non-Epic quality unprocessed common trade goods like Linen Cloth 
 #      and Peacebloom are in the config by default to over bias those at 10x rate
 ###############################################################################
