@@ -1649,7 +1649,7 @@ void AuctionHouseBot::PopulateVendorItemsPrices()
     uint32_t numItems = f[0].Get<uint32>();
     vendorItemsPrices = std::vector<uint32>(numItems, UINT32_MAX);
     
-    QueryResult result = WorldDatabase.Query("SELECT v.entry, MIN(v.SellPrice) AS SellPrice FROM item_template v JOIN npc_vendor p ON v.entry = p.item GROUP BY v.entry");
+    QueryResult result = WorldDatabase.Query("SELECT v.entry, MIN(v.SellPrice) AS SellPrice FROM item_template v JOIN npc_vendor p ON v.entry = p.item WHERE v.class != {} GROUP BY v.entry", ITEM_CLASS_TRADE_GOODS);
     if (result)
     {
         do
