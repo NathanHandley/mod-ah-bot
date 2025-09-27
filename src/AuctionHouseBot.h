@@ -128,7 +128,8 @@ private:
 
     bool SellingBotEnabled;
     bool BuyingBotEnabled;
-    int CyclesBetweenBuyOrSell;
+    int CyclesBetweenBuyOrSellMin;
+    int CyclesBetweenBuyOrSellMax;
     uint32 MaxBuyoutPriceInCopper;
     float BuyoutVariationReducePercent;
     float BuyoutVariationAddPercent;
@@ -290,6 +291,7 @@ public:
     void InitializeConfiguration();
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);
+    void SetCyclesBetweenBuyOrSell();
     void AddCharacters(std::string characterGUIDString);
     void AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName);
     void AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName);

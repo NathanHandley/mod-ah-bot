@@ -41,7 +41,8 @@ AuctionHouseBot::AuctionHouseBot() :
     debug_Out_Filters(false),
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
-    CyclesBetweenBuyOrSell(1),
+    CyclesBetweenBuyOrSellMin(1),
+    CyclesBetweenBuyOrSellMax(1),
     MaxBuyoutPriceInCopper(1000000000),
     BuyoutVariationReducePercent(0.15f),
     BuyoutVariationAddPercent(0.25f),
@@ -1173,7 +1174,7 @@ void AuctionHouseBot::Update()
 
     // Only update if the update cycle has been hit
     LastCycleCount++;
-    if (LastCycleCount < CyclesBetweenBuyOrSell)
+    if (LastCycleCount < urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax))
         return;
     LastCycleCount = 0;
 
@@ -1226,7 +1227,7 @@ void AuctionHouseBot::InitializeConfiguration()
     AddCharacters(charString);
 
     // Buyer & Seller core properties
-    CyclesBetweenBuyOrSell = sConfigMgr->GetOption<uint32>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", 1);
+    SetCyclesBetweenBuyOrSell();
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
     MaxBuyoutPriceInCopper = sConfigMgr->GetOption<uint32>("AuctionHouseBot.MaxBuyoutPriceInCopper", 1000000000);
     BuyoutVariationReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationReducePercent", 0.15f);
@@ -1461,6 +1462,26 @@ uint32 AuctionHouseBot::GetRandomStackIncrementValue(std::string configKeyString
         stackIncrementValue = defaultValue;
     }
     return stackIncrementValue;
+}
+
+void AuctionHouseBot::SetCyclesBetweenBuyOrSell()
+{
+    std::string cyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", "1");
+    size_t pos = cyclesConfigString.find(':');
+    if (pos != std::string::npos)
+    {
+        CyclesBetweenBuyOrSellMin = std::stoi(cyclesConfigString.substr(0, pos));
+        CyclesBetweenBuyOrSellMax = std::stoi(cyclesConfigString.substr(pos + 1));
+
+        if (CyclesBetweenBuyOrSellMin < 1)
+            CyclesBetweenBuyOrSellMin = 1;
+        if (CyclesBetweenBuyOrSellMax < CyclesBetweenBuyOrSellMin)
+            CyclesBetweenBuyOrSellMax = CyclesBetweenBuyOrSellMin;
+    }
+    else
+    {
+        CyclesBetweenBuyOrSellMin = CyclesBetweenBuyOrSellMax = std::stoi(cyclesConfigString);
+    }
 }
 
 void AuctionHouseBot::AddCharacters(std::string characterGUIDString)

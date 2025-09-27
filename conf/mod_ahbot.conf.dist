@@ -11,10 +11,13 @@
 #    Default: false (disabled)
 #
 #    AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell
-#        How many cycles to wait between executing any buying or selling logic
-#        - At this time, the AzerothCore has it set as 1 minute inside the
-#          AuctionHouseMgr.cpp file
-#    Default 1 (once per AuctionHouseMgr.cpp update cycle)
+#        How many cycles to wait between executing any buying and selling logic.
+#        At this time, AzerothCore waits 1 minute between cycles as defined by
+#        the AuctionHouseMgr.cpp file.
+#        Value can be a single number in order to wait X cycles between buying
+#        and selling, or a pair of numbers separated by a ':' to wait a random 
+#        number of cycles between X and Y before buying and selling. (e.g. 3:15 )
+#    Default: 1
 #
 #    AuctionHouseBot.EnableSeller
 #        Enable/Disable the part of AHBot that puts items up for auction
