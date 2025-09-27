@@ -42,6 +42,7 @@ AuctionHouseBot::AuctionHouseBot() :
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
     CyclesBetweenBuyOrSellMin(1),
+    CyclesBetweenBuyOrSell(1),
     CyclesBetweenBuyOrSellMax(1),
     MaxBuyoutPriceInCopper(1000000000),
     BuyoutVariationReducePercent(0.15f),
@@ -1176,9 +1177,10 @@ void AuctionHouseBot::Update()
 
     // Only update if the update cycle has been hit
     LastCycleCount++;
-    if (LastCycleCount < urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax))
+    if (LastCycleCount < CyclesBetweenBuyOrSell)
         return;
     LastCycleCount = 0;
+    CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 
     // Randomly select the bot to load, and load it
     uint32 botIndex = urand(0, AHCharacters.size() - 1);
@@ -1470,6 +1472,7 @@ void AuctionHouseBot::SetCyclesBetweenBuyOrSell()
 {
     std::string cyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", "1");
     GetConfigMinAndMax(cyclesConfigString, CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
+    CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 }
 
 void AuctionHouseBot::SetBuyingBotBuyCandidatesPerBuyCycle()

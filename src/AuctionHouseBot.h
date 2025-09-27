@@ -129,6 +129,7 @@ private:
     bool SellingBotEnabled;
     bool BuyingBotEnabled;
     uint32 CyclesBetweenBuyOrSellMin;
+    uint32 CyclesBetweenBuyOrSell;
     uint32 CyclesBetweenBuyOrSellMax;
     uint32 MaxBuyoutPriceInCopper;
     float BuyoutVariationReducePercent;
