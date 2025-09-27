@@ -128,14 +128,17 @@ private:
 
     bool SellingBotEnabled;
     bool BuyingBotEnabled;
-    int CyclesBetweenBuyOrSell;
+    uint32 CyclesBetweenBuyOrSellMin;
+    uint32 CyclesBetweenBuyOrSell;
+    uint32 CyclesBetweenBuyOrSellMax;
     uint32 MaxBuyoutPriceInCopper;
     float BuyoutVariationReducePercent;
     float BuyoutVariationAddPercent;
     float BidVariationHighReducePercent;
     float BidVariationLowReducePercent;
     float BuyoutBelowVendorVariationAddPercent;
-    uint32 BuyingBotBuyCandidatesPerBuyCycle;
+    uint32 BuyingBotBuyCandidatesPerBuyCycleMin;
+    uint32 BuyingBotBuyCandidatesPerBuyCycleMax;
     uint32 ListingExpireTimeInSecondsMin;
     uint32 ListingExpireTimeInSecondsMax;
     float BuyingBotAcceptablePriceModifier;
@@ -271,7 +274,7 @@ private:
     FactionSpecificAuctionHouseConfig HordeConfig;
     FactionSpecificAuctionHouseConfig NeutralConfig;
 
-    int LastCycleCount;
+    uint32 LastCycleCount;
     int ActiveListMultipleItemID;
     int RemainingListMultipleCount;
 
@@ -290,6 +293,9 @@ public:
     void InitializeConfiguration();
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);
+    void SetCyclesBetweenBuyOrSell();
+    void SetBuyingBotBuyCandidatesPerBuyCycle();
+    void GetConfigMinAndMax(std::string config, uint32& min, uint32& max);
     void AddCharacters(std::string characterGUIDString);
     void AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName);
     void AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName);
