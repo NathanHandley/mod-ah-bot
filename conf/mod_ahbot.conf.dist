@@ -16,7 +16,8 @@
 #        the AuctionHouseMgr.cpp file.
 #        Value can be a single number in order to wait X cycles between buying
 #        and selling, or a pair of numbers separated by a ':' to wait a random 
-#        number of cycles between X and Y before buying and selling. (e.g. 3:15 )
+#        number of cycles between X and Y before buying and selling (e.g. 3:15 to 
+#        wait 3-15 minutes between cycles).
 #    Default: 1
 #
 #    AuctionHouseBot.EnableSeller
@@ -142,11 +143,14 @@ AuctionHouseBot.Neutral.MaxItems = 15000
 #        How many to items to price and attempt to buy.  Note, this number of
 #        items will be selected from each of the auction house types (Alliance,
 #        Horde, Neutral).  Meaning if you set this as 10, then up to 10 items
-#        from will be selected (total of 30).  Whole numbers only.  Very large
-#        values can impact server performance, and is generally not neccessary.
-#        This runs every minute (which is the auction house update loop time, 
-#        defined by azerothcore core inside the AuctionHouseMgr.cpp file).
-#    Default: 1 (1 item per auction house is considered per minute)
+#        from each AH will be selected (total of 30).  Whole numbers only.
+#        Very large values can impact server performance, and is generally 
+#        not neccessary. This runs once every Buy/Sell cycle as defined 
+#        by AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell.
+#        Value can be a single number in order to consider buying X items each
+#        Buy/Sell cycle, or a pair of numbers separated by a ':' to consider 
+#        buying a random number between X and Y items. (e.g. 1:5 to consider 1-5 items)
+#    Default: 1 (1 item per auction house is considered per Buy/Sell cycle)
 #
 #    AuctionHouseBot.Buyer.AcceptablePriceModifier
 #        The buyer bot calculates item prices the same way the selling

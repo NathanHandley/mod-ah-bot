@@ -49,7 +49,8 @@ AuctionHouseBot::AuctionHouseBot() :
     BidVariationHighReducePercent(0),
     BidVariationLowReducePercent(0.25f),
     BuyoutBelowVendorVariationAddPercent(0.25f),
-    BuyingBotBuyCandidatesPerBuyCycle(1),
+    BuyingBotBuyCandidatesPerBuyCycleMin(1),
+    BuyingBotBuyCandidatesPerBuyCycleMax(1),
     ListingExpireTimeInSecondsMin(900),
     ListingExpireTimeInSecondsMax(86400),
     BuyingBotAcceptablePriceModifier(1),
@@ -798,7 +799,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
         ListProportionNode curNode = ItemListProportionNodesSeed[i];
         if (ItemCandidatesByItemClassAndQuality[curNode.ItemClassID][curNode.ItemQualityID].size() > 0)
         {
-            for (int j = 0; j < curNode.Proportion; j++)
+            for (uint32 j = 0; j < curNode.Proportion; j++)
                 ItemListProportionNodesLookup.push_back(curNode);
         }
     }
@@ -1002,15 +1003,16 @@ void AuctionHouseBot::AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
     {
         uint32 tmpdata = result->Fetch()->Get<uint32>();
         possibleBids.push_back(tmpdata);
-    }while (result->NextRow());
+    } while (result->NextRow());
 
-    for (uint32 count = 1; count <= BuyingBotBuyCandidatesPerBuyCycle; ++count)
+    int randBuyingBotBuyCandidatesPerBuyCycle = urand(BuyingBotBuyCandidatesPerBuyCycleMin, BuyingBotBuyCandidatesPerBuyCycleMax);
+    for (int count = 1; count <= randBuyingBotBuyCandidatesPerBuyCycle; ++count)
     {
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
             //if (debug_Out) sLog->outError( "AHBuyer: I have no newItemsToListCount to bid on.");
-            count = BuyingBotBuyCandidatesPerBuyCycle;
+            count = randBuyingBotBuyCandidatesPerBuyCycle;
             continue;
         }
 
@@ -1191,16 +1193,16 @@ void AuctionHouseBot::Update()
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
         AddNewAuctions(&_AHBplayer, &AllianceConfig);
-        if (BuyingBotBuyCandidatesPerBuyCycle > 0)
+        if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
             AddNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
 
         AddNewAuctions(&_AHBplayer, &HordeConfig);
-        if (BuyingBotBuyCandidatesPerBuyCycle > 0)
+        if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
             AddNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
     }
 
     AddNewAuctions(&_AHBplayer, &NeutralConfig);
-    if (BuyingBotBuyCandidatesPerBuyCycle > 0)
+    if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
         AddNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
 
     ObjectAccessor::RemoveObject(&_AHBplayer);
@@ -1255,7 +1257,7 @@ void AuctionHouseBot::InitializeConfiguration()
     }
 
     // Buyer Bot
-    BuyingBotBuyCandidatesPerBuyCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", 1);
+    SetBuyingBotBuyCandidatesPerBuyCycle();
     BuyingBotAcceptablePriceModifier = sConfigMgr->GetOption<float>("AuctionHouseBot.Buyer.AcceptablePriceModifier", 1);
     BuyingBotAlwaysBidMaxCalculatedPrice = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.AlwaysBidMaxCalculatedPrice", false);
     PreventOverpayingForVendorItems = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.PreventOverpayingForVendorItems", true);
@@ -1467,21 +1469,30 @@ uint32 AuctionHouseBot::GetRandomStackIncrementValue(std::string configKeyString
 void AuctionHouseBot::SetCyclesBetweenBuyOrSell()
 {
     std::string cyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", "1");
-    size_t pos = cyclesConfigString.find(':');
+    GetConfigMinAndMax(cyclesConfigString, CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
+}
+
+void AuctionHouseBot::SetBuyingBotBuyCandidatesPerBuyCycle()
+{
+    std::string candidatesPerCycleString = sConfigMgr->GetOption<string>("AuctionHouseBot.Buyer.BuyCandidatesPerBuyCycle", "1");
+    GetConfigMinAndMax(candidatesPerCycleString, BuyingBotBuyCandidatesPerBuyCycleMin, BuyingBotBuyCandidatesPerBuyCycleMax);
+}
+
+void AuctionHouseBot::GetConfigMinAndMax(std::string config, uint32& min, uint32& max)
+{
+    size_t pos = config.find(':');
     if (pos != std::string::npos)
     {
-        CyclesBetweenBuyOrSellMin = std::stoi(cyclesConfigString.substr(0, pos));
-        CyclesBetweenBuyOrSellMax = std::stoi(cyclesConfigString.substr(pos + 1));
+        min = std::stoul(config.substr(0, pos));
+        max = std::stoul(config.substr(pos + 1));
 
-        if (CyclesBetweenBuyOrSellMin < 1)
-            CyclesBetweenBuyOrSellMin = 1;
-        if (CyclesBetweenBuyOrSellMax < CyclesBetweenBuyOrSellMin)
-            CyclesBetweenBuyOrSellMax = CyclesBetweenBuyOrSellMin;
+        if (min < 1)
+            min = 1;
+        if (max < min)
+            max = min;
     }
     else
-    {
-        CyclesBetweenBuyOrSellMin = CyclesBetweenBuyOrSellMax = std::stoi(cyclesConfigString);
-    }
+        min = max = std::stoul(config);
 }
 
 void AuctionHouseBot::AddCharacters(std::string characterGUIDString)
