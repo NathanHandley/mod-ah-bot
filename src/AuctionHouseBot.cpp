@@ -884,92 +884,99 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
     uint32 itemsGenerated = 0;
     for (uint32 cnt = 1; cnt <= newItemsToListCount; cnt++)
     {
-        // Either generate a new item ID to list, or grab from the remaining list
-        uint32 itemID;
-        if (ActiveListMultipleItemID != 0)
-        {
-            itemID = ActiveListMultipleItemID;
-            RemainingListMultipleCount--;
-            if (RemainingListMultipleCount <= 0)
-                ActiveListMultipleItemID = 0;
-        }
-        else
-        {
-            itemID = GetRandomItemIDForListing();
-            if (itemID != 0 && ItemListProportionMultipliedItemIDs.find(itemID) != ItemListProportionMultipliedItemIDs.end() &&
-                ItemListProportionMultipliedItemIDs[itemID] > 1)
-            {
-                ActiveListMultipleItemID = itemID;
-                RemainingListMultipleCount = ItemListProportionMultipliedItemIDs[itemID] - 1;
-                if (debug_Out)
-                    LOG_INFO("module", "AHSeller: Is listing item ID {} which is configured for {} multiples from ListMultipliedItemIDs", itemID, ItemListProportionMultipliedItemIDs[itemID]);
-            }
-        }
-
-        // Prevent invalid IDs
-        if (itemID == 0)
-        {
-            if (debug_Out)
-                LOG_ERROR("module", "AHSeller: Item::CreateItem() failed as the ItemID is 0");
-            continue;
-        }
-
-        ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemID);
-        if (prototype == NULL)
-        {
-            if (debug_Out)
-                LOG_ERROR("module", "AHSeller: prototype == NULL");
-            continue;
-        }
-
-        Item* item = Item::CreateItem(itemID, 1, AHBplayer);
-        if (item == NULL)
-        {
-            if (debug_Out)
-                LOG_ERROR("module", "AHSeller: Item::CreateItem() returned NULL");
-            break;
-        }
-        item->AddToUpdateQueueOf(AHBplayer);
-
-        uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(itemID);
-        if (randomPropertyId != 0)
-            item->SetItemRandomProperties(randomPropertyId);
-
-        // Determine price
-        uint64 buyoutPrice = 0;
-        uint64 bidPrice = 0;
-        CalculateItemValue(prototype, bidPrice, buyoutPrice);
-
-        // Define a duration
-        uint32 etime = urand(ListingExpireTimeInSecondsMin, ListingExpireTimeInSecondsMax);
-
-        // Set stack size
-        uint32 stackCount = GetStackSizeForItem(prototype);
-        item->SetCount(stackCount);
-
-        uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
-
         auto trans = CharacterDatabase.BeginTransaction();
-        AuctionEntry* auctionEntry = new AuctionEntry();
-        auctionEntry->Id = sObjectMgr->GenerateAuctionID();
-        auctionEntry->houseId = AuctionHouseId(config->GetAHID());
-		auctionEntry->item_guid = item->GetGUID();
-        auctionEntry->item_template = item->GetEntry();
-        auctionEntry->itemCount = item->GetCount();
-        auctionEntry->owner = AHBplayer->GetGUID();
-        auctionEntry->startbid = bidPrice * stackCount;
-        auctionEntry->buyout = buyoutPrice * stackCount;
-        auctionEntry->bid = 0;
-        auctionEntry->deposit = dep;
-        auctionEntry->expire_time = (time_t) etime + time(NULL);
-        auctionEntry->auctionHouseEntry = ahEntry;
-        item->SaveToDB(trans);
-        item->RemoveFromUpdateQueueOf(AHBplayer);
-        sAuctionMgr->AddAItem(item);
-        auctionHouse->AddAuction(auctionEntry);
-        auctionEntry->SaveToDB(trans);
+        uint32 batchCount = 0;
+
+        while (batchCount < 500 && itemsGenerated < newItemsToListCount)
+        {
+            // Either generate a new item ID to list, or grab from the remaining list
+            uint32 itemID;
+            if (ActiveListMultipleItemID != 0)
+            {
+                itemID = ActiveListMultipleItemID;
+                RemainingListMultipleCount--;
+                if (RemainingListMultipleCount <= 0)
+                    ActiveListMultipleItemID = 0;
+            }
+            else
+            {
+                itemID = GetRandomItemIDForListing();
+                if (itemID != 0 && ItemListProportionMultipliedItemIDs.find(itemID) != ItemListProportionMultipliedItemIDs.end() &&
+                    ItemListProportionMultipliedItemIDs[itemID] > 1)
+                {
+                    ActiveListMultipleItemID = itemID;
+                    RemainingListMultipleCount = ItemListProportionMultipliedItemIDs[itemID] - 1;
+                    if (debug_Out)
+                        LOG_INFO("module", "AHSeller: Is listing item ID {} which is configured for {} multiples from ListMultipliedItemIDs", itemID, ItemListProportionMultipliedItemIDs[itemID]);
+                }
+            }
+
+            // Prevent invalid IDs
+            if (itemID == 0)
+            {
+                if (debug_Out)
+                    LOG_ERROR("module", "AHSeller: Item::CreateItem() failed as the ItemID is 0");
+                continue;
+            }
+
+            ItemTemplate const* prototype = sObjectMgr->GetItemTemplate(itemID);
+            if (prototype == NULL)
+            {
+                if (debug_Out)
+                    LOG_ERROR("module", "AHSeller: prototype == NULL");
+                continue;
+            }
+
+            Item* item = Item::CreateItem(itemID, 1, AHBplayer);
+            if (item == NULL)
+            {
+                if (debug_Out)
+                    LOG_ERROR("module", "AHSeller: Item::CreateItem() returned NULL");
+                break;
+            }
+            item->AddToUpdateQueueOf(AHBplayer);
+
+            uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(itemID);
+            if (randomPropertyId != 0)
+                item->SetItemRandomProperties(randomPropertyId);
+
+            // Determine price
+            uint64 buyoutPrice = 0;
+            uint64 bidPrice = 0;
+            CalculateItemValue(prototype, bidPrice, buyoutPrice);
+
+            // Define a duration
+            uint32 etime = urand(ListingExpireTimeInSecondsMin, ListingExpireTimeInSecondsMax);
+
+            // Set stack size
+            uint32 stackCount = GetStackSizeForItem(prototype);
+            item->SetCount(stackCount);
+
+            uint32 dep =  sAuctionMgr->GetAuctionDeposit(ahEntry, etime, item, stackCount);
+
+            AuctionEntry* auctionEntry = new AuctionEntry();
+            auctionEntry->Id = sObjectMgr->GenerateAuctionID();
+            auctionEntry->houseId = AuctionHouseId(config->GetAHID());
+            auctionEntry->item_guid = item->GetGUID();
+            auctionEntry->item_template = item->GetEntry();
+            auctionEntry->itemCount = item->GetCount();
+            auctionEntry->owner = AHBplayer->GetGUID();
+            auctionEntry->startbid = bidPrice * stackCount;
+            auctionEntry->buyout = buyoutPrice * stackCount;
+            auctionEntry->bid = 0;
+            auctionEntry->deposit = dep;
+            auctionEntry->expire_time = (time_t) etime + time(NULL);
+            auctionEntry->auctionHouseEntry = ahEntry;
+            item->SaveToDB(trans);
+            item->RemoveFromUpdateQueueOf(AHBplayer);
+            sAuctionMgr->AddAItem(item);
+            auctionHouse->AddAuction(auctionEntry);
+            auctionEntry->SaveToDB(trans);
+            itemsGenerated++;
+            batchCount++;
+        }
+
         CharacterDatabase.CommitTransaction(trans);
-        itemsGenerated++;
     }
     if (debug_Out)
         LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
