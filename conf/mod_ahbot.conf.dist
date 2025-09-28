@@ -37,11 +37,8 @@
 #
 #    AuctionHouseBot.ItemsPerCycle
 #        How many items to post on the auction house every house update. Items
-#        in a cycle will be posted by a single randomly selected bot, so Keep
-#        this value low if you want highly diverse postings. Do note that
-#        this value has a direct impact on login startup time (specifically time
-#        from startup complete to first character being able to log in) so a 
-#        value greater than a few hundred is not recommended.
+#        in a cycle will be posted by a single randomly selected bot, so keep
+#        this value low if you want highly diverse "Seller" names in auction listings.
 #    Default 150
 #
 #    AuctionHouseBot.ListingExpireTimeInSecondsMin
