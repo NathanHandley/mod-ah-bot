@@ -36,9 +36,8 @@
 #        AuctionHouseBot.GUIDs = 3,4 <- Both characters with GUID 3 and 4
 #
 #    AuctionHouseBot.ItemsPerCycle
-#        How many items to post on the auction house every house update. Items
-#        in a cycle will be posted by a single randomly selected bot, so keep
-#        this value low if you want highly diverse "Seller" names in auction listings.
+#        How many items to post on the auction house every house update.
+#        Items in a cycle will be posted by a randomly selected bot.
 #    Default 150
 #
 #    AuctionHouseBot.ListingExpireTimeInSecondsMin

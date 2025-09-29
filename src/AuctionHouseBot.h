@@ -307,8 +307,8 @@ public:
     ItemTemplate const* GetProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
     void PopulateItemCandidatesAndProportions();
     uint32 GetRandomItemIDForListing();
-    void AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
-    void AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig* config);
+    void AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
+    void AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
     void PopulateVendorItemsPrices();
 
     template <typename ValueType>
