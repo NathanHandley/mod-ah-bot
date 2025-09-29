@@ -827,7 +827,7 @@ uint32 AuctionHouseBot::GetRandomItemIDForListing()
     return ItemCandidatesByItemClassAndQuality[listProportionNode.ItemClassID][listProportionNode.ItemQualityID][urand(0, numOfValidItemsInGroup-1)];
 }
 
-void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
+void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig *config)
 {
     if (!SellingBotEnabled)
     {
@@ -927,6 +927,8 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
                 continue;
             }
 
+            Player* AHBplayer = AHBPlayers[urand(0, AHBPlayers.size() - 1)];
+
             Item* item = Item::CreateItem(itemID, 1, AHBplayer);
             if (item == NULL)
             {
@@ -982,7 +984,7 @@ void AuctionHouseBot::AddNewAuctions(Player* AHBplayer, FactionSpecificAuctionHo
         LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
 }
 
-void AuctionHouseBot::AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecificAuctionHouseConfig *config)
+void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig *config)
 {
     if (!BuyingBotEnabled)
     {
@@ -1133,6 +1135,9 @@ void AuctionHouseBot::AddNewAuctionBuyerBotBid(Player* AHBplayer, FactionSpecifi
             LOG_INFO("module", "AHBuyer: Stopped from buying due to 'PreventOverpayingForVendorItems'?: {}", preventedOverpayingForVendorItem);
             LOG_INFO("module", "-------------------------------------------------");
         }
+
+        Player* AHBplayer = AHBPlayers[urand(0, AHBPlayers.size() - 1)];
+
         if (doBid)
         {
             auto trans = CharacterDatabase.BeginTransaction();
@@ -1189,32 +1194,37 @@ void AuctionHouseBot::Update()
     LastCycleCount = 0;
     CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 
-    // Randomly select the bot to load, and load it
-    uint32 botIndex = urand(0, AHCharacters.size() - 1);
-    CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
-    std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
-    WorldSession _session(AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
-    Player _AHBplayer(&_session);
-    _AHBplayer.Initialize(AHCharacters[botIndex].CharacterGUID);
-    ObjectAccessor::AddObject(&_AHBplayer);
+    // Load all AH Bot Players
+    std::vector<Player*> AHBPlayers;
+    for (uint32 botIndex = 0; botIndex <= AHCharacters.size() - 1; ++botIndex)
+    {
+        CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
+        std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
+        WorldSession _session(AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
+        Player* _AHBplayer = new Player(&_session);
+        _AHBplayer->Initialize(AHCharacters[botIndex].CharacterGUID);
+        ObjectAccessor::AddObject(_AHBplayer);
+        AHBPlayers.push_back(_AHBplayer);
+    }
 
     // Add New Bids
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
-        AddNewAuctions(&_AHBplayer, &AllianceConfig);
+        AddNewAuctions(AHBPlayers, &AllianceConfig);
         if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(&_AHBplayer, &AllianceConfig);
+            AddNewAuctionBuyerBotBid(AHBPlayers, &AllianceConfig);
 
-        AddNewAuctions(&_AHBplayer, &HordeConfig);
+        AddNewAuctions(AHBPlayers, &HordeConfig);
         if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(&_AHBplayer, &HordeConfig);
+            AddNewAuctionBuyerBotBid(AHBPlayers, &HordeConfig);
     }
 
-    AddNewAuctions(&_AHBplayer, &NeutralConfig);
+    AddNewAuctions(AHBPlayers, &NeutralConfig);
     if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-        AddNewAuctionBuyerBotBid(&_AHBplayer, &NeutralConfig);
+        AddNewAuctionBuyerBotBid(AHBPlayers, &NeutralConfig);
 
-    ObjectAccessor::RemoveObject(&_AHBplayer);
+    for (Player* p : AHBPlayers)
+        ObjectAccessor::RemoveObject(p);
 }
 
 void AuctionHouseBot::InitializeConfiguration()
