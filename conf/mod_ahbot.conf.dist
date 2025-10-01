@@ -334,10 +334,10 @@ AuctionHouseBot.ListProportion.CategoryKey.QualityArtifact = 0
 AuctionHouseBot.ListProportion.CategoryKey.QualityHeirloom = 0
 
 AuctionHouseBot.ListProportion.CategoryMisc.QualityPoor = 0
-AuctionHouseBot.ListProportion.CategoryMisc.QualityNormal = 0
-AuctionHouseBot.ListProportion.CategoryMisc.QualityUncommon = 0
-AuctionHouseBot.ListProportion.CategoryMisc.QualityRare = 0
-AuctionHouseBot.ListProportion.CategoryMisc.QualityEpic = 0
+AuctionHouseBot.ListProportion.CategoryMisc.QualityNormal = 2
+AuctionHouseBot.ListProportion.CategoryMisc.QualityUncommon = 2
+AuctionHouseBot.ListProportion.CategoryMisc.QualityRare = 1
+AuctionHouseBot.ListProportion.CategoryMisc.QualityEpic = 1
 AuctionHouseBot.ListProportion.CategoryMisc.QualityLegendary = 0
 AuctionHouseBot.ListProportion.CategoryMisc.QualityArtifact = 0
 AuctionHouseBot.ListProportion.CategoryMisc.QualityHeirloom = 0
