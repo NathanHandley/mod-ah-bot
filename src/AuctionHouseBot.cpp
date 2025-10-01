@@ -1194,29 +1194,29 @@ void AuctionHouseBot::Update()
     CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 
     // Load all AH Bot Players
-    std::vector<std::pair<Player*, std::unique_ptr<WorldSession>>> AHBPlayers;
+    std::vector<std::pair<std::unique_ptr<Player>, std::unique_ptr<WorldSession>>> AHBPlayers;
     AHBPlayers.reserve(AHCharacters.size());
     for (uint32 botIndex = 0; botIndex < AHCharacters.size(); ++botIndex)
     {
         CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
         std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
 
-        // Wrap session in unique pointer to manage the session lifetime
+        // Wrap session and player in unique pointer to manage lifetime
         auto session = std::make_unique<WorldSession>(
             AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr,
             SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0
         );
-        Player* player = new Player(session.get());
+        auto player = std::make_unique<Player>(session.get());
         player->Initialize(AHCharacters[botIndex].CharacterGUID);
-        ObjectAccessor::AddObject(player);
-        AHBPlayers.emplace_back(player, std::move(session));
+        ObjectAccessor::AddObject(player.get());
+        AHBPlayers.emplace_back(std::move(player), std::move(session));
     }
 
     // Create a vector of Player* for passing to methods
     std::vector<Player*> playersPointerVector;
     playersPointerVector.reserve(AHBPlayers.size());
     for (const auto& pair : AHBPlayers)
-        playersPointerVector.push_back(pair.first);
+        playersPointerVector.emplace_back(pair.first.get());
 
     // Add New Bids
     if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
@@ -1233,12 +1233,9 @@ void AuctionHouseBot::Update()
     if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
         AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
 
-    // Explicitly delete players to close sessions
+    // Remove AH Bot Players from world
     for (auto& [player, session] : AHBPlayers)
-    {
-        ObjectAccessor::RemoveObject(player);
-        delete player;
-    }
+        ObjectAccessor::RemoveObject(player.get());
 }
 
 void AuctionHouseBot::InitializeConfiguration()
