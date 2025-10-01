@@ -1183,9 +1183,8 @@ void AuctionHouseBot::Update()
 {
     if ((SellingBotEnabled == false) && (BuyingBotEnabled == false))
         return;
-    if (AHCharacters.size() == 0)
+    if (AHCharacters.empty() == true)
         return;
-
 
     // Only update if the update cycle has been hit
     LastCycleCount++;
@@ -1195,36 +1194,51 @@ void AuctionHouseBot::Update()
     CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 
     // Load all AH Bot Players
-    std::vector<Player*> AHBPlayers;
-    for (uint32 botIndex = 0; botIndex <= AHCharacters.size() - 1; ++botIndex)
+    std::vector<std::pair<Player*, std::unique_ptr<WorldSession>>> AHBPlayers;
+    AHBPlayers.reserve(AHCharacters.size());
+    for (uint32 botIndex = 0; botIndex < AHCharacters.size(); ++botIndex)
     {
         CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
         std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
-        WorldSession _session(AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr, SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0);
-        Player* _AHBplayer = new Player(&_session);
-        _AHBplayer->Initialize(AHCharacters[botIndex].CharacterGUID);
-        ObjectAccessor::AddObject(_AHBplayer);
-        AHBPlayers.push_back(_AHBplayer);
+
+        // Wrap session in unique pointer to manage the session lifetime
+        auto session = std::make_unique<WorldSession>(
+            AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr,
+            SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0
+        );
+        Player* player = new Player(session.get());
+        player->Initialize(AHCharacters[botIndex].CharacterGUID);
+        ObjectAccessor::AddObject(player);
+        AHBPlayers.emplace_back(player, std::move(session));
     }
+
+    // Create a vector of Player* for passing to methods
+    std::vector<Player*> playersPointerVector;
+    playersPointerVector.reserve(AHBPlayers.size());
+    for (const auto& pair : AHBPlayers)
+        playersPointerVector.push_back(pair.first);
 
     // Add New Bids
-    if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
+    if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
     {
-        AddNewAuctions(AHBPlayers, &AllianceConfig);
+        AddNewAuctions(playersPointerVector, &AllianceConfig);
         if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(AHBPlayers, &AllianceConfig);
+            AddNewAuctionBuyerBotBid(playersPointerVector, &AllianceConfig);
 
-        AddNewAuctions(AHBPlayers, &HordeConfig);
+        AddNewAuctions(playersPointerVector, &HordeConfig);
         if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(AHBPlayers, &HordeConfig);
+            AddNewAuctionBuyerBotBid(playersPointerVector, &HordeConfig);
     }
-
-    AddNewAuctions(AHBPlayers, &NeutralConfig);
+    AddNewAuctions(playersPointerVector, &NeutralConfig);
     if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-        AddNewAuctionBuyerBotBid(AHBPlayers, &NeutralConfig);
+        AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
 
-    for (Player* p : AHBPlayers)
-        ObjectAccessor::RemoveObject(p);
+    // Explicitly delete players to close sessions
+    for (auto& [player, session] : AHBPlayers)
+    {
+        ObjectAccessor::RemoveObject(player);
+        delete player;
+    }
 }
 
 void AuctionHouseBot::InitializeConfiguration()
