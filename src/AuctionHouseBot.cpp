@@ -25,7 +25,6 @@
 #include "Config.h"
 #include "Player.h"
 #include "WorldSession.h"
-#include "GameTime.h"
 #include "DatabaseEnv.h"
 #include "ItemTemplate.h"
 #include "SharedDefines.h"
@@ -33,6 +32,7 @@
 #include <cmath>
 
 #include <set>
+#include <unordered_map>
 
 using namespace std;
 
@@ -60,7 +60,6 @@ AuctionHouseBot::AuctionHouseBot() :
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
     DisabledItemTextFilter(true),
-    DisabledRecipeProducedItemFilterEnabled(false),
     ListedItemLevelRestrictedEnabled(false),
     ListedItemLevelRestrictedUseCraftedItemForCalculation(true),
     ListedItemLevelMax(999),
@@ -153,7 +152,15 @@ AuctionHouseBot::AuctionHouseBot() :
     ListedItemIDMax(200000),
     LastCycleCount(0),
     ActiveListMultipleItemID(0),
-    RemainingListMultipleCount(0)
+    RemainingListMultipleCount(0),
+    _AHItemsCountSnapshot(0),
+    _AHCategoriesCountSnapshot(),
+    MaxDuplicatesCategoryArmorQualityEpic(-1),
+    MaxDuplicatesCategoryWeaponQualityEpic(-1),
+    MaxDuplicatesCategoryMount(-1),
+    MaxDuplicatesCategoryPet(-1),
+    MaxItemsCategoryPet(-1),
+    MaxItemsCategoryMount(-1)
 {
     AllianceConfig = FactionSpecificAuctionHouseConfig(2);
     HordeConfig = FactionSpecificAuctionHouseConfig(6);
@@ -568,71 +575,6 @@ ItemTemplate const* AuctionHouseBot::GetProducedItemFromRecipe(ItemTemplate cons
     return nullptr;
 }
 
-static const std::unordered_set<uint32> professionSkills = {
-    164,  // Blacksmithing
-    165,  // Leatherworking
-    171,  // Alchemy
-    182,  // Herbalism
-    185,  // Cooking
-    186,  // Mining
-    197,  // Tailoring
-    202,  // Engineering
-    333,  // Enchanting
-    356,  // Fishing
-    393,  // Skinning
-    755,  // Jewelcrafting
-    773,  // Inscription
-    129   // First Aid
-};
-
-std::unordered_set<uint32> AuctionHouseBot::GetItemIDsProducedByRecipes()
-{
-    std::unordered_set<uint32> recipeItemIDs;
-    for (uint32 spellId = 1; spellId < sSpellStore.GetNumRows(); ++spellId)
-    {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-        if (!spellInfo)
-            continue;
-
-        // Check if the spell is tied to a profession skill
-        bool isProfessionSpell = false;
-        SkillLineAbilityMapBounds skillBounds = sSpellMgr->GetSkillLineAbilityMapBounds(spellId);
-        for (SkillLineAbilityMap::const_iterator skillItr = skillBounds.first; skillItr != skillBounds.second; ++skillItr)
-        {
-            if (professionSkills.find(skillItr->second->SkillLine) != professionSkills.end())
-            {
-                isProfessionSpell = true;
-                break;
-            }
-        }
-
-        if (isProfessionSpell == false)
-            continue;
-
-        // SPELL_EFFECT_CREATE_ITEM (effect ID 24) identify created items
-        for (uint8 effIndex = 0; effIndex < MAX_SPELL_EFFECTS; ++effIndex)
-        {
-            if (spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_CREATE_ITEM && spellInfo->Effects[effIndex].ItemType > 0)
-            {
-                uint32 itemID = spellInfo->Effects[effIndex].ItemType;
-                recipeItemIDs.insert(itemID);
-            }
-        }
-    }
-    return recipeItemIDs;
-}
-
-bool AuctionHouseBot::IsItemADisabledRecipeProducedClassSubclass(ItemTemplate const* itemTemplate)
-{
-    if (DisabledRecipeProducedItemClassSubClasses.find(itemTemplate->Class) == DisabledRecipeProducedItemClassSubClasses.end())
-        return false;
-    else if (DisabledRecipeProducedItemClassSubClasses[itemTemplate->Class].find(itemTemplate->SubClass) == DisabledRecipeProducedItemClassSubClasses[itemTemplate->Class].end())
-        return false;
-    else if (ItemIDsProducedByRecipes.find(itemTemplate->ItemId) == ItemIDsProducedByRecipes.end())
-        return false;
-    return true;
-}
-
 void AuctionHouseBot::PopulateItemCandidatesAndProportions()
 {
     // Clear old list and rebuild it
@@ -649,9 +591,6 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
     includeItemIDExecptions.insert(18333);
     includeItemIDExecptions.insert(18334);
     includeItemIDExecptions.insert(18335);
-
-    ItemIDsProducedByRecipes.clear();
-    ItemIDsProducedByRecipes = GetItemIDsProducedByRecipes();
 
     // Fill candidate item templates
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
@@ -725,17 +664,6 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disabled recipe item check
-        if (DisabledRecipeProducedItemFilterEnabled == true)
-        {
-            if (IsItemADisabledRecipeProducedClassSubclass(&itr->second) == true)
-            {
-                if (debug_Out_Filters)
-                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Configured by DisabledRecipeProducedItemFilterEnabled and DisabledRecipeProducedItemClassSubClasses)", itr->second.ItemId);
-                continue;
-            }
-        }
-
         // These newItemsToListCount should be included and would otherwise be skipped due to conditions below
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
@@ -795,7 +723,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable normal class 'book' recipies, since they are junk
+        // Disable normal class 'book' recipes, since they are junk
         if (itr->second.Class == ITEM_CLASS_RECIPE && itr->second.SubClass == ITEM_SUBCLASS_BOOK && itr->second.Quality <= ITEM_QUALITY_NORMAL)
         {
             if (debug_Out_Filters)
@@ -960,8 +888,13 @@ void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpe
     if (debug_Out)
         LOG_INFO("module", "AHSeller: Current house id is {}", config->GetAHID());
 
-    // only insert a few at a time, so as not to peg the processor
     uint32 itemsGenerated = 0;
+    _AHItemsCountSnapshot.clear();
+    for (auto& row : _AHCategoriesCountSnapshot)
+        row.fill(0);
+    PopulateAHItemsAndCategoriesCountSnapshot(config->GetAHID());
+
+    // only insert a few at a time, so as not to peg the processor
     for (uint32 cnt = 1; cnt <= newItemsToListCount; cnt++)
     {
         auto trans = CharacterDatabase.BeginTransaction();
@@ -1004,6 +937,22 @@ void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpe
             {
                 if (debug_Out)
                     LOG_ERROR("module", "AHSeller: prototype == NULL");
+                continue;
+            }
+
+            if (IsItemOverpopulated(prototype))
+            {
+                if (debug_Out)
+                    LOG_INFO("module", "Item {} {} is overpopulated in the AH. Skipping...", prototype->ItemId, prototype->Name1);
+                ActiveListMultipleItemID = 0;
+                continue;
+            }
+
+            if (IsItemCategoryOverpopulated(prototype))
+            {
+                if (debug_Out)
+                    LOG_INFO("module", "Class {} SubClass {} is overpopulated in the AH. Skipping...", GetCategoryName((ItemClass)prototype->Class), prototype->SubClass);
+                ActiveListMultipleItemID = 0;
                 continue;
             }
 
@@ -1056,12 +1005,156 @@ void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpe
             auctionEntry->SaveToDB(trans);
             itemsGenerated++;
             batchCount++;
+            _AHItemsCountSnapshot[prototype->ItemId] += 1;
+            _AHCategoriesCountSnapshot[prototype->Class][prototype->SubClass] += 1;
         }
 
         CharacterDatabase.CommitTransaction(trans);
     }
     if (debug_Out)
         LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
+}
+
+void AuctionHouseBot::PopulateAHItemsAndCategoriesCountSnapshot(uint32 AHID)
+{
+    // Create snapshot of current AH's items and count # of each ItemID for "IsOverpopulated()" checks.
+    // Since we can't simultaneously query the Character and World databases with a JOIN, we have to
+    //   perform a roundabout way of collecting item_template information about each auction item.
+    //   (i.e. Query both databases individually, then combine results in code)
+    struct AHItem
+    {
+        uint32 itemID;
+        uint32 count;
+    };
+
+    std::vector<uint32> uniqueItemEntries;
+    std::unordered_map<uint32, ItemTemplate> uniqueItemEntriesTemplates;
+    std::vector<AHItem> AHItems;
+
+    // Get all auction items for this AH. Store itemID and stack count in AHItems for later use
+    string characterQueryString = "SELECT instance.itemEntry, instance.count "
+        "FROM auctionhouse ah "
+        "JOIN item_instance instance ON ah.itemguid = instance.guid "
+        "WHERE ah.houseid = {}";
+    QueryResult characterResult = CharacterDatabase.Query(characterQueryString, AHID);
+    if (characterResult)
+    {
+        do {
+            Field* fields = characterResult->Fetch();
+            uint32_t itemID = fields[0].Get<uint32>();
+            uint32_t itemCount = fields[1].Get<uint32>();
+            _AHItemsCountSnapshot[itemID] += itemCount;
+            uniqueItemEntries.push_back(itemID);
+            AHItems.push_back(AHItem(itemID, itemCount));
+        } while (characterResult->NextRow());
+    }
+    else {
+        return;
+    }
+
+    // Collect item_templates for each auction house item
+    std::ostringstream worldQueryString;
+    worldQueryString << "SELECT entry, class, subclass, name FROM item_template WHERE entry IN (";
+    bool first = true;
+    for (auto entry : uniqueItemEntries)
+    {
+        if (!first) worldQueryString << ",";
+        worldQueryString << entry;
+        first = false;
+    }
+    worldQueryString << ")";
+
+    QueryResult worldResult = WorldDatabase.Query(worldQueryString.str().c_str());
+    if (worldResult)
+    {
+        do {
+            uint32 entry = (*worldResult)[0].Get<uint32>();
+            uint32 iClass = (*worldResult)[1].Get<uint32>();
+            uint32 iSubclass = (*worldResult)[2].Get<uint32>();
+            string name = (*worldResult)[3].Get<string>();
+            ItemTemplate it;
+            it.ItemId = entry;
+            it.Class = iClass;
+            it.SubClass = iSubclass;
+            it.Name1 = name;
+            uniqueItemEntriesTemplates[entry] = it;
+        } while (worldResult->NextRow());
+    } else {
+        return;
+    }
+
+    // Increment category counts
+    for (AHItem auction : AHItems)
+    {
+        ItemTemplate it = uniqueItemEntriesTemplates[auction.itemID];
+        _AHCategoriesCountSnapshot[it.Class][it.SubClass] += auction.count;
+    }
+}
+
+bool AuctionHouseBot::IsItemOverpopulated(ItemTemplate const* itemProto)
+{
+    // LOG_INFO("module", "Number of existing auctions for {} {} = {}",itemProto->ItemId, itemProto->Name1, _AHItemsCountSnapshot[itemProto->ItemId]);
+    int32 count = _AHItemsCountSnapshot[itemProto->ItemId];
+    switch (itemProto->Class)
+    {
+        case ITEM_CLASS_ARMOR:
+        {
+            if (itemProto->Quality == ITEM_QUALITY_EPIC && MaxDuplicatesCategoryArmorQualityEpic > -1)
+                return (count >= MaxDuplicatesCategoryArmorQualityEpic);
+            break;
+        }
+        case ITEM_CLASS_WEAPON:
+        {
+            if (itemProto->Quality == ITEM_QUALITY_EPIC && MaxDuplicatesCategoryWeaponQualityEpic > -1)
+                return (count >= MaxDuplicatesCategoryWeaponQualityEpic);
+            break;
+        }
+        case ITEM_CLASS_MISC:
+        {
+            if (itemProto->SubClass == ITEM_SUBCLASS_JUNK_MOUNT && MaxDuplicatesCategoryMount > -1)
+                return (count >= MaxDuplicatesCategoryMount);
+            else if (itemProto->SubClass == ITEM_SUBCLASS_JUNK_PET && MaxDuplicatesCategoryPet > -1)
+                return (count >= MaxDuplicatesCategoryPet);
+            break;
+        }
+        /*
+            Probably shouldn't attempt to expand to all
+              possible Class/Subclass/Quality combinations.
+              980 possible (140 valid Class/Subclass combinations * 7 Qualities)
+            Implement only as requests come in?
+        */
+        default:
+            break;
+    }
+
+    return false;
+}
+
+bool AuctionHouseBot::IsItemCategoryOverpopulated(ItemTemplate const* itemProto)
+{
+    // LOG_INFO("module", "Number of existing auctions for Class {}, Subclass {} = {}", itemProto->Class, itemProto->SubClass, _AHCategoriesCountSnapshot[itemProto->Class]);
+    int32 count = _AHCategoriesCountSnapshot[itemProto->Class][itemProto->SubClass];
+    switch (itemProto->Class)
+    {
+        case ITEM_CLASS_MISC:
+        {
+            if (itemProto->SubClass == ITEM_SUBCLASS_JUNK_MOUNT && MaxItemsCategoryMount > -1)
+                return (count >= MaxItemsCategoryMount);
+            else if (itemProto->SubClass == ITEM_SUBCLASS_JUNK_PET && MaxItemsCategoryPet > -1)
+                return (count >= MaxItemsCategoryPet);
+            break;
+        }
+        /*
+            Probably shouldn't attempt to expand to all
+              Class/Subclass combinations.
+              (140 valid Class/Subclass combinations)
+            Implement only as requests come in?
+        */
+        default:
+            break;
+    }
+
+    return false;
 }
 
 void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig *config)
@@ -1274,29 +1367,29 @@ void AuctionHouseBot::Update()
     CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
 
     // Load all AH Bot Players
-    std::vector<std::pair<std::unique_ptr<Player>, std::unique_ptr<WorldSession>>> AHBPlayers;
+    std::vector<std::pair<Player*, std::unique_ptr<WorldSession>>> AHBPlayers;
     AHBPlayers.reserve(AHCharacters.size());
     for (uint32 botIndex = 0; botIndex < AHCharacters.size(); ++botIndex)
     {
         CurrentBotCharGUID = AHCharacters[botIndex].CharacterGUID;
         std::string accountName = "AuctionHouseBot" + std::to_string(AHCharacters[botIndex].AccountID);
 
-        // Wrap session and player in unique pointer to manage lifetime
+        // Wrap session in unique pointer to manage the session lifetime
         auto session = std::make_unique<WorldSession>(
             AHCharacters[botIndex].AccountID, std::move(accountName), 0, nullptr,
             SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0
         );
-        auto player = std::make_unique<Player>(session.get());
+        Player* player = new Player(session.get());
         player->Initialize(AHCharacters[botIndex].CharacterGUID);
-        ObjectAccessor::AddObject(player.get());
-        AHBPlayers.emplace_back(std::move(player), std::move(session));
+        ObjectAccessor::AddObject(player);
+        AHBPlayers.emplace_back(player, std::move(session));
     }
 
     // Create a vector of Player* for passing to methods
     std::vector<Player*> playersPointerVector;
     playersPointerVector.reserve(AHBPlayers.size());
     for (const auto& pair : AHBPlayers)
-        playersPointerVector.emplace_back(pair.first.get());
+        playersPointerVector.push_back(pair.first);
 
     // Add New Bids
     if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
@@ -1313,9 +1406,12 @@ void AuctionHouseBot::Update()
     if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
         AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
 
-    // Remove AH Bot Players from world
+    // Explicitly delete players to close sessions
     for (auto& [player, session] : AHBPlayers)
-        ObjectAccessor::RemoveObject(player.get());
+    {
+        ObjectAccessor::RemoveObject(player);
+        delete player;
+    }
 }
 
 void AuctionHouseBot::InitializeConfiguration()
@@ -1536,13 +1632,21 @@ void AuctionHouseBot::InitializeConfiguration()
     ListedItemIDExceptionItems.clear();
     AddItemIDsFromString(ListedItemIDExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs", ""), "ListedItemIDRestrict.ExceptionItemIDs");
 
+    // Duplicate Item Count Restrictions
+    MaxDuplicatesCategoryArmorQualityEpic = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItem.CategoryArmor.QualityEpic.MaxCount", -1);
+    MaxDuplicatesCategoryWeaponQualityEpic = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItem.CategoryWeapon.QualityEpic.MaxCount", -1);
+    MaxDuplicatesCategoryMount = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItem.CategoryMount.MaxCount", -1);
+    MaxDuplicatesCategoryPet = sConfigMgr->GetOption<int32>("AuctionHouseBot.ListedItem.CategoryPet.MaxCount", -1);
+
+    // Category Max Item Count Restrictions
+    MaxItemsCategoryPet = sConfigMgr->GetOption<int32>("AuctionHouseBot.CategoryPet.MaxCount", -1);
+    MaxItemsCategoryMount = sConfigMgr->GetOption<int32>("AuctionHouseBot.CategoryMount.MaxCount", -1);
+
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
-    DisabledRecipeProducedItemFilterEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledRecipeProducedItemFilterEnabled", false);
     DisabledItems.clear();
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledInvalidItemIDs", ""), "AuctionHouseBot.DisabledInvalidItemIDs");
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCustomItemIDs", ""), "AuctionHouseBot.DisabledCustomItemIDs");
-    AddValuesToSetByKeyMap(DisabledRecipeProducedItemClassSubClasses, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledRecipeProducedItemClassSubClasses", ""), 0, 20);
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""), "AuctionHouseBot.DisabledItemIDs");
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""), "AuctionHouseBot.DisabledCraftedItemIDs");
 
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
@@ -1689,38 +1793,6 @@ void AuctionHouseBot::AddItemValuePairsToItemIDMap(std::unordered_map<uint32, Va
             auto convertedValue = atoi(valueString.c_str());
             if (itemId > 0 && convertedValue > 0)
                 workingValueToItemIDMap.insert({ itemId, convertedValue });
-        }
-    }
-}
-
-void AuctionHouseBot::AddValuesToSetByKeyMap(std::map<uint32, std::unordered_set<uint32>>& workingSetByKeyMap, std::string valuesToKeyMapString,
-    uint32 wildcardLowValue, uint32 wildcardHighValue)
-{
-    std::string delimitedValue;
-    std::stringstream valueToKeyStream;
-    valueToKeyStream.str(valuesToKeyMapString);
-    while (std::getline(valueToKeyStream, delimitedValue, ',')) // Process each block delimited by the comma ","
-    {
-        std::string curBlock;
-        std::stringstream itemPairStream(delimitedValue);
-        itemPairStream >> curBlock;
-
-        // Only process if it has a colon (:)
-        if (curBlock.find(":") != std::string::npos)
-        {
-            std::string itemIDString = curBlock.substr(0, curBlock.find(":"));
-            auto keyValue = atoi(itemIDString.c_str());
-            std::string valueString = curBlock.substr(curBlock.find(":") + 1);
-            if (valueString == "*")
-            {
-                for (int i = wildcardLowValue; i <= wildcardHighValue; i++)
-                    workingSetByKeyMap[keyValue].insert(i);
-            }
-            else
-            {
-                auto convertedValue = atoi(valueString.c_str());
-                workingSetByKeyMap[keyValue].insert(convertedValue);
-            }
         }
     }
 }

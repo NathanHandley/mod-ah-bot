@@ -148,9 +148,6 @@ private:
     std::string AHCharactersGUIDsForQuery;
     uint32 ItemsPerCycle;
     bool DisabledItemTextFilter;
-    bool DisabledRecipeProducedItemFilterEnabled;
-    std::unordered_set<uint32> ItemIDsProducedByRecipes;
-    std::map<uint32, std::unordered_set<uint32>> DisabledRecipeProducedItemClassSubClasses;
     std::set<uint32> DisabledItems;
     bool ListedItemLevelRestrictedEnabled;
     bool ListedItemLevelRestrictedUseCraftedItemForCalculation;
@@ -280,6 +277,14 @@ private:
     uint32 LastCycleCount;
     int ActiveListMultipleItemID;
     int RemainingListMultipleCount;
+    std::unordered_map<uint32, uint32> _AHItemsCountSnapshot;
+    std::array<std::array<int, 20>, 20> _AHCategoriesCountSnapshot;
+    int32 MaxDuplicatesCategoryArmorQualityEpic;
+    int32 MaxDuplicatesCategoryWeaponQualityEpic;
+    int32 MaxDuplicatesCategoryMount;
+    int32 MaxDuplicatesCategoryPet;
+    int32 MaxItemsCategoryPet;
+    int32 MaxItemsCategoryMount;
 
     AuctionHouseBot();
 
@@ -308,18 +313,17 @@ public:
     void CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     float GetAdvancedPricingMultiplier(ItemTemplate const* itemProto);
     ItemTemplate const* GetProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
-    std::unordered_set<uint32> GetItemIDsProducedByRecipes();
-    bool IsItemADisabledRecipeProducedClassSubclass(ItemTemplate const* itemTemplate);
     void PopulateItemCandidatesAndProportions();
     uint32 GetRandomItemIDForListing();
     void AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
     void AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
     void PopulateVendorItemsPrices();
+    void PopulateAHItemsAndCategoriesCountSnapshot(uint32 AHID);
+    bool IsItemOverpopulated(ItemTemplate const* itemProto);
+    bool IsItemCategoryOverpopulated(ItemTemplate const* itemProto);
 
     template <typename ValueType>
     void AddItemValuePairsToItemIDMap(std::unordered_map<uint32, ValueType>& workingValueToItemIDMap, std::string valueToItemIDMap);
-    void AddValuesToSetByKeyMap(std::map<uint32, std::unordered_set<uint32>>& workingSetByKeyMap, std::string valuesToKeyMapString,
-        uint32 wildcardLowValue, uint32 wildcardHighValue);
 };
 
 #define auctionbot AuctionHouseBot::instance()
