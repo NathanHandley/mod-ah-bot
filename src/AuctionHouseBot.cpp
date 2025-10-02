@@ -60,6 +60,7 @@ AuctionHouseBot::AuctionHouseBot() :
     AHCharactersGUIDsForQuery(""),
     ItemsPerCycle(75),
     DisabledItemTextFilter(true),
+    DisabledRecipeProducedItemFilterEnabled(false),
     ListedItemLevelRestrictedEnabled(false),
     ListedItemLevelRestrictedUseCraftedItemForCalculation(true),
     ListedItemLevelMax(999),
@@ -567,6 +568,71 @@ ItemTemplate const* AuctionHouseBot::GetProducedItemFromRecipe(ItemTemplate cons
     return nullptr;
 }
 
+static const std::unordered_set<uint32> professionSkills = {
+    164,  // Blacksmithing
+    165,  // Leatherworking
+    171,  // Alchemy
+    182,  // Herbalism
+    185,  // Cooking
+    186,  // Mining
+    197,  // Tailoring
+    202,  // Engineering
+    333,  // Enchanting
+    356,  // Fishing
+    393,  // Skinning
+    755,  // Jewelcrafting
+    773,  // Inscription
+    129   // First Aid
+};
+
+std::unordered_set<uint32> AuctionHouseBot::GetItemIDsProducedByRecipes()
+{
+    std::unordered_set<uint32> recipeItemIDs;
+    for (uint32 spellId = 1; spellId < sSpellStore.GetNumRows(); ++spellId)
+    {
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo)
+            continue;
+
+        // Check if the spell is tied to a profession skill
+        bool isProfessionSpell = false;
+        SkillLineAbilityMapBounds skillBounds = sSpellMgr->GetSkillLineAbilityMapBounds(spellId);
+        for (SkillLineAbilityMap::const_iterator skillItr = skillBounds.first; skillItr != skillBounds.second; ++skillItr)
+        {
+            if (professionSkills.find(skillItr->second->SkillLine) != professionSkills.end())
+            {
+                isProfessionSpell = true;
+                break;
+            }
+        }
+
+        if (isProfessionSpell == false)
+            continue;
+
+        // SPELL_EFFECT_CREATE_ITEM (effect ID 24) identify created items
+        for (uint8 effIndex = 0; effIndex < MAX_SPELL_EFFECTS; ++effIndex)
+        {
+            if (spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_CREATE_ITEM && spellInfo->Effects[effIndex].ItemType > 0)
+            {
+                uint32 itemID = spellInfo->Effects[effIndex].ItemType;
+                recipeItemIDs.insert(itemID);
+            }
+        }
+    }
+    return recipeItemIDs;
+}
+
+bool AuctionHouseBot::IsItemADisabledRecipeProducedClassSubclass(ItemTemplate const* itemTemplate)
+{
+    if (DisabledRecipeProducedItemClassSubClasses.find(itemTemplate->Class) == DisabledRecipeProducedItemClassSubClasses.end())
+        return false;
+    else if (DisabledRecipeProducedItemClassSubClasses[itemTemplate->Class].find(itemTemplate->SubClass) == DisabledRecipeProducedItemClassSubClasses[itemTemplate->Class].end())
+        return false;
+    else if (ItemIDsProducedByRecipes.find(itemTemplate->ItemId) == ItemIDsProducedByRecipes.end())
+        return false;
+    return true;
+}
+
 void AuctionHouseBot::PopulateItemCandidatesAndProportions()
 {
     // Clear old list and rebuild it
@@ -583,6 +649,9 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
     includeItemIDExecptions.insert(18333);
     includeItemIDExecptions.insert(18334);
     includeItemIDExecptions.insert(18335);
+
+    ItemIDsProducedByRecipes.clear();
+    ItemIDsProducedByRecipes = GetItemIDsProducedByRecipes();
 
     // Fill candidate item templates
     ItemTemplateContainer const* its = sObjectMgr->GetItemTemplateStore();
@@ -654,6 +723,17 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Configured by DisabledItemIDs and DisabledCraftedItemIDs)", itr->second.ItemId);
             continue;
+        }
+
+        // Disabled recipe item check
+        if (DisabledRecipeProducedItemFilterEnabled == true)
+        {
+            if (IsItemADisabledRecipeProducedClassSubclass(&itr->second) == true)
+            {
+                if (debug_Out_Filters)
+                    LOG_ERROR("module", "AuctionHouseBot: Item {} disabled (Configured by DisabledRecipeProducedItemFilterEnabled and DisabledRecipeProducedItemClassSubClasses)", itr->second.ItemId);
+                continue;
+            }
         }
 
         // These newItemsToListCount should be included and would otherwise be skipped due to conditions below
@@ -1458,9 +1538,11 @@ void AuctionHouseBot::InitializeConfiguration()
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
+    DisabledRecipeProducedItemFilterEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledRecipeProducedItemFilterEnabled", false);
     DisabledItems.clear();
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledItemIDs", ""), "AuctionHouseBot.DisabledItemIDs");
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCraftedItemIDs", ""), "AuctionHouseBot.DisabledCraftedItemIDs");
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledInvalidItemIDs", ""), "AuctionHouseBot.DisabledInvalidItemIDs");
+    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCustomItemIDs", ""), "AuctionHouseBot.DisabledCustomItemIDs");
+    AddValuesToSetByKeyMap(DisabledRecipeProducedItemClassSubClasses, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledRecipeProducedItemClassSubClasses", ""), 0, 20);
 
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
     {
@@ -1607,6 +1689,38 @@ void AuctionHouseBot::AddItemValuePairsToItemIDMap(std::unordered_map<uint32, Va
             auto convertedValue = atoi(valueString.c_str());
             if (itemId > 0 && convertedValue > 0)
                 workingValueToItemIDMap.insert({ itemId, convertedValue });
+        }
+    }
+}
+
+void AuctionHouseBot::AddValuesToSetByKeyMap(std::map<uint32, std::unordered_set<uint32>>& workingSetByKeyMap, std::string valuesToKeyMapString,
+    uint32 wildcardLowValue, uint32 wildcardHighValue)
+{
+    std::string delimitedValue;
+    std::stringstream valueToKeyStream;
+    valueToKeyStream.str(valuesToKeyMapString);
+    while (std::getline(valueToKeyStream, delimitedValue, ',')) // Process each block delimited by the comma ","
+    {
+        std::string curBlock;
+        std::stringstream itemPairStream(delimitedValue);
+        itemPairStream >> curBlock;
+
+        // Only process if it has a colon (:)
+        if (curBlock.find(":") != std::string::npos)
+        {
+            std::string itemIDString = curBlock.substr(0, curBlock.find(":"));
+            auto keyValue = atoi(itemIDString.c_str());
+            std::string valueString = curBlock.substr(curBlock.find(":") + 1);
+            if (valueString == "*")
+            {
+                for (int i = wildcardLowValue; i <= wildcardHighValue; i++)
+                    workingSetByKeyMap[keyValue].insert(i);
+            }
+            else
+            {
+                auto convertedValue = atoi(valueString.c_str());
+                workingSetByKeyMap[keyValue].insert(convertedValue);
+            }
         }
     }
 }
