@@ -10,14 +10,20 @@
 #        Enable/Disable Debugging output from Filters
 #    Default: false (disabled)
 #
-#    AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell
-#        How many cycles to wait between executing any buying and selling logic.
-#        At this time, AzerothCore waits 1 minute between cycles as defined by
-#        the AuctionHouseMgr.cpp file.
-#        Value can be a single number in order to wait X cycles between buying
-#        and selling, or a pair of numbers separated by a ':' to wait a random 
-#        number of cycles between X and Y before buying and selling (e.g. 3:15 to 
-#        wait 3-15 minutes between cycles).
+#    AuctionHouseBot.MinutesBetweenBuyCycle
+#        How many minutes to wait before bidding/buying items again.
+#        Value can be a single number in order to wait X minutes before buying
+#        again, or a pair of numbers separated by a ':' to wait a random 
+#        number of minutes between X and Y (e.g. 3:15 to wait 3-15 minutes
+#        between cycles).
+#    Default: 1
+#
+#    AuctionHouseBot.MinutesBetweenSellCycle
+#        How many minutes to wait before selling items again.
+#        Value can be a single number in order to wait X minutes before selling
+#        again, or a pair of numbers separated by a ':' to wait a random 
+#        number of minutes between X and Y (e.g. 3:15 to wait 3-15 minutes
+#        between cycles).
 #    Default: 1
 #
 #    AuctionHouseBot.EnableSeller
@@ -50,7 +56,8 @@
 
 AuctionHouseBot.DEBUG = false
 AuctionHouseBot.DEBUG_FILTERS = false
-AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell = 1
+AuctionHouseBot.MinutesBetweenBuyCycle = 1
+AuctionHouseBot.MinutesBetweenSellCycle = 1
 AuctionHouseBot.EnableSeller = false
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 150

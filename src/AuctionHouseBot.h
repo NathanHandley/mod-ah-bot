@@ -128,9 +128,12 @@ private:
 
     bool SellingBotEnabled;
     bool BuyingBotEnabled;
-    uint32 CyclesBetweenBuyOrSellMin;
-    uint32 CyclesBetweenBuyOrSell;
-    uint32 CyclesBetweenBuyOrSellMax;
+    uint32 CyclesBetweenBuyActionMin;
+    uint32 CyclesBetweenBuyAction;
+    uint32 CyclesBetweenBuyActionMax;
+    uint32 CyclesBetweenSellActionMin;
+    uint32 CyclesBetweenSellAction;
+    uint32 CyclesBetweenSellActionMax;
     uint32 MaxBuyoutPriceInCopper;
     float BuyoutVariationReducePercent;
     float BuyoutVariationAddPercent;
@@ -277,7 +280,8 @@ private:
     FactionSpecificAuctionHouseConfig HordeConfig;
     FactionSpecificAuctionHouseConfig NeutralConfig;
 
-    uint32 LastCycleCount;
+    uint32 LastBuyCycleCount;
+    uint32 LastSellCycleCount;
     int ActiveListMultipleItemID;
     int RemainingListMultipleCount;
 
