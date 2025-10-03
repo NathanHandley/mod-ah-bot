@@ -41,9 +41,12 @@ AuctionHouseBot::AuctionHouseBot() :
     debug_Out_Filters(false),
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
-    CyclesBetweenBuyOrSellMin(1),
-    CyclesBetweenBuyOrSell(1),
-    CyclesBetweenBuyOrSellMax(1),
+    CyclesBetweenBuyActionMin(1),
+    CyclesBetweenBuyAction(1),
+    CyclesBetweenBuyActionMax(1),
+    CyclesBetweenSellActionMin(1),
+    CyclesBetweenSellAction(1),
+    CyclesBetweenSellActionMax(1),
     MaxBuyoutPriceInCopper(1000000000),
     BuyoutVariationReducePercent(0.15f),
     BuyoutVariationAddPercent(0.25f),
@@ -151,7 +154,8 @@ AuctionHouseBot::AuctionHouseBot() :
     ListedItemIDRestrictedEnabled(false),
     ListedItemIDMin(0),
     ListedItemIDMax(200000),
-    LastCycleCount(0),
+    LastBuyCycleCount(0),
+    LastSellCycleCount(0),
     ActiveListMultipleItemID(0),
     RemainingListMultipleCount(0)
 {
@@ -360,7 +364,7 @@ void AuctionHouseBot::CalculateItemValue(ItemTemplate const* itemProto, uint64& 
     float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
 
-    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH newItemsToListCount
+    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
     if (outBuyoutPrice < itemProto->SellPrice)
     {
         float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
@@ -393,7 +397,7 @@ float AuctionHouseBot::GetAdvancedPricingMultiplier(ItemTemplate const* itemProt
       Notes:
       - This formula produces a multiplier that grows logarithmically with ItemLevel (uses natural log, not base10)
       - The first term (before '+') heavily influences low item levels, the second term adds some fine-tuning for higher levels.
-      - The subtraction of 'r' can help ensure low-level newItemsToListCount don't get inflated excessively. Sometimes it isn't necessary
+      - The subtraction of 'r' can help ensure low-level items don't get inflated excessively. Sometimes it isn't necessary
     */
 
     // Try to approximate real world prices for Trade Goods based on subclass and item level
@@ -669,7 +673,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             {
                 uint32 itemLevelToCompare = itr->second.ItemLevel;
 
-                // Recipes might need to consider produced newItemsToListCount
+                // Recipes might need to consider produced items
                 if (ListedItemLevelRestrictedUseCraftedItemForCalculation == true && itr->second.Class == ITEM_CLASS_RECIPE)
                 {
                     ItemTemplate const* producedItemTemplate = GetProducedItemFromRecipe(&itr->second);
@@ -717,7 +721,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             }
         }
 
-        // Disabled newItemsToListCount by Id
+        // Disabled items by Id
         if (DisabledItems.find(itr->second.ItemId) != DisabledItems.end())
         {
             if (debug_Out_Filters)
@@ -736,14 +740,14 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             }
         }
 
-        // These newItemsToListCount should be included and would otherwise be skipped due to conditions below
+        // These items should be included and would otherwise be skipped due to conditions below
         if (includeItemIDExecptions.find(itr->second.ItemId) != includeItemIDExecptions.end())
         {
             ItemCandidatesByItemClassAndQuality[itr->second.Class][itr->second.Quality].push_back(itr->second.ItemId);
             continue;
         }
 
-        // Skip any BOP newItemsToListCount
+        // Skip any BOP items
         if (itr->second.Bonding == BIND_WHEN_PICKED_UP || itr->second.Bonding == BIND_QUEST_ITEM)
         {
             if (debug_Out_Filters)
@@ -755,7 +759,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
         if (itr->second.Quality == 0 || itr->second.Quality > 6)
             continue;
 
-        // Disable conjured newItemsToListCount
+        // Disable conjured items
         if (itr->second.IsConjuredConsumable())
         {
             if (debug_Out_Filters)
@@ -779,7 +783,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable newItemsToListCount with duration
+        // Disable items with duration
         if (itr->second.Duration > 0)
         {
             if (debug_Out_Filters)
@@ -795,7 +799,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable normal class 'book' recipies, since they are junk
+        // Disable normal class 'book' recipes, since they are junk
         if (itr->second.Class == ITEM_CLASS_RECIPE && itr->second.SubClass == ITEM_SUBCLASS_BOOK && itr->second.Quality <= ITEM_QUALITY_NORMAL)
         {
             if (debug_Out_Filters)
@@ -803,7 +807,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable anything with the string literal of a testing or depricated item
+        // Disable anything with the string literal of a testing or deprecated item
         if (DisabledItemTextFilter == true && 
             (itr->second.Name1.find("Test ") != std::string::npos ||
             itr->second.Name1.find("TEST") != std::string::npos ||
@@ -828,7 +832,7 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             continue;
         }
 
-        // Disable all newItemsToListCount that have neither a sell or a buy price, with exception of item enhancements and trade goods
+        // Disable all items that have neither a sell or a buy price, with exception of item enhancements and trade goods
         bool isEnchantingTradeGood = (itr->second.Class == ITEM_CLASS_TRADE_GOODS && itr->second.SubClass == ITEM_SUBCLASS_ENCHANTING);
         bool isItemEnhancement = (itr->second.Class == ITEM_CLASS_CONSUMABLE && itr->second.SubClass == ITEM_SUBCLASS_ITEM_ENHANCEMENT);
         bool hasNoPrice = (itr->second.SellPrice == 0 && itr->second.BuyPrice == 0);
@@ -1101,7 +1105,7 @@ void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, 
         // Do we have anything to bid? If not, stop here.
         if (possibleBids.empty())
         {
-            //if (debug_Out) sLog->outError( "AHBuyer: I have no newItemsToListCount to bid on.");
+            //if (debug_Out) sLog->outError( "AHBuyer: I have no items to bid on.");
             count = randBuyingBotBuyCandidatesPerBuyCycle;
             continue;
         }
@@ -1266,13 +1270,30 @@ void AuctionHouseBot::Update()
     if (AHCharacters.empty() == true)
         return;
 
-    // Only update if the update cycle has been hit
-    LastCycleCount++;
-    if (LastCycleCount < CyclesBetweenBuyOrSell)
-        return;
-    LastCycleCount = 0;
-    CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
+    LastBuyCycleCount++;
+    LastSellCycleCount++;
 
+    bool buyReady = false;
+    bool sellReady = false;
+
+    // Check if an update cycle has been hit. Set # of cycles until next update
+    if (LastBuyCycleCount >= CyclesBetweenBuyAction) // Should never be >, but we check anyway
+    {
+        LastBuyCycleCount = 0;
+        CyclesBetweenBuyAction = urand(CyclesBetweenBuyActionMin, CyclesBetweenBuyActionMax);
+        buyReady = true;
+    }
+    if (LastSellCycleCount >= CyclesBetweenSellAction) // Should never be >, but we check anyway
+    {
+        LastSellCycleCount = 0;
+        CyclesBetweenSellAction = urand(CyclesBetweenSellActionMin, CyclesBetweenSellActionMax);
+        sellReady = true;
+    }
+    
+    // Only update if a Buy or Sell update cycle has been hit
+    if (!buyReady && !sellReady)
+        return;
+    
     // Load all AH Bot Players
     std::vector<std::pair<std::unique_ptr<Player>, std::unique_ptr<WorldSession>>> AHBPlayers;
     AHBPlayers.reserve(AHCharacters.size());
@@ -1297,21 +1318,28 @@ void AuctionHouseBot::Update()
     playersPointerVector.reserve(AHBPlayers.size());
     for (const auto& pair : AHBPlayers)
         playersPointerVector.emplace_back(pair.first.get());
-
-    // Add New Bids
-    if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
+    
+    // List New Auctions
+    if (sellReady) 
     {
-        AddNewAuctions(playersPointerVector, &AllianceConfig);
-        if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(playersPointerVector, &AllianceConfig);
-
-        AddNewAuctions(playersPointerVector, &HordeConfig);
-        if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-            AddNewAuctionBuyerBotBid(playersPointerVector, &HordeConfig);
+        if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
+        {
+            AddNewAuctions(playersPointerVector, &AllianceConfig);
+            AddNewAuctions(playersPointerVector, &HordeConfig);
+        }
+        AddNewAuctions(playersPointerVector, &NeutralConfig);
     }
-    AddNewAuctions(playersPointerVector, &NeutralConfig);
-    if (BuyingBotBuyCandidatesPerBuyCycleMin > 0)
+
+    // Place New Bids
+    if (buyReady && BuyingBotBuyCandidatesPerBuyCycleMin > 0) 
+    {
+        if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
+        {
+            AddNewAuctionBuyerBotBid(playersPointerVector, &AllianceConfig);
+            AddNewAuctionBuyerBotBid(playersPointerVector, &HordeConfig);
+        }
         AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
+    }
 
     // Remove AH Bot Players from world
     for (auto& [player, session] : AHBPlayers)
@@ -1580,9 +1608,13 @@ uint32 AuctionHouseBot::GetRandomStackIncrementValue(std::string configKeyString
 
 void AuctionHouseBot::SetCyclesBetweenBuyOrSell()
 {
-    std::string cyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.AuctionHouseManagerCyclesBetweenBuyOrSell", "1");
-    GetConfigMinAndMax(cyclesConfigString, CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
-    CyclesBetweenBuyOrSell = urand(CyclesBetweenBuyOrSellMin, CyclesBetweenBuyOrSellMax);
+    std::string buyCyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.MinutesBetweenBuyCycle", "1");
+    GetConfigMinAndMax(buyCyclesConfigString, CyclesBetweenBuyActionMin, CyclesBetweenBuyActionMax);
+    CyclesBetweenBuyAction = urand(CyclesBetweenBuyActionMin, CyclesBetweenBuyActionMax);
+
+    std::string sellCyclesConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.MinutesBetweenSellCycle", "1");
+    GetConfigMinAndMax(sellCyclesConfigString, CyclesBetweenSellActionMin, CyclesBetweenSellActionMax);
+    CyclesBetweenSellAction = urand(CyclesBetweenSellActionMin, CyclesBetweenSellActionMax);
 }
 
 void AuctionHouseBot::SetBuyingBotBuyCandidatesPerBuyCycle()
@@ -1713,7 +1745,7 @@ void AuctionHouseBot::AddValuesToSetByKeyMap(std::map<uint32, std::unordered_set
             std::string valueString = curBlock.substr(curBlock.find(":") + 1);
             if (valueString == "*")
             {
-                for (int i = wildcardLowValue; i <= wildcardHighValue; i++)
+                for (uint32 i = wildcardLowValue; i <= wildcardHighValue; i++)
                     workingSetByKeyMap[keyValue].insert(i);
             }
             else
@@ -1820,7 +1852,7 @@ const char* AuctionHouseBot::GetCategoryName(ItemClass category)
 
 void AuctionHouseBot::PopulateVendorItemsPrices()
 {
-    // Load vendor newItemsToListCount' prices into a vector for fast lookup
+    // Load vendor items' prices into a vector for fast lookup
     QueryResult r = WorldDatabase.Query("SELECT MAX(entry) FROM item_template");
     Field* f = r->Fetch();
     uint32_t numItems = f[0].Get<uint32>();
