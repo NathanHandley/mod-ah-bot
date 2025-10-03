@@ -1318,54 +1318,28 @@ void AuctionHouseBot::Update()
     playersPointerVector.reserve(AHBPlayers.size());
     for (const auto& pair : AHBPlayers)
         playersPointerVector.emplace_back(pair.first.get());
-    
 
-    // Helper: run factionHandler() for each enabled AH config.
-    auto UpdateAuctionHouses = [&](auto factionHandler)
-    {
-        if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
-        {
-            factionHandler(&AllianceConfig);
-            factionHandler(&HordeConfig);
-        }
-        factionHandler(&NeutralConfig);
-    };
+     // List New Auctions
+     if (sellReady) 
+     {
+         if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
+         {
+             AddNewAuctions(playersPointerVector, &AllianceConfig);
+             AddNewAuctions(playersPointerVector, &HordeConfig);
+         }
+         AddNewAuctions(playersPointerVector, &NeutralConfig);
+     }
 
-    // Pass distinct factionHandler() definition to UpdateAuctionHouses based on Buy/Sell cycle
-    // List New Auctions
-    if (sellReady)
-        UpdateAuctionHouses([&](FactionSpecificAuctionHouseConfig* cfg){
-            AddNewAuctions(playersPointerVector, cfg);
-        });
-    
-    // Place New Bids
-    if (buyReady && BuyingBotBuyCandidatesPerBuyCycleMin > 0)
-        UpdateAuctionHouses([&](FactionSpecificAuctionHouseConfig* cfg){
-            AddNewAuctionBuyerBotBid(playersPointerVector, cfg);
-        });
-
-
-    // // List New Auctions
-    // if (sellReady) 
-    // {
-    //     if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
-    //     {
-    //         AddNewAuctions(playersPointerVector, &AllianceConfig);
-    //         AddNewAuctions(playersPointerVector, &HordeConfig);
-    //     }
-    //     AddNewAuctions(playersPointerVector, &NeutralConfig);
-    // }
-
-    // // Place New Bids
-    // if (buyReady && BuyingBotBuyCandidatesPerBuyCycleMin > 0) 
-    // {
-    //     if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
-    //     {
-    //         AddNewAuctionBuyerBotBid(playersPointerVector, &AllianceConfig);
-    //         AddNewAuctionBuyerBotBid(playersPointerVector, &HordeConfig);
-    //     }
-    //     AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
-    // }
+     // Place New Bids
+     if (buyReady && BuyingBotBuyCandidatesPerBuyCycleMin > 0) 
+     {
+         if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION) == false)
+         {
+             AddNewAuctionBuyerBotBid(playersPointerVector, &AllianceConfig);
+             AddNewAuctionBuyerBotBid(playersPointerVector, &HordeConfig);
+         }
+         AddNewAuctionBuyerBotBid(playersPointerVector, &NeutralConfig);
+     }
 
     // Remove AH Bot Players from world
     for (auto& [player, session] : AHBPlayers)
