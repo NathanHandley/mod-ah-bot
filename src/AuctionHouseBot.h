@@ -298,6 +298,7 @@ public:
 
     void Update();
     void InitializeConfiguration();
+    void EmptyAuctionHouses();
     uint32 GetRandomStackValue(std::string configKeyString, uint32 defaultValue);
     uint32 GetRandomStackIncrementValue(std::string configKeyString, uint32 defaultValue);
     void SetCyclesBetweenBuyOrSell();

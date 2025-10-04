@@ -1,5 +1,14 @@
 [worldserver]
 
+###################################################################################################
+# AUCTION HOUSE BOT IN-GAME COMMANDS
+#
+#    Available GM commands:
+#        .ahbot reload  - Reloads AuctionHouseBot configuration
+#        .ahbot empty   - Clears all auctions from all auction houses
+#        .ahbot update  - Forces an immediate update cycle
+###################################################################################################
+
 ###############################################################################
 # AUCTION HOUSE BOT SETTINGS
 #    AuctionHouseBot.DEBUG
