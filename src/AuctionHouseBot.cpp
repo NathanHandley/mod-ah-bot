@@ -1584,6 +1584,29 @@ void AuctionHouseBot::InitializeConfiguration()
     NeutralConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MaxItems", 15000));
 }
 
+void AuctionHouseBot::EmptyAuctionHouses()
+{
+    vector<FactionSpecificAuctionHouseConfig> configs = { AllianceConfig, HordeConfig, NeutralConfig };
+    auto trans = CharacterDatabase.BeginTransaction();
+
+    for (FactionSpecificAuctionHouseConfig config : configs) {
+        AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config.GetAHFID());
+        auto auctionEntryMap = auctionHouse->GetAuctions();
+        for (auto itr = auctionEntryMap.begin(); itr != auctionEntryMap.end();)
+        {
+            AuctionEntry* auction = itr->second;
+
+            auction->DeleteFromDB(trans);
+            sAuctionMgr->RemoveAItem(auction->item_guid);
+            auctionHouse->RemoveAuction(auction);
+
+            itr = auctionEntryMap.erase(itr);
+        }
+    }
+
+    CharacterDatabase.CommitTransaction(trans);
+}
+
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
 {
     uint32 stackValue = sConfigMgr->GetOption<uint32>(configKeyString, defaultValue);
