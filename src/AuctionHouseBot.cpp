@@ -1586,101 +1586,93 @@ void AuctionHouseBot::InitializeConfiguration()
 
 void AuctionHouseBot::EmptyAuctionHouses()
 {
-    vector<FactionSpecificAuctionHouseConfig> configs = { AllianceConfig, HordeConfig, NeutralConfig };
-    vector<uint32> ahBotActiveAuctions;
-
-    // Get all auctions owned by AHBots which have no bidders
-    std::string queryString = "SELECT id FROM auctionhouse WHERE itemowner IN ({}) AND buyguid = 0";
-    QueryResult result = CharacterDatabase.Query(queryString, AHCharactersGUIDsForQuery);
-
+    struct AuctionInfo {
+        uint32 itemID {0};
+        uint32 characterGUID {0};
+        uint32 houseID {0};
+    };
+    vector<AuctionInfo> ahBotActiveAuctions;
     auto trans = CharacterDatabase.BeginTransaction();
-    if (result && result->GetRowCount() > 0)
+
+    // Get all auctions owned by AHBots
+    std::string queryString = "SELECT id, buyguid, houseid FROM auctionhouse WHERE itemowner IN ({})";
+    QueryResult result = CharacterDatabase.Query(queryString, AHCharactersGUIDsForQuery);
+    if (!result)
+        return;
+
+    if (result->GetRowCount() > 0)
     {
+        // Load results into vector<AuctionInfo> for lookups later
         do
         {
-            uint32 tmpdata = result->Fetch()->Get<uint32>();
-            ahBotActiveAuctions.push_back(tmpdata);
+            Field* fields = result->Fetch();
+            AuctionInfo ai = {
+                fields[0].Get<uint32>(),
+                fields[1].Get<uint32>(),
+                fields[2].Get<uint32>()
+            };
+            ahBotActiveAuctions.push_back(ai);
         } while (result->NextRow());
 
-        // Remove bidder-less AHBot items from the AHs
-        for (FactionSpecificAuctionHouseConfig config : configs) {
-            AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config.GetAHFID());
-            for (uint32 auctionID : ahBotActiveAuctions)
-            {
-                vector<uint32>::iterator iter = ahBotActiveAuctions.begin();
-                AuctionEntry* auction = auctionHouse->GetAuction(*iter);
-                ahBotActiveAuctions.erase(iter);
-
-                auction->DeleteFromDB(trans);
-                sAuctionMgr->RemoveAItem(auction->item_guid);
-                auctionHouse->RemoveAuction(auction);
-            }
-        }
-    }
-
-    // Get auctions owned by AHBots which DO have a bidder, return their deposits
-    std::vector<std::pair<uint32, uint32>> auctionsToRefund;
-    std::string refundQueryString = "SELECT id, buyguid FROM auctionhouse WHERE itemowner IN ({}) AND buyguid != 0";
-    QueryResult refundResult = CharacterDatabase.Query(refundQueryString, AHCharactersGUIDsForQuery);
-    if (refundResult && refundResult->GetRowCount() > 0)
-    {
-        do
+        // For each auction, refund bidder where possible, delete entry from AH
+        AuctionHouseObject* auctionHouse;
+        for (auto iter = ahBotActiveAuctions.begin(); iter != ahBotActiveAuctions.end(); ++iter)
         {
-            Field* fields = refundResult->Fetch();
-            uint32 auctionID = fields[0].Get<uint32>();
-            uint32 buyGUID =   fields[1].Get<uint32>();
-            auctionsToRefund.push_back({auctionID, buyGUID});
-        } while (refundResult->NextRow());
+            AuctionInfo& ai = *iter;
 
-        // Remove AHBot items with bidders from the AHs
-        for (FactionSpecificAuctionHouseConfig config : configs) {
-            AuctionHouseObject* auctionHouse =  sAuctionMgr->GetAuctionsMap(config.GetAHFID());
-            for (std::pair<uint32, uint32> p : auctionsToRefund)
+            // Get Auction House and Auction references
+            auctionHouse = nullptr;
+            switch (ai.houseID) {
+                case 2: auctionHouse = sAuctionMgr->GetAuctionsMap(AllianceConfig.GetAHFID()); break;
+                case 6: auctionHouse = sAuctionMgr->GetAuctionsMap(HordeConfig.GetAHFID()); break;
+                case 7: auctionHouse = sAuctionMgr->GetAuctionsMap(NeutralConfig.GetAHFID()); break;
+            }
+            if (auctionHouse == nullptr)
+                continue;
+
+            AuctionEntry* auction = auctionHouse->GetAuction(ai.itemID);
+            if (!auction)
+                continue;
+
+            // If auction has a bidder, refund that character
+            if (ai.characterGUID != 0)
             {
-                uint32 auctionID = p.first;
-                uint32 buyGUID = p.second;
-
                 // Lookup accountID and accountName associated with bidder character
-                std::string accountIDQueryString = "SELECT account FROM characters WHERE guid = {}";
-                std::string accountNameQueryString = "SELECT username FROM acore_auth.account WHERE id = {}";
-                QueryResult accountIDQueryResult = CharacterDatabase.Query(accountIDQueryString, buyGUID);
+                std::string accountIDQueryString =   "SELECT account  FROM characters WHERE guid = {}";
+                std::string accountNameQueryString = "SELECT username FROM account    WHERE id   = {}";
 
+                QueryResult accountIDQueryResult = CharacterDatabase.Query(accountIDQueryString, ai.characterGUID);
                 if (!accountIDQueryResult)
                     continue;
 
-                uint32 bidderAccountID = accountIDQueryResult->Fetch()->Get<uint32>();
-                QueryResult accountNameQueryResult = LoginDatabase.Query(accountNameQueryString, bidderAccountID);
+                uint32 bidderAccountID = (*accountIDQueryResult)[0].Get<uint32>();
 
+                QueryResult accountNameQueryResult = LoginDatabase.Query(accountNameQueryString, bidderAccountID);
                 if (!accountNameQueryResult)
                     continue;
 
-                std::string bidderAccountName = accountNameQueryResult->Fetch()->Get<std::string>();
+                std::string bidderAccountName = (*accountNameQueryResult)[0].Get<std::string>();
 
                 // Load Player information, and issue refund
                 auto session = std::make_unique<WorldSession>(
                     bidderAccountID, std::move(bidderAccountName), 0, nullptr,
                     SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0
                 );
+
                 auto player = std::make_unique<Player>(session.get());
                 if (!player)
                     continue;
-                player->Initialize(buyGUID);
 
-                auto iter = auctionsToRefund.begin();
-                AuctionEntry* auction = auctionHouse->GetAuction(iter->first);
-                if (!auction)
-                    continue;
+                player->Initialize(ai.characterGUID);
 
-                uint32 auctionCut = auction->GetAuctionCut();
                 sAuctionMgr->SendAuctionCancelledToBidderMail(auction,  trans);
-                player->ModifyMoney(-int32(auctionCut)); // ModifyMoney() already handles negative check
-
-                // Remove item from the AH
-                auctionsToRefund.erase(iter);
-                auction->DeleteFromDB(trans);
-                sAuctionMgr->RemoveAItem(auction->item_guid);
-                auctionHouse->RemoveAuction(auction);
+                player->ModifyMoney(-int32(auction->GetAuctionCut())); // ModifyMoney() already handles negative check
             }
+
+            // Remove item from AH
+            auction->DeleteFromDB(trans);
+            sAuctionMgr->RemoveAItem(auction->item_guid);
+            auctionHouse->RemoveAuction(auction);
         }
     }
 
