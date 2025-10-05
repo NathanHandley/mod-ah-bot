@@ -1584,6 +1584,70 @@ void AuctionHouseBot::InitializeConfiguration()
     NeutralConfig.SetMaxItems(sConfigMgr->GetOption<uint32>("AuctionHouseBot.Neutral.MaxItems", 15000));
 }
 
+void AuctionHouseBot::EmptyAuctionHouses()
+{
+    struct AuctionInfo {
+        uint32 itemID {0};
+        uint32 characterGUID {0};
+        uint32 houseID {0};
+    };
+    vector<AuctionInfo> ahBotActiveAuctions;
+    auto trans = CharacterDatabase.BeginTransaction();
+
+    // Get all auctions owned by AHBots
+    std::string queryString = "SELECT id, buyguid, houseid FROM auctionhouse WHERE itemowner IN ({})";
+    QueryResult result = CharacterDatabase.Query(queryString, AHCharactersGUIDsForQuery);
+    if (!result)
+        return;
+
+    if (result->GetRowCount() > 0)
+    {
+        // Load results into vector<AuctionInfo> for lookups later
+        do
+        {
+            Field* fields = result->Fetch();
+            AuctionInfo ai = {
+                fields[0].Get<uint32>(),
+                fields[1].Get<uint32>(),
+                fields[2].Get<uint32>()
+            };
+            ahBotActiveAuctions.push_back(ai);
+        } while (result->NextRow());
+
+        // For each auction, refund bidder where possible, delete entry from AH
+        AuctionHouseObject* auctionHouse;
+        for (auto iter = ahBotActiveAuctions.begin(); iter != ahBotActiveAuctions.end(); ++iter)
+        {
+            AuctionInfo& ai = *iter;
+
+            // Get Auction House and Auction references
+            auctionHouse = nullptr;
+            switch (ai.houseID) {
+                case 2: auctionHouse = sAuctionMgr->GetAuctionsMap(AllianceConfig.GetAHFID()); break;
+                case 6: auctionHouse = sAuctionMgr->GetAuctionsMap(HordeConfig.GetAHFID()); break;
+                case 7: auctionHouse = sAuctionMgr->GetAuctionsMap(NeutralConfig.GetAHFID()); break;
+            }
+            if (auctionHouse == nullptr)
+                continue;
+
+            AuctionEntry* auction = auctionHouse->GetAuction(ai.itemID);
+            if (!auction)
+                continue;
+
+            // If auction has a bidder, refund that character
+            if (ai.characterGUID != 0)
+                sAuctionMgr->SendAuctionCancelledToBidderMail(auction,  trans);
+
+            // Remove item from AH
+            auction->DeleteFromDB(trans);
+            sAuctionMgr->RemoveAItem(auction->item_guid);
+            auctionHouse->RemoveAuction(auction);
+        }
+    }
+
+    CharacterDatabase.CommitTransaction(trans);
+}
+
 uint32 AuctionHouseBot::GetRandomStackValue(std::string configKeyString, uint32 defaultValue)
 {
     uint32 stackValue = sConfigMgr->GetOption<uint32>(configKeyString, defaultValue);
