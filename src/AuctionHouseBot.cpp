@@ -1636,38 +1636,7 @@ void AuctionHouseBot::EmptyAuctionHouses()
 
             // If auction has a bidder, refund that character
             if (ai.characterGUID != 0)
-            {
-                // Lookup accountID and accountName associated with bidder character
-                std::string accountIDQueryString =   "SELECT account  FROM characters WHERE guid = {}";
-                std::string accountNameQueryString = "SELECT username FROM account    WHERE id   = {}";
-
-                QueryResult accountIDQueryResult = CharacterDatabase.Query(accountIDQueryString, ai.characterGUID);
-                if (!accountIDQueryResult)
-                    continue;
-
-                uint32 bidderAccountID = (*accountIDQueryResult)[0].Get<uint32>();
-
-                QueryResult accountNameQueryResult = LoginDatabase.Query(accountNameQueryString, bidderAccountID);
-                if (!accountNameQueryResult)
-                    continue;
-
-                std::string bidderAccountName = (*accountNameQueryResult)[0].Get<std::string>();
-
-                // Load Player information, and issue refund
-                auto session = std::make_unique<WorldSession>(
-                    bidderAccountID, std::move(bidderAccountName), 0, nullptr,
-                    SEC_PLAYER, sWorld->getIntConfig(CONFIG_EXPANSION), 0, LOCALE_enUS, 0, false, false, 0
-                );
-
-                auto player = std::make_unique<Player>(session.get());
-                if (!player)
-                    continue;
-
-                player->Initialize(ai.characterGUID);
-
                 sAuctionMgr->SendAuctionCancelledToBidderMail(auction,  trans);
-                player->ModifyMoney(-int32(auction->GetAuctionCut())); // ModifyMoney() already handles negative check
-            }
 
             // Remove item from AH
             auction->DeleteFromDB(trans);
