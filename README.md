@@ -36,7 +36,7 @@ The AuctionHouseBot module adds the following in-game commands (for GMs only):
 | Command | Description |
 |----------|--------------|
 | `.ahbot reload` | Reloads the AuctionHouseBot configuration file and updates settings. |
-| `.ahbot empty` | Removes all auctions from all auction houses. Use with caution! |
+| `.ahbot empty` | Removes all AuctionHouseBot auctions from all auction houses.<br>Player auctions are unaffected. Bids on affected items are returned to players.<br>Use with caution! |
 | `.ahbot update` | Forces the bot to refresh or repopulate auction listings immediately.<br>Note: If you have multiple minutes configured between Buy/Sell cycles, you may have to run this additional times before you see results. |
 
 

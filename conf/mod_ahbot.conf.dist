@@ -5,7 +5,7 @@
 #
 #    Available GM commands:
 #        .ahbot reload  - Reloads AuctionHouseBot configuration
-#        .ahbot empty   - Clears all auctions from all auction houses
+#        .ahbot empty   - Clears all AuctionHouseBot auctions from all auction houses
 #        .ahbot update  - Forces an immediate update cycle
 ###################################################################################################
 

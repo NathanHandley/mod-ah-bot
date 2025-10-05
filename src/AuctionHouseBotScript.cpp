@@ -172,7 +172,7 @@ public:
     {
         handler->PSendSysMessage("AuctionHouseBot commands:");
         handler->PSendSysMessage("  .ahbot reload - Reloads configuration");
-        handler->PSendSysMessage("  .ahbot empty  - Removes all auctions");
+        handler->PSendSysMessage("  .ahbot empty  - Removes all AuctionHouseBot auctions");
         handler->PSendSysMessage("  .ahbot update - Runs an update cycle");
         return true;
     }
