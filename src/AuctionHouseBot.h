@@ -278,6 +278,10 @@ private:
     uint32 ListedItemIDMax;
     std::set<uint32> ListedItemIDExceptionItems;
     bool PreventOverpayingForVendorItems;
+    std::unordered_map<uint32, double> CachedItemDropRates;
+    std::vector<uint32> ItemTiersByClassAndQuality[17][7][11]; // [Classes][Qualities][Tiers]
+    bool SellerUseDBDropRates;
+    std::unordered_set<uint32> QuestRewardItemIDs;
 
     FactionSpecificAuctionHouseConfig AllianceConfig;
     FactionSpecificAuctionHouseConfig HordeConfig;
@@ -314,6 +318,12 @@ public:
     const char* GetCategoryName(ItemClass category);
     uint32 GetStackSizeForItem(ItemTemplate const* itemProto) const;
     void CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
+    void PopulateItemDropChances();
+    void PopulateQuestRewardItemIDs();
+    bool IsItemQuestReward(uint32 itemID);
+    bool IsItemCrafted(uint32 itemID);
+    bool IsItemEligibleForDBDropRates(ItemTemplate const* proto);
+    int GetItemDropChanceTier(double dropRate);
     float GetAdvancedPricingMultiplier(ItemTemplate const* itemProto);
     ItemTemplate const* GetProducedItemFromRecipe(ItemTemplate const* recipeItemTemplate);
     std::unordered_set<uint32> GetItemIDsProducedByRecipes();

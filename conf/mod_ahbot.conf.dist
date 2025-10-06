@@ -46,6 +46,11 @@
 #        acore_characters.item_instance database table to grow over time.
 #    Default: false (disabled)
 #
+#    AuctionHouseBot.Seller.UseDBDropRates.Enabled
+#        Enable/Disable the Seller using items' in-game drop rates from enemies 
+#        and gameobjects to determine probability of listing the items on the AH.
+#    Default: false (disabled)
+#
 #    AuctionHouseBot.GUIDs
 #        These are the character GUIDS (from characters->characters table) that
 #        will be used to create auctions and otherwise interact with auctions.
@@ -76,6 +81,7 @@ AuctionHouseBot.MinutesBetweenBuyCycle = 1
 AuctionHouseBot.MinutesBetweenSellCycle = 1
 AuctionHouseBot.EnableSeller = false
 AuctionHouseBot.ReturnExpiredAuctionItemsToBot = false
+AuctionHouseBot.Seller.UseDBDropRates.Enabled = false
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 150
 AuctionHouseBot.ListingExpireTimeInSecondsMin = 900
