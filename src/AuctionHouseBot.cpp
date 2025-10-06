@@ -52,6 +52,7 @@ AuctionHouseBot::AuctionHouseBot() :
     BuyoutVariationAddPercent(0.25f),
     BidVariationHighReducePercent(0),
     BidVariationLowReducePercent(0.25f),
+    BuyoutBelowVendorVariationAddPercentEnabled(true),
     BuyoutBelowVendorVariationAddPercent(0.25f),
     BuyingBotBuyCandidatesPerBuyCycleMin(1),
     BuyingBotBuyCandidatesPerBuyCycleMax(1),
@@ -136,6 +137,7 @@ AuctionHouseBot::AuctionHouseBot() :
     PriceMultiplierQualityLegendary(1),
     PriceMultiplierQualityArtifact(1),
     PriceMultiplierQualityHeirloom(1),
+    UseItemSellPriceIfHigherThanPriceMinimumCenterBase(true),
     PriceMinimumCenterBaseConsumable(1),
     PriceMinimumCenterBaseContainer(1),
     PriceMinimumCenterBaseWeapon(1),
@@ -232,8 +234,11 @@ uint32 AuctionHouseBot::GetStackSizeForItem(ItemTemplate const* itemProto) const
 
 void AuctionHouseBot::CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
 {
-    // Start with a buyout price related to the sell price
-    outBuyoutPrice = itemProto->SellPrice;
+    // Start with a buyout price related to the sell price, if configured
+    if (UseItemSellPriceIfHigherThanPriceMinimumCenterBase == true)
+        outBuyoutPrice = itemProto->SellPrice;
+    else
+        outBuyoutPrice = 1; // Avoid zeros
 
     // Get the price multipliers
     float classPriceMultiplier = 1;
@@ -351,29 +356,25 @@ void AuctionHouseBot::CalculateItemValue(ItemTemplate const* itemProto, uint64& 
     if (itemLevelPriceMultplier > 0.0f && itemProto->ItemLevel > 0 && advancedPricingMultiplier == 1.0f)
         outBuyoutPrice *= itemProto->ItemLevel * itemLevelPriceMultplier;
 
-    // If a vendor sells this item, make the price at least that high
-    if (itemProto->SellPrice > outBuyoutPrice)
-        outBuyoutPrice = itemProto->SellPrice;
-
     // Avoid price overflows
     if (outBuyoutPrice > MaxBuyoutPriceInCopper)
         outBuyoutPrice = MaxBuyoutPriceInCopper;
+
+    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
+    if (BuyoutBelowVendorVariationAddPercentEnabled == true && outBuyoutPrice < itemProto->SellPrice)
+    {
+        float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
+        outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
+    }
 
     // Calculate a bid price based on a variance against buyout price
     float sellVarianceBidPriceTopPercent = 1.0f - BidVariationHighReducePercent;
     float sellVarianceBidPriceBottomPercent = 1.0f - BidVariationLowReducePercent;
     outBidPrice = urand(sellVarianceBidPriceBottomPercent * outBuyoutPrice, sellVarianceBidPriceTopPercent * outBuyoutPrice);
 
-    // If variance brought price below sell price, bring it back up to avoid making money off vendoring AH items
-    if (outBuyoutPrice < itemProto->SellPrice)
-    {
-        float minLowPriceAddVariancePercent = 1.0f + BuyoutBelowVendorVariationAddPercent;
-        outBuyoutPrice = urand(itemProto->SellPrice, minLowPriceAddVariancePercent * itemProto->SellPrice);
-    }
-
-    // Bid price can never be below sell price
-    if (outBidPrice < itemProto->SellPrice)
-        outBidPrice = itemProto->SellPrice;
+    // Catch any zeros
+    if (outBuyoutPrice == 0)
+        outBuyoutPrice = 1;
 }
 
 float AuctionHouseBot::GetAdvancedPricingMultiplier(ItemTemplate const* itemProto)
@@ -1374,6 +1375,7 @@ void AuctionHouseBot::InitializeConfiguration()
     BuyoutVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationAddPercent", 0.25f);
     BidVariationHighReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationHighReducePercent", 0);
     BidVariationLowReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BidVariationLowReducePercent", 0.25f);
+    BuyoutBelowVendorVariationAddPercentEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.BuyoutBelowVendorVariationAddPercentEnabled", true);
     BuyoutBelowVendorVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutBelowVendorVariationAddPercent", 0.25f);
     ListingExpireTimeInSecondsMin = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListingExpireTimeInSecondsMin", 900);
     if (ListingExpireTimeInSecondsMin < 900)
@@ -1532,6 +1534,7 @@ void AuctionHouseBot::InitializeConfiguration()
     AdvancedPricingMiscMountEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedPricing.Misc.Mount.Enabled", true);
 
     // Price minimums
+    UseItemSellPriceIfHigherThanPriceMinimumCenterBase = sConfigMgr->GetOption<bool>("AuctionHouseBot.PriceMinimumCenterBase.UseItemSellPriceIfHigher", true);
     PriceMinimumCenterBaseConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Consumable",1000);
     PriceMinimumCenterBaseContainer = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Container", 1000);
     PriceMinimumCenterBaseWeapon = sConfigMgr->GetOption<uint32>("AuctionHouseBot.PriceMinimumCenterBase.Weapon", 1000);

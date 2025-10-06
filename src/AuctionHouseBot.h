@@ -139,6 +139,7 @@ private:
     float BuyoutVariationAddPercent;
     float BidVariationHighReducePercent;
     float BidVariationLowReducePercent;
+    bool BuyoutBelowVendorVariationAddPercentEnabled;
     float BuyoutBelowVendorVariationAddPercent;
     uint32 BuyingBotBuyCandidatesPerBuyCycleMin;
     uint32 BuyingBotBuyCandidatesPerBuyCycleMax;
@@ -254,6 +255,7 @@ private:
     bool AdvancedPricingTradeGoodMeatEnabled;
     bool AdvancedPricingMiscJunkEnabled;
     bool AdvancedPricingMiscMountEnabled;
+    bool UseItemSellPriceIfHigherThanPriceMinimumCenterBase;
     uint32 PriceMinimumCenterBaseConsumable;
     uint32 PriceMinimumCenterBaseContainer;
     uint32 PriceMinimumCenterBaseWeapon;
