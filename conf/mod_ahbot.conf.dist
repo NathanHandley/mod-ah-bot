@@ -39,6 +39,13 @@
 #        Enable/Disable the part of AHBot that puts items up for auction
 #    Default: false (disabled)
 #
+#    AuctionHouseBot.ReturnExpiredAuctionItemsToBot
+#        If enabled (true), returns expired auction items to the AH Bot(s) via
+#        mail. Note: if enabled, this can cause your bot's mailbox to fill up
+#        if you don't manage it manually. This can also cause the size of your
+#        acore_characters.item_instance database table to grow over time.
+#    Default: false (disabled)
+#
 #    AuctionHouseBot.GUIDs
 #        These are the character GUIDS (from characters->characters table) that
 #        will be used to create auctions and otherwise interact with auctions.
@@ -68,6 +75,7 @@ AuctionHouseBot.DEBUG_FILTERS = false
 AuctionHouseBot.MinutesBetweenBuyCycle = 1
 AuctionHouseBot.MinutesBetweenSellCycle = 1
 AuctionHouseBot.EnableSeller = false
+AuctionHouseBot.ReturnExpiredAuctionItemsToBot = false
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 150
 AuctionHouseBot.ListingExpireTimeInSecondsMin = 900
