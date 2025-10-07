@@ -24,6 +24,13 @@ public:
         if (HasPerformedStartup == true)
         {
             LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
+            auctionbot->PopulateItemCandidatesAndProportions();
+
+            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.Seller.UseDBDropRates.Enabled", true))
+            {
+                auctionbot->PopulateQuestRewardItemIDs();
+                auctionbot->PopulateItemDropChances();
+            }
         }
     }
 
