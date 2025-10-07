@@ -1589,6 +1589,12 @@ void AuctionHouseBot::InitializeConfiguration()
 
 void AuctionHouseBot::EmptyAuctionHouses()
 {
+    if (AHCharactersGUIDsForQuery.empty())
+    {
+        LOG_ERROR("module", "AuctionHouseBot: No character GUIDs found when emptying Auction Houses via '.ahbot empty' .");
+        return;
+    }
+
     struct AuctionInfo {
         uint32 itemID {0};
         uint32 characterGUID {0};
