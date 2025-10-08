@@ -46,11 +46,6 @@
 #        acore_characters.item_instance database table to grow over time.
 #    Default: false (disabled)
 #
-#    AuctionHouseBot.Seller.UseDBDropRates.Enabled
-#        Enable/Disable the Seller using items' in-game drop rates from enemies 
-#        and gameobjects to determine probability of listing the items on the AH.
-#    Default: false (disabled)
-#
 #    AuctionHouseBot.GUIDs
 #        These are the character GUIDS (from characters->characters table) that
 #        will be used to create auctions and otherwise interact with auctions.
@@ -81,11 +76,41 @@ AuctionHouseBot.MinutesBetweenBuyCycle = 1
 AuctionHouseBot.MinutesBetweenSellCycle = 1
 AuctionHouseBot.EnableSeller = false
 AuctionHouseBot.ReturnExpiredAuctionItemsToBot = false
-AuctionHouseBot.Seller.UseDBDropRates.Enabled = false
 AuctionHouseBot.GUIDs = 0
 AuctionHouseBot.ItemsPerCycle = 150
 AuctionHouseBot.ListingExpireTimeInSecondsMin = 900
 AuctionHouseBot.ListingExpireTimeInSecondsMax = 86400
+
+###############################################################################
+#    AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled
+#        Enable/Disable the Seller using items' in-game drop rates from Enemies
+#        and GameObjects to determine the probability of listing them on the AH.
+#        Attempts to simulate "live" AHs by making very powerful items appear less often.
+#        This setting respects ListProportion config. It can also result in more duplicate
+#        items appearing on the AH due to higher-drop-rate items being selected more often.
+#        Crafted items may also appear more often since their drop rate is effectively 100%.
+#    Default: false (disabled)
+#
+#    AuctionHouseBot.AdvancedListingRules.UseDropRates.MinQuality
+#        The minimum quality that should be included by AdvancedListingRules.UseDropRates.
+#        Value should be the integer corresponding to the desired minimum rarity.
+#        Examples: Setting to 3 will apply to Rare, Epic, Legendary, and Heirloom.
+#          Setting to 1 will apply to Common, Uncommon, Rare, Epic, Legendary, and Heirloom.
+#        (0) Poor, (1) Common, (2) Uncommon, (3) Rare, (4) Epic, (5) Legendary, (6) Heirloom
+#    Default: 3
+#
+#    AuctionHouseBot.Seller.AdvancedListingRules.UseDropRates.<Category>
+#        Toggle AdvancedListingRules.UseDropRates behavior for individual category.
+#        Only applied if AdvancedListingRules.UseDropRates.Enabled is true.
+#    Default: true (enabled)
+###############################################################################
+
+AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled = false
+AuctionHouseBot.AdvancedListingRules.UseDropRates.MinQuality = 2
+
+AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon = true
+AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor  = true
+AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe = true
 
 ###############################################################################
 #    AuctionHouseBot.MaxBuyoutPriceInCopper

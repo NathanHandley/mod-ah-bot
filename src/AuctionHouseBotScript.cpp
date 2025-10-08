@@ -26,7 +26,7 @@ public:
             LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
             auctionbot->PopulateItemCandidatesAndProportions();
 
-            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.Seller.UseDBDropRates.Enabled", true))
+            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", true))
             {
                 auctionbot->PopulateQuestRewardItemIDs();
                 auctionbot->PopulateItemDropChances();
@@ -38,7 +38,7 @@ public:
     {
         LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
         auctionbot->PopulateItemCandidatesAndProportions();
-        if (sConfigMgr->GetOption<bool>("AuctionHouseBot.Seller.UseDBDropRates.Enabled", true))
+        if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", true))
         {
             auctionbot->PopulateQuestRewardItemIDs();
             auctionbot->PopulateItemDropChances();

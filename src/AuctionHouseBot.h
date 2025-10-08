@@ -280,7 +280,11 @@ private:
     bool PreventOverpayingForVendorItems;
     std::unordered_map<uint32, double> CachedItemDropRates;
     std::vector<uint32> ItemTiersByClassAndQuality[17][7][11]; // [Classes][Qualities][Tiers]
-    bool SellerUseDBDropRates;
+    bool AdvancedListingRuleUseDropRatesEnabled;
+    bool AdvancedListingRuleUseDropRatesWeaponEnabled;
+    bool AdvancedListingRuleUseDropRatesArmorEnabled;
+    bool AdvancedListingRuleUseDropRatesRecipeEnabled;
+    int AdvancedListingRuleUseDropRatesMinQuality;
     std::unordered_set<uint32> QuestRewardItemIDs;
 
     FactionSpecificAuctionHouseConfig AllianceConfig;
@@ -319,6 +323,7 @@ public:
     uint32 GetStackSizeForItem(ItemTemplate const* itemProto) const;
     void CalculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice);
     void PopulateItemDropChances();
+    std::string GetAdvancedListingRuleUseDropRatesEnabledCategoriesString();
     void PopulateQuestRewardItemIDs();
     bool IsItemQuestReward(uint32 itemID);
     bool IsItemCrafted(uint32 itemID);
