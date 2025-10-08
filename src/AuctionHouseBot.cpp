@@ -1648,28 +1648,14 @@ void AuctionHouseBot::EmptyAuctionHouses()
 
             // Return item to AHBot if configured, else delete it
             if (ReturnExpiredAuctionItemsToBot)
-            {
-                // Copied logic from AuctionHouseMgr.cpp::SendAuctionExpiredMail(), but not working as intended
-                //  For now, delete from DB so data doesn't build up unnecessarily
-                Item::DeleteFromDB(trans, auction->item_guid.GetCounter());
-
-                // Player* owner = ObjectAccessor::FindPlayer(auction->owner);
-                // Item* item = sAuctionMgr->GetAItem(auction->item_guid);
-                // owner->GetSession()->SendAuctionOwnerNotification(auction);
-                // MailDraft(auction->BuildAuctionMailSubject(AUCTION_EXPIRED), AuctionEntry::BuildAuctionMailBody(ObjectGuid::Empty, 0, auction->buyout, auction->deposit))
-                // .AddItem(item)
-                // .SendMailTo(trans, MailReceiver(owner, auction->owner.GetCounter()), auction, MAIL_CHECK_MASK_COPIED, 0);
-            }
+                sAuctionMgr->SendAuctionExpiredMail(auction, trans, true, true);
             else
-            {
                 Item::DeleteFromDB(trans, auction->item_guid.GetCounter());
-            }
 
             // Remove auction from AH
             auction->DeleteFromDB(trans);
             sAuctionMgr->RemoveAItem(auction->item_guid);
             auctionHouse->RemoveAuction(auction);
-
         }
     }
 

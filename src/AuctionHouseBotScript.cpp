@@ -117,9 +117,17 @@ public:
         }
         if (isAHBot == true)
         {
-            if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
-                deleteMailItemsFromDB = true;
-            sendMail = false;
+            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.ReturnExpiredAuctionItemsToBot", false))
+            {
+                deleteMailItemsFromDB = false;
+                sendMail = true;
+            }
+            else
+            {
+                if (sender.GetMailMessageType() == MAIL_AUCTION)        // auction mail with items
+                    deleteMailItemsFromDB = true;
+                sendMail = false;
+            }
         }
     }
 };
