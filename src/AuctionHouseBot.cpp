@@ -41,6 +41,7 @@ AuctionHouseBot::AuctionHouseBot() :
     debug_Out_Filters(false),
     SellingBotEnabled(false),
     BuyingBotEnabled(false),
+    ReturnExpiredAuctionItemsToBot(false),
     CyclesBetweenBuyActionMin(1),
     CyclesBetweenBuyAction(1),
     CyclesBetweenBuyActionMax(1),
@@ -1266,9 +1267,12 @@ void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, 
 
 void AuctionHouseBot::Update()
 {
-    if ((SellingBotEnabled == false) && (BuyingBotEnabled == false))
-        return;
     if (AHCharacters.empty() == true)
+        return;
+
+    CleanupExpiredAuctionItems();
+
+    if ((SellingBotEnabled == false) && (BuyingBotEnabled == false))
         return;
 
     LastBuyCycleCount++;
@@ -1369,6 +1373,7 @@ void AuctionHouseBot::InitializeConfiguration()
 
     // Buyer & Seller core properties
     SetCyclesBetweenBuyOrSell();
+    ReturnExpiredAuctionItemsToBot = sConfigMgr->GetOption<bool>("AuctionHouseBot.ReturnExpiredAuctionItemsToBot", false);
     ItemsPerCycle = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ItemsPerCycle", 75);
     MaxBuyoutPriceInCopper = sConfigMgr->GetOption<uint32>("AuctionHouseBot.MaxBuyoutPriceInCopper", 1000000000);
     BuyoutVariationReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationReducePercent", 0.15f);
@@ -1647,7 +1652,13 @@ void AuctionHouseBot::EmptyAuctionHouses()
             if (ai.characterGUID != 0)
                 sAuctionMgr->SendAuctionCancelledToBidderMail(auction,  trans);
 
-            // Remove item from AH
+            // Return item to AHBot if configured, else delete it
+            if (ReturnExpiredAuctionItemsToBot)
+                sAuctionMgr->SendAuctionExpiredMail(auction, trans, true, true);
+            else
+                Item::DeleteFromDB(trans, auction->item_guid.GetCounter());
+
+            // Remove auction from AH
             auction->DeleteFromDB(trans);
             sAuctionMgr->RemoveAItem(auction->item_guid);
             auctionHouse->RemoveAuction(auction);
@@ -1942,4 +1953,34 @@ void AuctionHouseBot::PopulateVendorItemsPrices()
             vendorItemsPrices[itemID] = itemPrice;
         } while (result->NextRow()); 
     }
+}
+
+void AuctionHouseBot::CleanupExpiredAuctionItems()
+{
+    if (AHCharactersGUIDsForQuery.empty() ||
+        ReturnExpiredAuctionItemsToBot)
+        return;
+
+    // Delete item_instances that are not in the Auction Houses
+    std::string queryItemInstancesString = R"SQL(
+        SELECT guid
+            FROM item_instance
+            LEFT JOIN auctionhouse ON auctionhouse.itemguid = item_instance.guid
+            WHERE item_instance.owner_guid IN ({})
+            AND auctionhouse.id IS NULL
+    )SQL";
+
+    QueryResult queryItemInstancesResult = CharacterDatabase.Query(queryItemInstancesString, AHCharactersGUIDsForQuery);
+    if (!queryItemInstancesResult)
+        return;
+
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+
+    do
+    {
+        uint32 guid = queryItemInstancesResult->Fetch()[0].Get<uint32>();
+        Item::DeleteFromDB(trans, guid);
+    } while (queryItemInstancesResult->NextRow());
+
+    CharacterDatabase.CommitTransaction(trans);
 }

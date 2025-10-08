@@ -128,6 +128,7 @@ private:
 
     bool SellingBotEnabled;
     bool BuyingBotEnabled;
+    bool ReturnExpiredAuctionItemsToBot;
     uint32 CyclesBetweenBuyActionMin;
     uint32 CyclesBetweenBuyAction;
     uint32 CyclesBetweenBuyActionMax;
@@ -322,6 +323,7 @@ public:
     void AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
     void AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig* config);
     void PopulateVendorItemsPrices();
+    void CleanupExpiredAuctionItems();
 
     template <typename ValueType>
     void AddItemValuePairsToItemIDMap(std::unordered_map<uint32, ValueType>& workingValueToItemIDMap, std::string valueToItemIDMap);
