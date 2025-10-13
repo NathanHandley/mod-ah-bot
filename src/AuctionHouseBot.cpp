@@ -1016,40 +1016,11 @@ void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpe
                     continue;
                 }
 
-                // If current item is crafted, ineligible, or quest reward, ignore drop rates and continue to list it
-                if (AdvancedListingRuleUseDropRatesEnabled &&
-                    IsItemEligibleForDBDropRates(prototype) &&
-                    !IsItemCrafted(itemID) &&
-                    !IsItemQuestReward(itemID))
+                if (IsItemEligibleForDBDropRates(prototype))
                 {
-                    // The AHBot has chosen a rare/epic armor/weapon/recipe, so select another item
-                    //   of that type based on drop rates. This way ListProportions are respected.
-
-                    // Roll for rarity tier
-                    double r = 100.0 * (urand(0, INT32_MAX) / static_cast<double>(INT32_MAX));
-                    int tier = GetItemDropChanceTier(r);
-
-                    // If chosen tier is empty, search rarer tiers until not empty
-                    auto& tierBuckets = ItemTiersByClassAndQuality[prototype->Class][prototype->Quality];
-                    while (tierBuckets[tier].empty() && tier < 10) {
-                        if (debug_Out)
-                            LOG_INFO("module", "Bucket is empty for class {} quality {} tier {}", prototype->Class, prototype->Quality, tier);
-                        tier++;
-                    }
-
-                    // Pull a random item from selected rarity tier
-                    auto& bucket = tierBuckets[tier];
-                    if (!bucket.empty())
-                    {
-                        itemID = bucket[rand() % bucket.size()];
-                        prototype = sObjectMgr->GetItemTemplate(itemID);
-                        if (!prototype)
-                        {
-                            if (debug_Out)
-                                LOG_ERROR("module", "AHSeller: prototype == NULL");
-                            continue;
-                        }
-                    }
+                    bool foundDBDropRatesItem = HandleAdvancedListingRuleUseDropRates(prototype);
+                    if (foundDBDropRatesItem)
+                        itemID = prototype->ItemId;
                     else continue;
                 }
 
@@ -1120,76 +1091,174 @@ void AuctionHouseBot::AddNewAuctions(std::vector<Player*> AHBPlayers, FactionSpe
         LOG_INFO("module", "AHSeller: Added {} items", itemsGenerated);
 }
 
-std::string AuctionHouseBot::GetAdvancedListingRuleUseDropRatesEnabledCategoriesString()
+bool AuctionHouseBot::HandleAdvancedListingRuleUseDropRates(ItemTemplate const*& proto)
 {
-    std::vector<uint32> enabledCategories;
+    // The AHBot has chosen a rare/epic armor/weapon/recipe, so select another item
+    //   of that type based on drop rates. This way ListProportions are respected.
 
-    if (AdvancedListingRuleUseDropRatesWeaponEnabled)
-        enabledCategories.push_back(ITEM_CLASS_WEAPON);
-    if (AdvancedListingRuleUseDropRatesArmorEnabled)
-        enabledCategories.push_back(ITEM_CLASS_ARMOR);
-    if (AdvancedListingRuleUseDropRatesRecipeEnabled)
-        enabledCategories.push_back(ITEM_CLASS_RECIPE);
+    // Roll for rarity tier
+    double r = 100.0 * (urand(0, INT32_MAX) / static_cast<double>(INT32_MAX));
+    int tier = GetItemDropChanceTier(r);
 
-    std::ostringstream oss;
-    for (size_t i = 0; i < enabledCategories.size(); ++i)
-    {
-        if (i > 0)
-            oss << ",";
-        oss << enabledCategories[i];
+    // If chosen tier is empty, search rarer tiers until not empty
+    auto& tierBuckets = ItemTiersByClassAndQuality[proto->Class][proto->Quality];
+    while (tierBuckets[tier].empty() && tier < 10) {
+        tier++;
     }
 
-    return oss.str();
+    // Pull a random item from selected rarity tier
+    uint32 itemID = proto->ItemId;
+    auto& bucket = tierBuckets[tier];
+    if (!bucket.empty())
+    {
+        itemID = bucket[rand() % bucket.size()];
+        proto = sObjectMgr->GetItemTemplate(itemID);
+        if (!proto)
+        {
+            if (debug_Out)
+                LOG_ERROR("module", "AHSeller: prototype == NULL");
+            return false;
+        }
+    }
+    else return false;
+
+    return true;
 }
 
 void AuctionHouseBot::PopulateItemDropChances()
 {
+    InitializeAdvancedListingRuleUseDropRatesTiers();
+
+    if (!AdvancedListingRuleUseDropRatesWeaponEnabled &&
+        !AdvancedListingRuleUseDropRatesArmorEnabled &&
+        !AdvancedListingRuleUseDropRatesRecipeEnabled)
+    {
+        LOG_ERROR("module", "AuctionHouseBot: No categories are enabled for AuctionHouseBot.Seller.AdvancedListingRules.UseDropRates");
+        return;
+    }
+
+    auto handleDropChancesForCategoryAndQuality = [this](ItemClass category, std::set<uint32> affectedQualities) {
+        std::string qualities = "";
+        int i = 0;
+        for (uint32 q : affectedQualities)
+        {
+            if (i > 0)
+                qualities += ",";
+            qualities += to_string(q);
+            i++;
+        }
+        PopulateItemDropChancesForCategoryAndQuality(category, qualities);
+    };
+
+    if (AdvancedListingRuleUseDropRatesWeaponEnabled)
+        handleDropChancesForCategoryAndQuality(ITEM_CLASS_WEAPON, AdvancedListingRuleUseDropRatesWeaponAffectedQualities);
+    if (AdvancedListingRuleUseDropRatesArmorEnabled)
+        handleDropChancesForCategoryAndQuality(ITEM_CLASS_ARMOR, AdvancedListingRuleUseDropRatesArmorAffectedQualities);
+    if (AdvancedListingRuleUseDropRatesRecipeEnabled)
+        handleDropChancesForCategoryAndQuality(ITEM_CLASS_RECIPE, AdvancedListingRuleUseDropRatesRecipeAffectedQualities);
+
+    // Erase item candidates that are not crafted, not quest rewards, and missing DB drop rate
+    for (auto& [classID, qualityGroups] : ItemCandidatesByItemClassAndQuality)
+    {
+        for (auto& [qualityID, candidates] : qualityGroups)
+        {
+            candidates.erase(
+                std::remove_if(
+                    candidates.begin(),
+                    candidates.end(),
+                    [&](uint32 id)
+                    {
+                        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(id);
+                        if (!IsItemCategoryQualityInDBDropRatesConfig(proto))
+                            return false;
+
+                        bool shouldErase = !IsItemCrafted(id)
+                                        && !IsItemQuestReward(id)
+                                        && !CachedItemDropRates.contains(id);
+
+                        return shouldErase;
+                    }),
+                candidates.end()
+            );
+        }
+    }
+
+    if (debug_Out)
+    {
+        // Show number of items in each tier
+        LOG_INFO("module", "AHBot AdvancedListingRule UseDropRates item counts by class and quality after appyling filters:");
+        for (size_t i = 0; i < ItemTiersByClassAndQuality.size(); ++i)
+        {
+            const auto& qualities = ItemTiersByClassAndQuality[i];
+            for (size_t j = 0; j < qualities.size(); ++j)
+            {
+                const auto& tiers = qualities[j];
+                for (size_t k = 0; k < tiers.size(); ++k)
+                {
+                    const auto& items = tiers[k];
+                    if (i == 2)
+                        LOG_INFO("module", "Armor Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
+                    if (i == 4)
+                        LOG_INFO("module", "Weapon Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
+                    if (i == 9)
+                        LOG_INFO("module", "Recipe Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
+                }
+            }
+        }
+    }
+}
+
+void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass category, std::string qualities)
+{
     // Search creature loot templates, referenced loot_loot_template, group_loot tables, and object_loot tables for items' drop rates
     std::string directDropString = R"SQL(
-        SELECT it.entry AS itemID, 
-                clt.Chance AS direct_chance, 
-                0 AS reference_chance
+        with chances AS (
+			SELECT it.entry     AS itemID, 
+                clt.Chance      AS direct_chance, 
+                0               AS reference_chance
             FROM creature_template ct
             JOIN creature_loot_template clt ON clt.Entry = ct.lootid
             JOIN item_template it ON it.entry = clt.Item
-            WHERE clt.Reference = 0 AND clt.GroupId = 0 AND it.class IN ({}) AND it.quality >= {}
+            WHERE clt.Reference = 0 AND clt.GroupId = 0 AND it.class IN ({}) AND it.quality IN ({})
+        )
+        SELECT itemID,
+                MIN(direct_chance)  AS direct_chance,
+                0                   AS reference_chance
+                FROM chances 
+                GROUP BY itemID
     )SQL";
 
     std::string referenceDropString = R"SQL(
-        WITH reference_group_counts AS (
-            SELECT entry AS referenceID, COUNT(*) AS groupCount
-            FROM reference_loot_template
-            GROUP BY entry
-        ),
-        all_references AS (
+        WITH chances AS (
             SELECT 
-                rlt.Entry AS referenceID,
                 rlt.Item AS itemID,
-                rlt.Chance AS referenceChance,
-                rgc.groupCount,
-                MIN(clt.Chance) AS creatureChance,
-                CASE WHEN COUNT(clt.Entry) > 0 THEN 1 ELSE 0 END AS hasCreature
+                CASE
+                    WHEN COUNT(clt.Entry) > 0 THEN
+                        (1.0 / CASE WHEN rgc.groupCount < 6 THEN 6 ELSE rgc.groupCount END)
+                        * COALESCE(NULLIF(rlt.Chance,0),1)
+                        * COALESCE(NULLIF(MIN(clt.Chance),0),1)
+                    ELSE
+                        (1.0 / rgc.groupCount) * COALESCE(NULLIF(rlt.Chance,0),1)
+                END AS reference_chance
             FROM reference_loot_template rlt
-            JOIN reference_group_counts rgc ON rlt.Entry = rgc.referenceID
-            LEFT JOIN creature_loot_template clt ON clt.Reference = rlt.Entry
-            WHERE clt.`Comment` NOT LIKE '%Placeholder%'
+            JOIN (
+                SELECT entry, COUNT(*) AS groupCount
+                FROM reference_loot_template
+                GROUP BY entry
+            ) rgc ON rlt.Entry = rgc.entry
+            LEFT JOIN creature_loot_template clt
+                ON clt.Reference = rlt.Entry
+                AND clt.Comment NOT LIKE '%Placeholder%'
+            JOIN item_template it ON it.entry = rlt.Item
+            WHERE it.class IN ({})
+              AND it.quality IN ({})
             GROUP BY rlt.Entry, rlt.Item, rlt.Chance, rgc.groupCount
         )
-        SELECT 
-            ar.itemID	AS itemID,
-            0           AS direct_chance, 
-            CASE
-                WHEN ar.hasCreature = 1
-                    THEN (1.0 / case when ar.groupCount < 6 then 6 ELSE ar.groupCount end) *
-                        COALESCE(NULLIF(ar.referenceChance,0),1) *
-                        COALESCE(NULLIF(ar.creatureChance,0),1)
-                ELSE
-                    (1.0 / ar.groupCount) *
-                    COALESCE(NULLIF(ar.referenceChance,0),1)
-            END AS reference_chance
-        FROM all_references ar
-        JOIN item_template it ON it.entry = ar.itemID
-        WHERE it.class IN ({}) AND it.quality >= {}
+        SELECT itemID,
+               0                     AS direct_chance,
+               MIN(reference_chance) AS reference_chance
+        FROM chances 
+        GROUP BY itemID
     )SQL";
 
     // This will lookup items in referenced_loot_template whose Reference entry is not associated with a creature_loot_template
@@ -1204,21 +1273,28 @@ void AuctionHouseBot::PopulateItemDropChances()
         ),
         reference_data AS (
             SELECT 
-                rlt.Entry AS referenceID,
-                rlt.Item AS itemID,
+                rlt.Entry  AS referenceID,
+                rlt.Item   AS itemID,
                 rlt.Chance AS referenceChance,
                 rgc.groupCount
             FROM reference_loot_template rlt
             JOIN reference_group_counts rgc ON rlt.Entry = rgc.referenceID
-        )
-        SELECT 
-                rd.itemID AS itemID,
+        ),
+        chances AS (
+        SELECT  rd.itemID AS itemID,
                 0         AS direct_chance,
                 (1.0 / rd.groupCount) * COALESCE(NULLIF(rd.referenceChance, 0), 1) AS reference_chance
             FROM reference_data rd
             JOIN item_template it ON it.entry = rd.itemID
             WHERE it.class IN ({})
-            AND it.quality >= {}
+            AND it.quality IN ({})
+        )
+         
+        SELECT  itemID,
+                0                     AS direct_chance,
+                AVG(reference_chance) AS reference_chance
+                FROM chances 
+                GROUP BY itemID
     )SQL";
 
     std::string groupDropString = R"SQL(
@@ -1238,7 +1314,7 @@ void AuctionHouseBot::PopulateItemDropChances()
                 SELECT group_tables.*, COUNT(*) OVER (PARTITION BY loot_entry, group_id) AS item_count
                 FROM group_tables
             ) compute_item_count
-            WHERE itemClass IN ({}) AND itemQuality >= {}
+            WHERE itemClass IN ({}) AND itemQuality IN ({})
     )SQL";
 
     std::string objectsDropString = R"SQL(
@@ -1247,30 +1323,23 @@ void AuctionHouseBot::PopulateItemDropChances()
                0		   AS reference_chance
             FROM item_loot_template ilt
             JOIN item_template it ON it.entry = ilt.Item
-            WHERE it.class IN ({}) AND it.quality >= {} AND chance != 0
+            WHERE it.class IN ({}) AND it.quality IN ({}) AND chance != 0
         UNION ALL 
         SELECT it.entry    AS itemID,
                golt.Chance AS direct_chance,
-               0				 AS reference_chance
+               0		   AS reference_chance
             FROM gameobject_loot_template golt
             JOIN item_template it ON it.entry = golt.Item
-            WHERE it.class IN ({}) AND it.quality >= {} AND chance != 0
+            WHERE it.class IN ({}) AND it.quality IN ({}) AND chance != 0
     )SQL";
 
-    std::string enabledCategories = GetAdvancedListingRuleUseDropRatesEnabledCategoriesString();
-    if (enabledCategories.empty())
-    {
-        LOG_ERROR("module", "AuctionHouseBot: No categories are enabled for AuctionHouseBot.Seller.AdvancedListingRules.UseDropRates");
-        return;
-    }
-
-    QueryResult directResult = WorldDatabase.Query(directDropString, enabledCategories, AdvancedListingRuleUseDropRatesMinQuality);
-    QueryResult referenceResult = WorldDatabase.Query(referenceDropString, enabledCategories, AdvancedListingRuleUseDropRatesMinQuality);
-    QueryResult danglingReferenceResult = WorldDatabase.Query(danglingReferenceDropString, enabledCategories, AdvancedListingRuleUseDropRatesMinQuality);
-    QueryResult groupResult = WorldDatabase.Query(groupDropString, enabledCategories, AdvancedListingRuleUseDropRatesMinQuality);
+    QueryResult directResult = WorldDatabase.Query(directDropString, category, qualities);
+    QueryResult referenceResult = WorldDatabase.Query(referenceDropString, category, qualities);
+    QueryResult danglingReferenceResult = WorldDatabase.Query(danglingReferenceDropString, category, qualities);
+    QueryResult groupResult = WorldDatabase.Query(groupDropString, category, qualities);
     QueryResult objectsDropResult = WorldDatabase.Query(objectsDropString,
-                                                        enabledCategories, AdvancedListingRuleUseDropRatesMinQuality,
-                                                        enabledCategories, AdvancedListingRuleUseDropRatesMinQuality);
+                                                        category, qualities,
+                                                        category, qualities);
     if (!directResult || !referenceResult || !danglingReferenceResult || !groupResult || !objectsDropResult)
     {
         LOG_ERROR("module", "AuctionHouseBot: PopulateItemDropChances() failed to query items' drop rates.");
@@ -1309,36 +1378,19 @@ void AuctionHouseBot::PopulateItemDropChances()
     parseResults(groupResult);
     parseResults(objectsDropResult);
 
-    // Process item candidates: filter invalid entries and group by drop rate tier
+    // Populate drop rates Tiers
     for (auto& [classID, qualityGroups] : ItemCandidatesByItemClassAndQuality)
     {
         for (auto& [qualityID, candidates] : qualityGroups)
         {
-            // Erase items that are not crafted, not quest rewards, and missing DB drop rate
-            candidates.erase(
-                std::remove_if(
-                    candidates.begin(),
-                    candidates.end(),
-                    [&](uint32 id)
-                    {
-                        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(id);
-                        if (!IsItemEligibleForDBDropRates(proto))
-                            return false;
-
-                        bool shouldErase = !IsItemCrafted(id)
-                                        && !IsItemQuestReward(id)
-                                        && !CachedItemDropRates.contains(id);
-
-                        return shouldErase;
-                    }),
-                candidates.end()
-            );
-
-            // Now process the remaining valid items
             for (uint32 id : candidates)
             {
                 ItemTemplate const* proto = sObjectMgr->GetItemTemplate(id);
-                if (!IsItemEligibleForDBDropRates(proto))
+                if (!IsItemCategoryQualityInDBDropRatesConfig(proto))
+                    continue;
+
+                // Skip items that haven't been populated yet.
+                if (!CachedItemDropRates.contains(id)) 
                     continue;
 
                 double rate = CachedItemDropRates[id];
@@ -1347,21 +1399,59 @@ void AuctionHouseBot::PopulateItemDropChances()
             }
         }
     }
+}
 
-    if (debug_Out)
+void AuctionHouseBot::InitializeAdvancedListingRuleUseDropRatesTiers()
+{
+    // Re-initialize to reset
+    DropRatesToTierMap = std::map<double, int, std::greater<double>>();
+    ItemTiersByClassAndQuality = std::vector<std::vector<std::vector<std::vector<uint32>>>>(17); // 17 Categories
+    std::string tiersConfigString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig", "50,10,5,2,1,0.5,0.2,0.1,0.05,0.02,0.01,0.005");
+
+    // Parse tiers config, populate DropRate -> Tier map for later lookups
+    int curTier = 0;
+    std::string delimitedValue;
+    std::stringstream tiersConfigStream;
+    tiersConfigStream.str(tiersConfigString);
+    while (std::getline(tiersConfigStream, delimitedValue, ',')) // Process each tier in the string, delimited by the comma ","
     {
-        // Show number of items in each tier
-        for (int i = 0; i < 17; i++)
-            for (int j = 0; j < 7; j++)
-                for (int k = 0; k < 10; k++)
-                {
-                    if (i == 2)
-                        LOG_INFO("module", "Armor Count: Rarity {} Tier {} has {} items", j, k, ItemTiersByClassAndQuality[i][j][k].size());
-                    if (i == 4)
-                        LOG_INFO("module", "Weapon Count: Rarity {} Tier {} has {} items", j, k, ItemTiersByClassAndQuality[i][j][k].size());
-                    if (i == 9)
-                        LOG_INFO("module", "Recipe Count: Rarity {} Tier {} has {} items", j, k, ItemTiersByClassAndQuality[i][j][k].size());
-                }
+        // Trim whitespace
+        delimitedValue.erase(0, delimitedValue.find_first_not_of(" \t"));
+        delimitedValue.erase(delimitedValue.find_last_not_of(" \t") + 1);
+
+        if (delimitedValue.empty())
+        {
+            LOG_ERROR("module", "AuctionHouseBot: Empty entry found in AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig: '{}'", tiersConfigString);
+            continue;
+        }
+
+        double rate = std::stod(delimitedValue);
+        if (rate <= 0.0)
+        {
+            LOG_ERROR("module", "AuctionHouseBot: Invalid (non-positive) drop rate '{}' in AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig: '{}'", delimitedValue, tiersConfigString);
+            continue;
+        }
+
+        // Check for duplicates
+        if (DropRatesToTierMap.contains(rate))
+        {
+            LOG_ERROR("module", "AuctionHouseBot: Duplicate drop rate '{}' found in AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig: '{}'", rate, tiersConfigString);
+            continue;
+        }
+
+        DropRatesToTierMap[rate] = curTier;
+        curTier++;
+    }
+
+    if (DropRatesToTierMap.empty())
+        LOG_ERROR("module", "AuctionHouseBot: Failed to parse any valid drop rates from AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig: '{}'", tiersConfigString);
+
+    // Resize ItemTiersByClassAndQuality by tier count
+    for (auto& qualities : ItemTiersByClassAndQuality)
+    {
+        qualities.resize(7);    // 7 Qualities
+        for (auto& tiers : qualities)
+            tiers.resize(DropRatesToTierMap.size() + 1); // Create an extra "catch-all" bucket
     }
 }
 
@@ -1404,17 +1494,16 @@ void AuctionHouseBot::PopulateQuestRewardItemIDs()
 
 int AuctionHouseBot::GetItemDropChanceTier(double dropRate)
 {
-    if (dropRate > 10)        return 0;
-    else if (dropRate > 5)    return 1;
-    else if (dropRate > 2)    return 2;
-    else if (dropRate > 1)    return 3;
-    else if (dropRate > 0.5)  return 4;
-    else if (dropRate > 0.2)  return 5;
-    else if (dropRate > 0.1)  return 6;
-    else if (dropRate > 0.05) return 7;
-    else if (dropRate > 0.02) return 8;
-    else if (dropRate > 0.01) return 9;
-    else return 10;
+    for(const auto& pair : DropRatesToTierMap)
+    {
+        double mapDropRate = pair.first;
+        int mapTier = pair.second;
+        if (dropRate >= mapDropRate) 
+            return mapTier;
+    }
+
+    // If dropRate is lower than smallest configured tier, return "catch-all" bucket index
+    return DropRatesToTierMap.size();
 }
 
 void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, FactionSpecificAuctionHouseConfig *config)
@@ -1726,7 +1815,11 @@ void AuctionHouseBot::InitializeConfiguration()
     AdvancedListingRuleUseDropRatesWeaponEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon", true);
     AdvancedListingRuleUseDropRatesArmorEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor", true);
     AdvancedListingRuleUseDropRatesRecipeEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe", true);
-    AdvancedListingRuleUseDropRatesMinQuality = sConfigMgr->GetOption<int>("AuctionHouseBot.AdvancedListingRules.UseDropRates.MinQuality", 3);
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesWeaponAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon.AffectedQualities", "2,3,4,5"), "");
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesArmorAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor.AffectedQualities", "2,3,4,5"), "");
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesRecipeAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe.AffectedQualities", "2,3,4,5"), "");
+    AdvancedListingRuleUseDropRatesExceptionItems.clear();
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.DisabledItemIDs", ""), "AdvancedListingRules.UseDropRates.DisabledItemIDs");
     MaxBuyoutPriceInCopper = sConfigMgr->GetOption<uint32>("AuctionHouseBot.MaxBuyoutPriceInCopper", 1000000000);
     BuyoutVariationReducePercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationReducePercent", 0.15f);
     BuyoutVariationAddPercent = sConfigMgr->GetOption<float>("AuctionHouseBot.BuyoutVariationAddPercent", 0.25f);
@@ -1915,21 +2008,21 @@ void AuctionHouseBot::InitializeConfiguration()
     ListedItemLevelMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MinItemLevel", 0);
     ListedItemLevelMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel", 999);
     ListedItemLevelExceptionItems.clear();
-    AddItemIDsFromString(ListedItemLevelExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""), "ListedItemLevelRestrict.ExceptionItemIDs");
+    ParseNumberListToSet(ListedItemLevelExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs", ""), "ListedItemLevelRestrict.ExceptionItemIDs");
 
     // Item ID Restrictions
     ListedItemIDRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.ListedItemIDRestrict.Enabled", false);
     ListedItemIDMin = sConfigMgr->GetOption("AuctionHouseBot.ListedItemIDRestrict.MinItemID", 0);
     ListedItemIDMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemIDRestrict.MaxItemID", 200000);
     ListedItemIDExceptionItems.clear();
-    AddItemIDsFromString(ListedItemIDExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs", ""), "ListedItemIDRestrict.ExceptionItemIDs");
+    ParseNumberListToSet(ListedItemIDExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs", ""), "ListedItemIDRestrict.ExceptionItemIDs");
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);
     DisabledRecipeProducedItemFilterEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledRecipeProducedItemFilterEnabled", false);
     DisabledItems.clear();
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledInvalidItemIDs", ""), "AuctionHouseBot.DisabledInvalidItemIDs");
-    AddItemIDsFromString(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCustomItemIDs", ""), "AuctionHouseBot.DisabledCustomItemIDs");
+    ParseNumberListToSet(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledInvalidItemIDs", ""), "AuctionHouseBot.DisabledInvalidItemIDs");
+    ParseNumberListToSet(DisabledItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledCustomItemIDs", ""), "AuctionHouseBot.DisabledCustomItemIDs");
     AddValuesToSetByKeyMap(DisabledRecipeProducedItemClassSubClasses, sConfigMgr->GetOption<std::string>("AuctionHouseBot.DisabledRecipeProducedItemClassSubClasses", ""), 0, 20);
 
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
@@ -2193,7 +2286,7 @@ void AuctionHouseBot::AddValuesToSetByKeyMap(std::map<uint32, std::unordered_set
     }
 }
 
-void AuctionHouseBot::AddItemIDsFromString(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName)
+void AuctionHouseBot::ParseNumberListToSet(std::set<uint32>& workingItemIDSet, std::string itemString, const char* parentOperationName)
 {
     std::string delimitedValue;
     std::stringstream itemIdStream;
@@ -2201,6 +2294,10 @@ void AuctionHouseBot::AddItemIDsFromString(std::set<uint32>& workingItemIDSet, s
     itemIdStream.str(itemString);
     while (std::getline(itemIdStream, delimitedValue, ',')) // Process each item ID in the string, delimited by the comma ","
     {
+        // Trim whitespace
+        delimitedValue.erase(0, delimitedValue.find_first_not_of(" \t"));
+        delimitedValue.erase(delimitedValue.find_last_not_of(" \t") + 1);
+
         std::string valueOne;
         std::stringstream itemPairStream(delimitedValue);
         itemPairStream >> valueOne;
@@ -2221,18 +2318,18 @@ void AuctionHouseBot::AddItemIDsFromString(std::set<uint32>& workingItemIDSet, s
             else
             {
                 for (int32 i = leftId; i <= rightId; ++i)
-                    AddToItemIDSet(workingItemIDSet, i, parentOperationName);
+                    AddToNumberListSet(workingItemIDSet, i, parentOperationName);
             }
         }
         else
         {
             auto itemId = atoi(valueOne.c_str());
-            AddToItemIDSet(workingItemIDSet, itemId, parentOperationName);
+            AddToNumberListSet(workingItemIDSet, itemId, parentOperationName);
         }
     }
 }
 
-void AuctionHouseBot::AddToItemIDSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName)
+void AuctionHouseBot::AddToNumberListSet(std::set<uint32>& workingItemIDSet, uint32 itemID, const char* parentOperationName)
 {
     if (workingItemIDSet.find(itemID) != workingItemIDSet.end())
     {
@@ -2347,23 +2444,41 @@ bool AuctionHouseBot::IsItemCrafted(uint32 itemID)
     return (ItemIDsProducedByRecipes.find(itemID) != ItemIDsProducedByRecipes.end());
 }
 
-bool AuctionHouseBot::IsItemEligibleForDBDropRates(ItemTemplate const* proto)
+bool AuctionHouseBot::IsItemCategoryQualityInDBDropRatesConfig(ItemTemplate const* proto)
 {
-    if (!AdvancedListingRuleUseDropRatesEnabled)
-        return false;
-
-    if (!proto || proto->Quality < AdvancedListingRuleUseDropRatesMinQuality)
+    if (!proto)
         return false;
 
     switch (proto->Class)
     {
         case ITEM_CLASS_WEAPON:
-            return AdvancedListingRuleUseDropRatesWeaponEnabled;
+            return (AdvancedListingRuleUseDropRatesWeaponEnabled &&
+                    AdvancedListingRuleUseDropRatesWeaponAffectedQualities.contains(proto->Quality));
         case ITEM_CLASS_ARMOR:
-            return AdvancedListingRuleUseDropRatesArmorEnabled;
+            return (AdvancedListingRuleUseDropRatesArmorEnabled &&
+                    AdvancedListingRuleUseDropRatesArmorAffectedQualities.contains(proto->Quality));
         case ITEM_CLASS_RECIPE:
-            return AdvancedListingRuleUseDropRatesRecipeEnabled;
+            return (AdvancedListingRuleUseDropRatesRecipeEnabled &&
+                    AdvancedListingRuleUseDropRatesRecipeAffectedQualities.contains(proto->Quality));
         default:
             return false;
     }
+}
+
+bool AuctionHouseBot::IsItemEligibleForDBDropRates(ItemTemplate const* proto)
+{
+    if (!proto || !AdvancedListingRuleUseDropRatesEnabled)
+        return false;
+
+    // Only continue if the itemID isn't an exception
+    if (AdvancedListingRuleUseDropRatesExceptionItems.find(proto->ItemId) != AdvancedListingRuleUseDropRatesExceptionItems.end())
+        return false;
+
+    // If feature enabled, && item category/quality enabled
+    //   && is not crafted, && is not a quest reward
+    return (AdvancedListingRuleUseDropRatesEnabled &&
+            IsItemCategoryQualityInDBDropRatesConfig(proto) &&
+            !IsItemCrafted(proto->ItemId) &&
+            !IsItemQuestReward(proto->ItemId)
+    );
 }

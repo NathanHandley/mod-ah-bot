@@ -181,6 +181,15 @@ public:
         sConfigMgr->LoadModulesConfigs(true, false);
         AuctionHouseBot::instance()->InitializeConfiguration();
         AuctionHouseBot::instance()->PopulateItemCandidatesAndProportions();
+
+        if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", true))
+        {
+            auctionbot->PopulateQuestRewardItemIDs();
+            auctionbot->PopulateItemDropChances();
+        }
+
+        LOG_INFO("module", "AuctionHouseBot: Config reloaded.");
+        handler->PSendSysMessage("AuctionHouseBot: Config reloaded.");        
         return true;
     }
 
