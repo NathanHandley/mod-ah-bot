@@ -289,6 +289,7 @@ private:
     std::set<uint32> AdvancedListingRuleUseDropRatesWeaponAffectedQualities;
     std::set<uint32> AdvancedListingRuleUseDropRatesArmorAffectedQualities;
     std::set<uint32> AdvancedListingRuleUseDropRatesRecipeAffectedQualities;
+    float AdvancedListingRuleUseDropRatesMinDropRate;
     std::unordered_set<uint32> QuestRewardItemIDs;
 
     FactionSpecificAuctionHouseConfig AllianceConfig;
