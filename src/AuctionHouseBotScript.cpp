@@ -169,6 +169,8 @@ public:
         LOG_INFO("module", "AuctionHouseBot: Updating Auction House...");
         handler->PSendSysMessage("AuctionHouseBot: Updating Auction House...");
         AuctionHouseBot::instance()->Update();
+        LOG_INFO("module", "AuctionHouseBot: Auction House Updated.");
+        handler->PSendSysMessage("AuctionHouseBot: Auction House Updated.");
         return true;
     }
 
@@ -198,6 +200,9 @@ public:
         LOG_INFO("module", "AuctionHouseBot: Emptying Auction House...");
         handler->PSendSysMessage("AuctionHouseBot: Emptying Auction House...");
         AuctionHouseBot::instance()->EmptyAuctionHouses();
+        AuctionHouseBot::instance()->CleanupExpiredAuctionItems(); // Must go after EmptyAuctionHouses()
+        LOG_INFO("module", "AuctionHouseBot: Auction Houses Emptied.");
+        handler->PSendSysMessage("AuctionHouseBot: Auction Houses Emptied.");
         return true;
     }
 

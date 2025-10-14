@@ -161,6 +161,7 @@ AuctionHouseBot::AuctionHouseBot() :
     AdvancedListingRuleUseDropRatesWeaponEnabled(true),
     AdvancedListingRuleUseDropRatesArmorEnabled(true),
     AdvancedListingRuleUseDropRatesRecipeEnabled(true),
+    AdvancedListingRuleUseDropRatesMinDropRate(0.005),
     LastBuyCycleCount(0),
     LastSellCycleCount(0),
     ActiveListMultipleItemID(0),
@@ -1292,7 +1293,7 @@ void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass cat
          
         SELECT  itemID,
                 0                     AS direct_chance,
-                AVG(reference_chance) AS reference_chance
+                MIN(reference_chance) AS reference_chance
                 FROM chances 
                 GROUP BY itemID
     )SQL";
@@ -1347,7 +1348,7 @@ void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass cat
     }
 
     // Add drop rate of all results to CachedItemDropRates 
-    auto parseResults = [this](QueryResult result) 
+    auto parseResults = [this](QueryResult result, bool overwriteDropRate) 
     {
         do {
             Field* fields = result->Fetch();
@@ -1359,12 +1360,17 @@ void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass cat
             if (IsItemQuestReward(itemID) || IsItemCrafted(itemID))
                 continue;
 
+            if (CachedItemDropRates.contains(itemID) && !overwriteDropRate)
+                continue;
+
             if (!fields[1].IsNull())
                 directDropChance = fields[1].Get<double>(); 
             if (!fields[2].IsNull())
                 referenceDropChance = fields[2].Get<double>();
             
+            // Choose higher of two rates (one is normally 0), then raise to MinDropRate if less than
             double higherDropChance = (directDropChance > referenceDropChance) ? directDropChance : referenceDropChance;
+            higherDropChance = (higherDropChance < AdvancedListingRuleUseDropRatesMinDropRate) ? AdvancedListingRuleUseDropRatesMinDropRate : higherDropChance;
 
             if (CachedItemDropRates[itemID] < higherDropChance) 
                 CachedItemDropRates[itemID] = higherDropChance;
@@ -1372,11 +1378,11 @@ void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass cat
         } while (result->NextRow());
     };
 
-    parseResults(directResult);
-    parseResults(referenceResult);
-    parseResults(danglingReferenceResult);
-    parseResults(groupResult);
-    parseResults(objectsDropResult);
+    parseResults(directResult, true);
+    parseResults(referenceResult, true);
+    parseResults(danglingReferenceResult, false);
+    parseResults(groupResult, true);
+    parseResults(objectsDropResult, true);
 
     // Populate drop rates Tiers
     for (auto& [classID, qualityGroups] : ItemCandidatesByItemClassAndQuality)
@@ -1706,8 +1712,6 @@ void AuctionHouseBot::Update()
     if (AHCharacters.empty() == true)
         return;
 
-    CleanupExpiredAuctionItems();
-
     if ((SellingBotEnabled == false) && (BuyingBotEnabled == false))
         return;
 
@@ -1815,6 +1819,8 @@ void AuctionHouseBot::InitializeConfiguration()
     AdvancedListingRuleUseDropRatesWeaponEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon", true);
     AdvancedListingRuleUseDropRatesArmorEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor", true);
     AdvancedListingRuleUseDropRatesRecipeEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe", true);
+    AdvancedListingRuleUseDropRatesMinDropRate = sConfigMgr->GetOption<float>("AuctionHouseBot.AdvancedListingRules.UseDropRates.MinDropRate", 0.005);
+    if (AdvancedListingRuleUseDropRatesMinDropRate < 0 || AdvancedListingRuleUseDropRatesMinDropRate > 100) AdvancedListingRuleUseDropRatesMinDropRate = 0.005;
     ParseNumberListToSet(AdvancedListingRuleUseDropRatesWeaponAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon.AffectedQualities", "2,3,4,5"), "");
     ParseNumberListToSet(AdvancedListingRuleUseDropRatesArmorAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor.AffectedQualities", "2,3,4,5"), "");
     ParseNumberListToSet(AdvancedListingRuleUseDropRatesRecipeAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe.AffectedQualities", "2,3,4,5"), "");

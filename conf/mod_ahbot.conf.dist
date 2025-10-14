@@ -94,7 +94,7 @@ AuctionHouseBot.ListingExpireTimeInSecondsMax = 86400
 #        Crafted items may also appear more often since their drop rate is effectively 100%.
 #    Default: false (disabled)
 #
-#    AuctionHouseBot.Seller.AdvancedListingRules.UseDropRates.<Category>
+#    AuctionHouseBot.AdvancedListingRules.UseDropRates.<Category>
 #        Toggle AdvancedListingRules.UseDropRates behavior for individual category.
 #        Only applied if AdvancedListingRules.UseDropRates.Enabled is true.
 #    Default: true (enabled)
@@ -106,6 +106,12 @@ AuctionHouseBot.ListingExpireTimeInSecondsMax = 86400
 #          Setting to 4 will apply only to Epic.
 #        (0) Poor, (1) Common, (2) Uncommon, (3) Rare, (4) Epic, (5) Legendary, (6) Heirloom
 #    Default: 2,3,4,5
+#
+#    AuctionHouseBot.AdvancedListingRules.UseDropRates.MinDropRate
+#        The minimum drop rate any affected item can have.
+#        Some items can have extremely low drop rates in the DB (e.g. 0.00006), so
+#        this setting will raise those items' drop rate to this value.
+#    Default: 0.005
 #
 #    AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig
 #        The thresholds that define item drop rate tiers.
@@ -135,6 +141,7 @@ AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon.AffectedQualities = 2,3
 AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor.AffectedQualities  = 2,3,4,5
 AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe.AffectedQualities = 2,3,4,5
 
+AuctionHouseBot.AdvancedListingRules.UseDropRates.MinDropRate = 0.005
 AuctionHouseBot.AdvancedListingRules.UseDropRates.TiersConfig = 50, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005
 AuctionHouseBot.AdvancedListingRules.UseDropRates.DisabledItemIDs = 
 
