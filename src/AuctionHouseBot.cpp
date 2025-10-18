@@ -1101,10 +1101,10 @@ bool AuctionHouseBot::HandleAdvancedListingRuleUseDropRates(ItemTemplate const*&
     double r = 100.0 * (urand(0, INT32_MAX) / static_cast<double>(INT32_MAX));
     int tier = GetItemDropChanceTier(r);
 
-    // If chosen tier is empty, search rarer tiers until not empty
+    // If chosen tier is empty, search more common tiers until not empty
     auto& tierBuckets = ItemTiersByClassAndQuality[proto->Class][proto->Quality];
-    while (tierBuckets[tier].empty() && tier < 10) {
-        tier++;
+    while (tierBuckets[tier].empty() && tier > 0) {
+        tier--;
     }
 
     // Pull a random item from selected rarity tier
@@ -1197,11 +1197,11 @@ void AuctionHouseBot::PopulateItemDropChances()
                 for (size_t k = 0; k < tiers.size(); ++k)
                 {
                     const auto& items = tiers[k];
-                    if (i == 2)
-                        LOG_INFO("module", "Armor Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
-                    if (i == 4)
+                    if (i == ITEM_CLASS_WEAPON)
                         LOG_INFO("module", "Weapon Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
-                    if (i == 9)
+                    if (i == ITEM_CLASS_ARMOR)
+                        LOG_INFO("module", "Armor Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
+                    if (i == ITEM_CLASS_RECIPE)
                         LOG_INFO("module", "Recipe Count: {} Tier {} has {} items", GetQualityName((ItemQualities)j), k, items.size());
                 }
             }
@@ -1405,6 +1405,14 @@ void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass cat
             }
         }
     }
+
+    // Remove duplicates
+    for (auto& byClass : ItemTiersByClassAndQuality)
+        for (auto& byQuality : byClass)
+            for (auto& byTier : byQuality) {
+                std::sort(byTier.begin(), byTier.end());
+                byTier.erase(std::unique(byTier.begin(), byTier.end()), byTier.end());
+            }
 }
 
 void AuctionHouseBot::InitializeAdvancedListingRuleUseDropRatesTiers()
