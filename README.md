@@ -51,6 +51,12 @@ The AuctionHouseBot module adds the following in-game commands (for GMs only):
 
 The above behavior is replicated on each enabled auction house.  If left to default settings, 1 item in each auction house will attempt to be bought from, if the price calculation seems favorable. Note that any item buy attempt, even items above buying price, consumes a buy candidate. That means that too many overpriced items can drown out potential sales.
 
+
+## Additional Resources
+
+[Advanced Pricing Calculator](tools/AdvancedPricingCalculator/Advanced_Pricing_Calculator.xlsx) - If `AuctionHouseBot.AdvancedPricing.<Category>.<Subclass>.Enabled` is enabled, this spreadsheet can help quickly visualize how config settings affect in-game prices.
+
+
 ## Credits
 
 - NathanHandley: Created this rewrite of the one that was ported to AzerothCore
