@@ -504,8 +504,11 @@ AuctionHouseBot.PriceMinimumCenterBase.OverrideItems =
 #        model their prices alongside more predictable items - their prices 
 #        may be considered "low".
 #
-#       Note that the AdvancedPricing logic also relies on values 
-#       set by AuctionHouseBot.PriceMultiplier.Category*.Quality* 
+#        Consider using the Advanced_Pricing_Calculator spreadsheet included
+#        in the "tools" folder of this module for help with changing config settings.
+#
+#        Note that the AdvancedPricing logic also relies on values 
+#        set by AuctionHouseBot.PriceMultiplier.Category*.Quality* 
 #    Defaults: true (Enabled)
 #
 #    Note that all price multpliers (along with the advanced pricing) are applied
