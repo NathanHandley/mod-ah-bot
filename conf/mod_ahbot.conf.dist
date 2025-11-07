@@ -194,6 +194,9 @@ AuctionHouseBot.BuyoutBelowVendorVariationAddPercent = 0.25
 #    AuctionHouseBot.<faction>.MinItems
 #    AuctionHouseBot.<faction>.MaxItems
 #        The minimum and maximum number of items to post on that auction house
+#    Note: If you have AllowTwoSide.Interaction.Auction enabled in your AzerothCore's
+#        worldserver.conf, then only the Neutral AH will appear to fill in the
+#        database. Auctions will still appear in non-Neutral AH.
 #    Default: 15000 for both
 ###############################################################################
 
