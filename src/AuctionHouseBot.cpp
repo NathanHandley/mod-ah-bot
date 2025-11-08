@@ -1829,9 +1829,12 @@ void AuctionHouseBot::InitializeConfiguration()
     AdvancedListingRuleUseDropRatesRecipeEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe", true);
     AdvancedListingRuleUseDropRatesMinDropRate = sConfigMgr->GetOption<float>("AuctionHouseBot.AdvancedListingRules.UseDropRates.MinDropRate", 0.005);
     if (AdvancedListingRuleUseDropRatesMinDropRate < 0 || AdvancedListingRuleUseDropRatesMinDropRate > 100) AdvancedListingRuleUseDropRatesMinDropRate = 0.005;
-    ParseNumberListToSet(AdvancedListingRuleUseDropRatesWeaponAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon.AffectedQualities", "2,3,4,5"), "");
-    ParseNumberListToSet(AdvancedListingRuleUseDropRatesArmorAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor.AffectedQualities", "2,3,4,5"), "");
-    ParseNumberListToSet(AdvancedListingRuleUseDropRatesRecipeAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe.AffectedQualities", "2,3,4,5"), "");
+    AdvancedListingRuleUseDropRatesWeaponAffectedQualities.clear();
+    AdvancedListingRuleUseDropRatesArmorAffectedQualities.clear();
+    AdvancedListingRuleUseDropRatesRecipeAffectedQualities.clear();
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesWeaponAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Weapon.AffectedQualities", "2,3,4,5"), "AdvancedListingRules.UseDropRates.Weapon.AffectedQualities");
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesArmorAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Armor.AffectedQualities", "2,3,4,5"), "AdvancedListingRules.UseDropRates.Armor.AffectedQualities");
+    ParseNumberListToSet(AdvancedListingRuleUseDropRatesRecipeAffectedQualities, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Recipe.AffectedQualities", "2,3,4,5"), "AdvancedListingRules.UseDropRates.Recipe.AffectedQualities");
     AdvancedListingRuleUseDropRatesExceptionItems.clear();
     ParseNumberListToSet(AdvancedListingRuleUseDropRatesExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.AdvancedListingRules.UseDropRates.DisabledItemIDs", ""), "AdvancedListingRules.UseDropRates.DisabledItemIDs");
     MaxBuyoutPriceInCopper = sConfigMgr->GetOption<uint32>("AuctionHouseBot.MaxBuyoutPriceInCopper", 1000000000);
