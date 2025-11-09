@@ -882,8 +882,9 @@ AuctionHouseBot.ListingStack.RandomStackIncrement.Glyph = 1
 #        Comma separated list of itemIDs to exclude from any item level restriction logic
 #        Ranges using a dash (-) can also be used
 #        NOTE: Other filtering will still be honored even if it's listed here
-#		 Example: "100,150-200" would cause item level 100, and all item levels
-#         between 150 and 200 (inclusively) to not be subjected to this restriction.
+#		 Example: "2589,3200-3202" would cause Linen Cloth (2589), Burnt Leather Bracers (3200),
+#         Barbarian War Axe (3201), and Forest Leather Bracers (3202) to not 
+#         be subjected to this restriction
 ###############################################################################
 
 AuctionHouseBot.ListedItemLevelRestrict.Enabled = false
