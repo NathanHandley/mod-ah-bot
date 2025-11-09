@@ -1,3 +1,5 @@
+**NOTICE: This repository has been named, which means you may have to rename your fork due to potential build issues**
+
 ## Auction Bot Plus
 
 This is a fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house, and it is built with the following ethos: "Maximum understandable customization in the hands of admins via non-SQL configurations".  Here are some of the feature highlights:
