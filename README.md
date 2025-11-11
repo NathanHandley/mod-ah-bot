@@ -1,4 +1,4 @@
-**NOTICE: This repository has been named, which means you may have to rename your fork due to potential build issues**
+**NOTICE: This repository has been renamed, which means if you forked prior to the new name you must rename your fork to mod-ah-bot-plus**
 
 ## Auction Bot Plus
 
