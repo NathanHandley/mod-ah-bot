@@ -12,3 +12,8 @@ void Addmod_ah_bot_plusScripts()
 {
     AddAHBotScripts();
 }
+
+void Addmod_ah_botScripts()
+{
+    AddAHBotScripts();
+}
