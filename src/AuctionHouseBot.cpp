@@ -1814,9 +1814,9 @@ bool AuctionHouseBot::IsModuleEnabled()
     if (sellerEnabled == false && buyerEnabled == false)
         return false;
     string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
-    if (charString == "0")
+    if (charString == "0" || charString.empty())
     {
-        LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is '0' so this module will be disabled");
+        LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is not configured so this module will be disabled");
         return false;
     }
     return true;
