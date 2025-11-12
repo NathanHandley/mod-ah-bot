@@ -20,13 +20,16 @@ public:
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
+        if (!auctionbot->IsModuleEnabled())
+            return;
+
         auctionbot->InitializeConfiguration();
         if (HasPerformedStartup == true)
         {
             LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
             auctionbot->PopulateItemCandidatesAndProportions();
 
-            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", true))
+            if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", false))
             {
                 auctionbot->PopulateQuestRewardItemIDs();
                 auctionbot->PopulateItemDropChances();
@@ -36,9 +39,12 @@ public:
 
     void OnStartup() override
     {
+        if (!auctionbot->IsModuleEnabled())
+            return;
+
         LOG_INFO("server.loading", "AuctionHouseBot: (Re)populating item candidate lists ...");
         auctionbot->PopulateItemCandidatesAndProportions();
-        if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", true))
+        if (sConfigMgr->GetOption<bool>("AuctionHouseBot.AdvancedListingRules.UseDropRates.Enabled", false))
         {
             auctionbot->PopulateQuestRewardItemIDs();
             auctionbot->PopulateItemDropChances();

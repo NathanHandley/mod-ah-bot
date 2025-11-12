@@ -1211,6 +1211,14 @@ void AuctionHouseBot::PopulateItemDropChances()
 
 void AuctionHouseBot::PopulateItemDropChancesForCategoryAndQuality(ItemClass category, std::string qualities)
 {
+    if (qualities.empty())
+    {
+        LOG_ERROR("module", "AuctionHouseBot: PopulateItemDropChancesForCategoryAndQuality() qualities are not set. "
+                            "Verify that mod_ahbot.conf has values for AdvancedListingRules.UseDropRates.<Category>.AffectedQualities. "
+                            "Defaulting to '2,3,4,5' to prevent crash.");
+        qualities = "2,3,4,5";
+    }
+
     // Search creature loot templates, referenced loot_loot_template, group_loot tables, and object_loot tables for items' drop rates
     std::string directDropString = R"SQL(
         with chances AS (
@@ -1799,24 +1807,30 @@ void AuctionHouseBot::Update()
         ObjectAccessor::RemoveObject(player.get());
 }
 
+bool AuctionHouseBot::IsModuleEnabled()
+{
+    bool sellerEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
+    bool buyerEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
+    if (sellerEnabled == false && buyerEnabled == false)
+        return false;
+    string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
+    if (charString == "0" || charString.empty())
+    {
+        LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is not configured so this module will be disabled");
+        return false;
+    }
+    return true;
+}
+
 void AuctionHouseBot::InitializeConfiguration()
 {
     debug_Out = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG", false);
     debug_Out_Filters = sConfigMgr->GetOption<bool>("AuctionHouseBot.DEBUG_FILTERS", false);
 
-    // Bot enablement
     SellingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EnableSeller", false);
     BuyingBotEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.Buyer.Enabled", false);
-    if (SellingBotEnabled == false && BuyingBotEnabled == false)
-        return;
+
     string charString = sConfigMgr->GetOption<std::string>("AuctionHouseBot.GUIDs", "0");
-    if (charString == "0")
-    {
-        BuyingBotEnabled = false;
-        SellingBotEnabled = false;
-        LOG_INFO("module", "AuctionHouseBot: AuctionHouseBot.GUIDs is '0' so this module will be disabled");
-        return;
-    }
     AddCharacters(charString);
 
     // Buyer & Seller core properties
