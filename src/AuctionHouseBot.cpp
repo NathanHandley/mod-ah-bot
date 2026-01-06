@@ -850,7 +850,8 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
             itr->second.Name1.find("]") != std::string::npos ||            
             itr->second.Name1.find("D'Sak") != std::string::npos ||
             itr->second.Name1.find("(") != std::string::npos ||
-            itr->second.Name1.find("OLD") != std::string::npos))
+            itr->second.Name1.find("OLD") != std::string::npos ||
+            itr->second.Name1.find("PVP") != std::string::npos))
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled item with a temp or unused item name", itr->second.ItemId);
@@ -873,22 +874,6 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
         {
             if (debug_Out_Filters)
                 LOG_ERROR("module", "AuctionHouseBot: Item {} disabled misc item", itr->second.ItemId);
-            continue;
-        }
-
-        //  Disable common weapons
-        if (itr->second.Quality == ITEM_QUALITY_NORMAL && itr->second.Class == ITEM_CLASS_WEAPON)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled common weapon", itr->second.ItemId);
-            continue;
-        }
-
-        // Disable common armor
-        if (itr->second.Quality == ITEM_QUALITY_NORMAL && itr->second.Class == ITEM_CLASS_ARMOR)
-        {
-            if (debug_Out_Filters)
-                LOG_ERROR("module", "AuctionHouseBot: Item {} disabled common non-misc armor", itr->second.ItemId);
             continue;
         }
 
