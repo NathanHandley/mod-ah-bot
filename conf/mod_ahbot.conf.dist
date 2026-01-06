@@ -894,6 +894,37 @@ AuctionHouseBot.ListedItemLevelRestrict.MaxItemLevel = 999
 AuctionHouseBot.ListedItemLevelRestrict.ExceptionItemIDs = 
 
 ###############################################################################
+#    AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.Enabled
+#        If true, the logic related to restricting the bot from listing items
+#        based on the equipped level or use level is active.  Note that items
+#        with no equip or use level are ignored from this logic (always included)
+#    Default: false
+#
+#    AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MinLevel
+#        The lowest equip or use level that will show up in listings.  Items
+#        no equip or use levels will not be restricted
+#    Default: 0
+#
+#    AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MaxLevel
+#        The highest equip or use level that will show up in listings.  Items
+#        no equip or use levels will not be restricted
+#    Default: 0
+#
+#    AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.ExceptionItemIDs
+#        Comma separated list of itemIDs to exclude from any equip or use level restriction logic
+#        Ranges using a dash (-) can also be used
+#        NOTE: Other filtering will still be honored even if it's listed here
+#		 Example: "2589,3200-3202" would cause Linen Cloth (2589), Burnt Leather Bracers (3200),
+#         Barbarian War Axe (3201), and Forest Leather Bracers (3202) to not 
+#         be subjected to this restriction
+###############################################################################
+
+AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.Enabled = false
+AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MinLevel = 0
+AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MaxLevel = 999
+AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.ExceptionItemIDs = 
+
+###############################################################################
 #    AuctionHouseBot.ListedItemIDRestrict.Enabled
 #        If true, the item ids (item_temtplate.entry) will be restricted in listings
 #    Default: false

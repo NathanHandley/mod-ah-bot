@@ -68,8 +68,11 @@ AuctionHouseBot::AuctionHouseBot() :
     DisabledRecipeProducedItemFilterEnabled(false),
     ListedItemLevelRestrictedEnabled(false),
     ListedItemLevelRestrictedUseCraftedItemForCalculation(true),
-    ListedItemLevelMax(999),
     ListedItemLevelMin(0),
+    ListedItemLevelMax(999),    
+    ListedItemUseOrEquipRestrictedEnabled(false),
+    ListedItemUseOrEquipRestrictMinLevel(0),
+    ListedItemUseOrEquipRestrictMaxLevel(999),    
     RandomStackRatioConsumable(1),
     RandomStackRatioContainer(1),
     RandomStackRatioWeapon(1),
@@ -723,6 +726,29 @@ void AuctionHouseBot::PopulateItemCandidatesAndProportions()
                 {
                     if (debug_Out_Filters)
                         LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item id is higher than ListedItemLevelRestrict.MaxItemID", itr->second.ItemId);
+                    continue;
+                }
+            }
+        }
+
+        // If there is a use/equip level exception, honor it
+        if (ListedItemUseOrEquipRestrictedEnabled == true)
+        {
+            // Only test if it's not an exception
+            if (ListedItemUseOrEquipExceptionItems.find(itr->second.ItemId) == ListedItemUseOrEquipExceptionItems.end())
+            {
+                uint32 useOrEquipLevelCompare = itr->second.RequiredLevel;
+
+                if (useOrEquipLevelCompare > 0 && useOrEquipLevelCompare < ListedItemUseOrEquipRestrictMinLevel)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item use or equip level is lower than EquipItemUseOrEquipLevelRestrict.MinItemLevel", itr->second.ItemId);
+                    continue;
+                }
+                if (useOrEquipLevelCompare > 0 && useOrEquipLevelCompare > ListedItemUseOrEquipRestrictMaxLevel)
+                {
+                    if (debug_Out_Filters)
+                        LOG_ERROR("module", "AuctionHouseBot: Item {} disabled since item use or equip level is higher than EquipItemUseOrEquipLevelRestrict.MaxItemLevel", itr->second.ItemId);
                     continue;
                 }
             }
@@ -2047,6 +2073,13 @@ void AuctionHouseBot::InitializeConfiguration()
     ListedItemIDMax = sConfigMgr->GetOption("AuctionHouseBot.ListedItemIDRestrict.MaxItemID", 200000);
     ListedItemIDExceptionItems.clear();
     ParseNumberListToSet(ListedItemIDExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.ListedItemIDRestrict.ExceptionItemIDs", ""), "ListedItemIDRestrict.ExceptionItemIDs");
+
+    // Equip or use restrictions
+    ListedItemUseOrEquipRestrictedEnabled = sConfigMgr->GetOption<bool>("AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.Enabled", false);
+    ListedItemUseOrEquipRestrictMinLevel = sConfigMgr->GetOption("AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MinLevel", 0);
+    ListedItemUseOrEquipRestrictMaxLevel = sConfigMgr->GetOption("AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.MaxLevel", 999);
+    ListedItemUseOrEquipExceptionItems.clear();
+    ParseNumberListToSet(ListedItemUseOrEquipExceptionItems, sConfigMgr->GetOption<std::string>("AuctionHouseBot.EquipItemUseOrEquipLevelRestrict.ExceptionItemIDs", ""), "EquipItemUseOrEquipLevelRestrict.ExceptionItemIDs");
 
     // Disabled Items
     DisabledItemTextFilter = sConfigMgr->GetOption<bool>("AuctionHouseBot.DisabledItemTextFilter", true);

@@ -159,9 +159,13 @@ private:
     std::set<uint32> DisabledItems;
     bool ListedItemLevelRestrictedEnabled;
     bool ListedItemLevelRestrictedUseCraftedItemForCalculation;
-    uint32 ListedItemLevelMax;
     uint32 ListedItemLevelMin;
+    uint32 ListedItemLevelMax;
     std::set<uint32> ListedItemLevelExceptionItems;
+    bool ListedItemUseOrEquipRestrictedEnabled;
+    uint32 ListedItemUseOrEquipRestrictMinLevel;
+    uint32 ListedItemUseOrEquipRestrictMaxLevel;
+    std::set<uint32> ListedItemUseOrEquipExceptionItems;
     uint32 RandomStackRatioConsumable;
     uint32 RandomStackRatioContainer;
     uint32 RandomStackRatioWeapon;
